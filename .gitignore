@@ -4,3 +4,5 @@ __pycache__/
 dev.sqlite3
 staticfiles/
 .venv/
+.pytest_cache/
+.claude/settings.local.json

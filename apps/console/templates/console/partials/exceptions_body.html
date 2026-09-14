@@ -1,0 +1,31 @@
+{% load console_tags %}
+<div id="exceptions-body" class="space-y-5">
+  {% include "console/partials/messages.html" %}
+
+  {% if stale %}
+  <section class="rounded border-2 border-red-500 bg-white">
+    <h2 class="border-b border-red-200 bg-red-50 px-3 py-2 font-semibold text-red-800">
+      Decaissements enlises : en attente operateur depuis plus de {{ stale_after|duration }}
+      <span class="font-normal">({{ stale|length }})</span>
+    </h2>
+    <p class="px-3 py-2 text-red-800">
+      L'argent est probablement parti sans confirmation. Appeler l'operateur avec la reference de retrait avant toute autre action.
+    </p>
+    {% include "console/partials/exception_table.html" with rows=stale %}
+  </section>
+  {% endif %}
+
+  {% for group in groups %}
+  <section class="rounded border bg-white">
+    <h2 class="flex items-center gap-2 border-b px-3 py-2 font-medium">
+      {% include "console/partials/state_badge.html" with state=group.state %}
+      <span class="font-normal text-slate-500">{{ group.rows|length }}</span>
+    </h2>
+    {% if group.rows %}
+      {% include "console/partials/exception_table.html" with rows=group.rows %}
+    {% else %}
+      <p class="px-3 py-2 text-slate-500">Aucune.</p>
+    {% endif %}
+  </section>
+  {% endfor %}
+</div>

@@ -45,6 +45,21 @@ class TransactionQuerySet(models.QuerySet):
     def payable(self):
         return self.filter(state=State.PAYOUT_QUEUED).order_by("payment_confirmed_at")
 
+    def with_state_since(self):
+        """Annote `state_since` : entree dans l'etat courant, lue dans le
+        journal des evenements (updated_at bouge a chaque sauvegarde).
+        """
+        entered = (
+            TransactionEvent.objects.filter(
+                transaction=models.OuterRef("pk"), to_state=models.OuterRef("state")
+            )
+            # Un constat (from_state == to_state) n'est pas une entree dans l'etat.
+            .exclude(from_state=models.F("to_state"))
+            .order_by("-created_at", "-id")
+            .values("created_at")[:1]
+        )
+        return self.annotate(state_since=models.Subquery(entered))
+
 
 class Transaction(models.Model):
     """Une conversion wallet -> wallet.
@@ -158,6 +173,24 @@ class Transaction(models.Model):
         )
         self.state = target
         return current
+
+    @db_transaction.atomic
+    def record_observation(self, *, actor=None, note: str = "", data: dict | None = None) -> "TransactionEvent":
+        """Journalise un constat SANS changer d'etat (from_state == to_state).
+
+        Pour les verifications qui ne tranchent rien mais dont la trace
+        compte pour la suite, comme un 404 sur un PAYOUT_UNKNOWN. Ne touche
+        jamais a `state` : seul transition() le fait.
+        """
+        current = Transaction.objects.select_for_update().get(pk=self.pk)
+        return TransactionEvent.objects.create(
+            transaction=current,
+            from_state=current.state,
+            to_state=current.state,
+            actor=actor,
+            note=note,
+            data=data or {},
+        )
 
 
 class TransactionEvent(models.Model):

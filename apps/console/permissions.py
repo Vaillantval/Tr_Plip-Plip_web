@@ -13,6 +13,9 @@ from django.core.exceptions import PermissionDenied
 
 from apps.accounts.models import AuditLog
 
+#: Longueur maximale d'une valeur de formulaire recopiee dans l'audit.
+AUDIT_VALUE_MAX_LENGTH = 255
+
 
 def client_ip(request):
     forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
@@ -32,17 +35,40 @@ def audit(request, action: str, *, target: str = "", allowed: bool = True, **det
     )
 
 
-def require_acting_role(action: str):
-    """Reserve une vue aux roles autorises a agir sur l'argent."""
+def audit_failure(request, action: str, *, target: str = "", error: str, **detail) -> None:
+    """Seconde ligne d'audit : issue d'une tentative autorisee qui a echoue."""
+    audit(request, action, target=target, allowed=True, outcome="error", error=error, **detail)
+
+
+def require_acting_role(action: str, *, target_kwarg: str = "reference", audit_fields: tuple[str, ...] = ()):
+    """Reserve une vue aux roles autorises a agir sur l'argent.
+
+    Ecrit une ligne d'AuditLog AVANT d'executer la vue. Sur cette ligne,
+    `allowed` signifie AUTORISE, pas REUSSI :
+
+      - allowed=False : role insuffisant, la vue n'est pas executee, 403 ;
+      - allowed=True  : le role permettait la tentative. Rien de plus.
+
+    L'issue d'une tentative autorisee qui echoue (transition interdite,
+    formulaire invalide...) est ecrite par la vue dans une SECONDE ligne,
+    via audit_failure(). Les deux lignes sont conservees : si la vue
+    plante avant d'avoir journalise son resultat, la tentative reste
+    tracee.
+
+    `target_kwarg` nomme l'argument d'URL qui identifie la cible.
+    `audit_fields` liste les champs POST recopies dans `detail`, sur la
+    ligne autorisee comme sur la ligne refusee.
+    """
 
     def decorator(view):
         @wraps(view)
         def wrapper(request, *args, **kwargs):
-            target = kwargs.get("reference", "")
+            target = str(kwargs.get(target_kwarg, ""))
+            submitted = {name: request.POST.get(name, "")[:AUDIT_VALUE_MAX_LENGTH] for name in audit_fields}
             if not request.user.is_authenticated or not request.user.can_act:
-                audit(request, action, target=target, allowed=False)
+                audit(request, action, target=target, allowed=False, **submitted)
                 raise PermissionDenied("Role insuffisant pour cette action")
-            audit(request, action, target=target, allowed=True)
+            audit(request, action, target=target, allowed=True, **submitted)
             return view(request, *args, **kwargs)
 
         return wrapper

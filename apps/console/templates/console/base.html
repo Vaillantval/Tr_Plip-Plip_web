@@ -7,16 +7,42 @@
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-50 text-slate-900">
-  <nav class="border-b bg-white px-6 py-3 flex gap-6 text-sm">
-    <span class="font-medium">Plip-Plip</span>
-    <a href="{% url 'console:dashboard' %}">Tableau de bord</a>
-    <a href="{% url 'console:queue' %}">File</a>
-    <a href="{% url 'console:transactions' %}">Transactions</a>
-    <a href="{% url 'console:exceptions' %}">Exceptions</a>
-    <a href="{% url 'console:treasury' %}">Tresorerie</a>
+<body class="bg-slate-50 text-sm text-slate-900" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  {% with current=request.resolver_match.url_name %}
+  <nav class="flex flex-wrap gap-x-6 gap-y-1 border-b bg-white px-6 py-2.5">
+    <span class="font-semibold">Plip-Plip</span>
+    <a href="{% url 'console:dashboard' %}" class="{% if current == 'dashboard' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Tableau de bord</a>
+    <a href="{% url 'console:queue' %}" class="{% if current == 'queue' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">File</a>
+    <a href="{% url 'console:transactions' %}" class="{% if current == 'transactions' or current == 'transaction_detail' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Transactions</a>
+    <a href="{% url 'console:exceptions' %}" class="{% if current == 'exceptions' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Exceptions</a>
+    <a href="{% url 'console:treasury' %}" class="{% if current == 'treasury' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Tresorerie</a>
     <span class="ml-auto text-slate-500">{{ request.user }} — {{ request.user.get_role_display }}</span>
   </nav>
-  <main class="p-6">{% block content %}{% endblock %}</main>
+  {% endwith %}
+  <div id="console-flash" class="mx-6 mt-3 hidden rounded border border-red-300 bg-red-50 px-3 py-2 text-red-800" role="alert"></div>
+  <main class="px-6 py-4">{% block content %}{% endblock %}</main>
+  <script>
+    // HTMX n'injecte pas les reponses 4xx/5xx : sans ce bandeau, un refus
+    // ou une erreur serveur passerait inapercu.
+    (function () {
+      var flash = document.getElementById("console-flash");
+      function show(text) {
+        flash.textContent = text;
+        flash.classList.remove("hidden");
+      }
+      document.body.addEventListener("htmx:beforeRequest", function () {
+        flash.classList.add("hidden");
+      });
+      document.body.addEventListener("htmx:responseError", function (evt) {
+        var status = evt.detail.xhr.status;
+        show(status === 403
+          ? "Action refusee : role insuffisant. La tentative a ete journalisee."
+          : "Erreur " + status + " : issue de l'action non confirmee. Recharger la page avant de reessayer.");
+      });
+      document.body.addEventListener("htmx:sendError", function () {
+        show("Serveur injoignable : ecran non mis a jour.");
+      });
+    })();
+  </script>
 </body>
 </html>

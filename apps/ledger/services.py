@@ -27,6 +27,10 @@ class UnbalancedEntry(Exception):
     pass
 
 
+class InvalidTopup(ValueError):
+    pass
+
+
 def ensure_accounts() -> None:
     for code, label, type_ in DEFAULT_ACCOUNTS:
         LedgerAccount.objects.get_or_create(code=code, defaults={"label": label, "type": type_})
@@ -127,12 +131,16 @@ def record_payout_executed(txn, *, actual_fee: Decimal) -> JournalEntry:
     )
 
 
-def record_refund(txn, *, reason: str, posted_by=None) -> JournalEntry:
-    """Remboursement : on rend le total debite et on renonce aux frais."""
+def record_refund(txn, *, reason: str, transfer_reference: str, posted_by=None) -> JournalEntry:
+    """Remboursement constate : on rend le total debite et on renonce aux frais.
+
+    Le transfert vers le payeur a deja ete fait hors systeme ; sa
+    reference figure dans la description, a cote du motif.
+    """
     fees = txn.fee_in + txn.fee_out + txn.fee_platform
     return post(
         reference=f"{txn.reference}-REFUND",
-        description=f"Remboursement — {reason}",
+        description=f"Remboursement — {reason} — transfert {transfer_reference}",
         transaction=txn,
         posted_by=posted_by,
         lines=[
@@ -144,6 +152,19 @@ def record_refund(txn, *, reason: str, posted_by=None) -> JournalEntry:
 
 
 def record_float_topup(amount: Decimal, *, reference: str, posted_by=None) -> JournalEntry:
+    """Rechargement du float, constate chez plopplop.
+
+    Un montant negatif viderait le float au grand livre : refuse. La
+    reference ne sert qu'une fois, sinon un double envoi du formulaire
+    doublerait le rechargement.
+    """
+    reference = (reference or "").strip()
+    if amount is None or amount <= ZERO:
+        raise InvalidTopup("Le montant d'un rechargement doit etre strictement positif")
+    if not reference:
+        raise InvalidTopup("Reference du rechargement obligatoire")
+    if JournalEntry.objects.filter(reference=reference).exists():
+        raise InvalidTopup(f"Reference deja enregistree au grand livre : {reference}")
     return post(
         reference=reference,
         description="Rechargement du float",

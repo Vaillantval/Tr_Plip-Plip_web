@@ -1,0 +1,63 @@
+{% load console_tags %}
+<div class="overflow-x-auto">
+  <table class="w-full">
+    <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+      <tr>
+        <th class="px-3 py-1.5">Reference</th>
+        <th class="px-3 py-1.5">Dans cet etat depuis</th>
+        <th class="px-3 py-1.5">Route</th>
+        <th class="px-3 py-1.5 text-right">Net</th>
+        <th class="px-3 py-1.5">Code d'echec</th>
+        <th class="px-3 py-1.5 text-right">Tent.</th>
+        <th class="px-3 py-1.5">Ref. retrait</th>
+        {% if request.user.can_act %}<th class="px-3 py-1.5">Actions</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody class="divide-y">
+      {% for row in rows %}
+      <tr class="align-top {% if row.stale %}bg-red-50{% endif %}"{% if row.stale %} data-stale="true"{% endif %}>
+        <td class="whitespace-nowrap px-3 py-1.5 font-mono">
+          <a class="underline decoration-slate-300 hover:decoration-slate-700" href="{% url 'console:transaction_detail' row.txn.reference %}">{{ row.txn.reference }}</a>
+        </td>
+        <td class="whitespace-nowrap px-3 py-1.5 tabular-nums {% if row.stale %}font-semibold text-red-700{% endif %}">{{ row.since_seconds|duration }}</td>
+        <td class="px-3 py-1.5">
+          {{ row.txn.get_source_wallet_display }} → {{ row.txn.get_destination_wallet_display }}
+          <div class="font-mono text-xs text-slate-500">{{ row.txn.recipient_phone }}</div>
+        </td>
+        <td class="px-3 py-1.5 text-right font-mono">{{ row.txn.net_amount|htg }}</td>
+        <td class="px-3 py-1.5">
+          <span class="font-mono text-xs">{{ row.txn.failure_code|default:"—" }}</span>
+          {% if row.txn.state == "payout_failed" %}{% if row.txn.failure_code == "INSUFFICIENT_BALANCE" or row.txn.failure_code == "METHOD_NOT_CONFIGURED" %}
+            <div class="text-xs text-red-700">Cause systemique : corriger avant de relancer</div>
+          {% endif %}{% endif %}
+          {% if row.txn.failure_message %}<div class="text-xs text-slate-500">{{ row.txn.failure_message|truncatechars:90 }}</div>{% endif %}
+        </td>
+        <td class="px-3 py-1.5 text-right tabular-nums">{{ row.txn.payout_attempts }}</td>
+        <td class="whitespace-nowrap px-3 py-1.5 font-mono text-xs">{{ row.txn.payout_reference|default:"—" }}</td>
+        {% if request.user.can_act %}
+        <td class="px-3 py-1.5">
+          <div class="flex flex-wrap items-start gap-2">
+            {% if row.actions.retry %}
+              {% url 'console:payout_retry' row.txn.reference as retry_url %}
+              {% include "console/partials/action_button.html" with name="retry" url=retry_url target="#exceptions-body" label="Relancer" confirm="Remettre cette transaction en file de decaissement ?" %}
+            {% endif %}
+            {% if row.actions.verify %}
+              {% url 'console:payout_verify' row.txn.reference as verify_url %}
+              {% include "console/partials/action_button.html" with name="verify" url=verify_url target="#exceptions-body" label="Verifier" %}
+            {% endif %}
+            {% if row.actions.refund %}
+            <details class="w-full">
+              <summary class="cursor-pointer text-amber-800">Enregistrer un remboursement</summary>
+              <div class="mt-1 w-96 max-w-full">
+                {% include "console/partials/refund_form.html" with txn=row.txn form=refund_form target="#exceptions-body" %}
+              </div>
+            </details>
+            {% endif %}
+          </div>
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

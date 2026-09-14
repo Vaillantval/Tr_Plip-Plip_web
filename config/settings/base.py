@@ -108,6 +108,16 @@ PAYOUT_MAX_ATTEMPTS = int(env("PAYOUT_MAX_ATTEMPTS", "3"))
 # decision locale. 30 minutes par defaut.
 PAYMENT_EXPIRY_SECONDS = int(env("PAYMENT_EXPIRY_SECONDS", "1800"))
 
+# Un PAYOUT_PENDING de dix minutes est normal. Au-dela de ce seuil,
+# l'argent est probablement parti sans confirmation : la console le
+# remonte en tete des exceptions, il faut appeler l'operateur. 2 h.
+PAYOUT_PENDING_STALE_SECONDS = int(env("PAYOUT_PENDING_STALE_SECONDS", "7200"))
+
+# Un 404 juste apres un timeout peut etre une course ecriture/lecture chez
+# plopplop. Un PAYOUT_UNKNOWN ne repart en file qu'apres deux 404 pour la
+# meme reference, espaces d'au moins ce delai. 10 min.
+PAYOUT_VERIFY_GRACE_SECONDS = int(env("PAYOUT_VERIFY_GRACE_SECONDS", "600"))
+
 # ----------------------------------------------------------------------
 # Tarification
 # ----------------------------------------------------------------------

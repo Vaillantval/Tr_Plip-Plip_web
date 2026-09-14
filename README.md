@@ -40,6 +40,13 @@ Timeout, 5xx ou `DUPLICATE_REFERENCE` sur `api/withdraw/marchand` mènent à
 sortie passe par `api/withdraw/marchand/verify`. C'est la protection
 contre le double paiement, et elle est testée.
 
+Un 404 à la vérification ne suffit pas à remettre en file : juste après
+un timeout, ce peut être une course écriture/lecture chez plopplop. Il
+faut deux 404 pour la même référence, espacés d'au moins
+`PAYOUT_VERIFY_GRACE_SECONDS`. Et un 404 sur un retrait que plopplop a
+déjà reconnu comme « en attente » (`PAYOUT_PENDING`) ne remet jamais en
+file : il se traite à la main.
+
 **Tout mouvement d'argent produit une écriture équilibrée.**
 Le grand livre refuse une écriture dont la somme n'est pas nulle, et
 n'accepte ni modification ni suppression. Une erreur se corrige par une

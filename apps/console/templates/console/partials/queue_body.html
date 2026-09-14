@@ -1,0 +1,75 @@
+{% load console_tags %}
+<div id="queue-body" hx-get="{% url 'console:queue' %}" hx-trigger="every 15s" hx-swap="outerHTML" class="space-y-3">
+  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="rounded border bg-white p-3">
+      <div class="text-slate-500">Profondeur de la file</div>
+      <div class="text-2xl font-semibold tabular-nums">{{ depth }}</div>
+      <div class="text-slate-500">transaction(s) a decaisser</div>
+    </div>
+    <div class="rounded border bg-white p-3">
+      <div class="text-slate-500">Ecoulement complet estime</div>
+      <div class="text-2xl font-semibold tabular-nums">{% if depth %}{{ drain_seconds|duration }}{% else %}—{% endif %}</div>
+      <div class="text-slate-500">{{ depth }} × {{ cooldown }} s de cooldown plopplop</div>
+    </div>
+    <div class="rounded border bg-white p-3">
+      <div class="text-slate-500">File face au float</div>
+      <div class="text-2xl font-semibold tabular-nums">{{ coverage.total_net|htg }} <span class="text-sm font-normal text-slate-500">HTG net</span></div>
+      <div class="text-slate-600">{{ coverage.total_debit|htg }} avec frais estimes · float disponible <span class="font-semibold">{{ coverage.available|htg }}</span></div>
+      <div class="text-xs text-slate-400">= grand livre {{ coverage.ledger_balance|htg }} − {{ coverage.engaged_outside_queue|htg }} deja engages hors file</div>
+    </div>
+    {% if coverage.stall_rank %}
+    <div class="rounded border-2 border-red-500 bg-red-50 p-3 text-red-900">
+      <div>La file cale au rang</div>
+      <div class="text-2xl font-semibold tabular-nums">{{ coverage.stall_rank }} <span class="text-sm font-normal">sur {{ depth }}</span></div>
+      <div>{{ coverage.covered_count }} decaissement(s) couvert(s) · manque {{ coverage.shortfall|htg }} HTG</div>
+    </div>
+    {% else %}
+    <div class="rounded border bg-white p-3">
+      <div class="text-slate-500">Couverture de la file</div>
+      <div class="text-2xl font-semibold text-emerald-700">Complete</div>
+      <div class="text-slate-500">le float couvre toute la file</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="overflow-x-auto rounded border bg-white">
+    <table class="w-full">
+      <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+        <tr>
+          <th class="px-3 py-1.5 text-right">#</th>
+          <th class="px-3 py-1.5">Reference</th>
+          <th class="px-3 py-1.5">Route</th>
+          <th class="px-3 py-1.5">Beneficiaire</th>
+          <th class="px-3 py-1.5 text-right">Net</th>
+          <th class="px-3 py-1.5">Paiement confirme</th>
+          <th class="px-3 py-1.5 text-right">Attente</th>
+          <th class="px-3 py-1.5 text-right">Passage estime</th>
+          <th class="px-3 py-1.5 text-right">Tent.</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        {% for row in rows %}
+        {% if row.stalls_here %}
+        <tr><td colspan="9" class="bg-red-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">Le float ne couvre plus les decaissements ci-dessous</td></tr>
+        {% endif %}
+        <tr class="{% if not row.covered %}bg-red-50 text-red-900{% endif %}">
+          <td class="px-3 py-1.5 text-right tabular-nums">{{ row.rank }}</td>
+          <td class="whitespace-nowrap px-3 py-1.5 font-mono"><a class="underline decoration-slate-300 hover:decoration-slate-700" href="{% url 'console:transaction_detail' row.txn.reference %}">{{ row.txn.reference }}</a></td>
+          <td class="whitespace-nowrap px-3 py-1.5">{{ row.txn.get_source_wallet_display }} → {{ row.txn.get_destination_wallet_display }}</td>
+          <td class="px-3 py-1.5 font-mono">{{ row.txn.recipient_phone }}</td>
+          <td class="px-3 py-1.5 text-right font-mono">{{ row.txn.net_amount|htg }}</td>
+          <td class="whitespace-nowrap px-3 py-1.5">{{ row.txn.payment_confirmed_at|date:"d/m H:i:s" }}</td>
+          <td class="whitespace-nowrap px-3 py-1.5 text-right tabular-nums">{{ row.wait_seconds|duration }}</td>
+          <td class="whitespace-nowrap px-3 py-1.5 text-right tabular-nums">~ {{ row.eta_seconds|duration }}</td>
+          <td class="px-3 py-1.5 text-right tabular-nums">{{ row.txn.payout_attempts }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" class="px-3 py-3 text-slate-500">File vide.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="text-xs text-slate-400">
+    Mis a jour a {{ now|date:"H:i:s" }} · rafraichi toutes les 15 s · passage estime = rang × cooldown, hors retard du worker{% if truncated %} · {{ rows|length }} premieres lignes affichees sur {{ depth }}{% endif %}
+  </p>
+</div>

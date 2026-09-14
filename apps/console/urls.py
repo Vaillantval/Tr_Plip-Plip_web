@@ -11,7 +11,12 @@ urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path("transactions/", views.transaction_list, name="transactions"),
     path("transactions/<str:reference>/", views.transaction_detail, name="transaction_detail"),
+    path("transactions/<str:reference>/retry/", views.payout_retry, name="payout_retry"),
+    path("transactions/<str:reference>/verify/", views.payout_verify, name="payout_verify"),
+    path("transactions/<str:reference>/refund/", views.transaction_refund, name="transaction_refund"),
     path("queue/", views.payout_queue, name="queue"),
     path("exceptions/", views.exceptions, name="exceptions"),
-    path("treasury/", views.treasury, name="treasury"),
+    path("treasury/", views.treasury_view, name="treasury"),
+    path("treasury/topup/", views.float_topup, name="float_topup"),
+    path("treasury/alerts/<int:alert_id>/ack/", views.alert_acknowledge, name="alert_acknowledge"),
 ]

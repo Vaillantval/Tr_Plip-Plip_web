@@ -1,4 +1,5 @@
 {% extends "console/base.html" %}
+{% block title %}{{ txn.reference }} — Console Plip-Plip{% endblock %}
 {% block content %}
-<p class="text-slate-500">Ecran « transaction_detail » — a construire.</p>
+{% include "console/partials/transaction_body.html" %}
 {% endblock %}

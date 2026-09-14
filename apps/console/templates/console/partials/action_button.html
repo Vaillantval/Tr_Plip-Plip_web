@@ -1,0 +1,5 @@
+<form data-console-action="{{ name }}" method="post" action="{{ url }}"
+      hx-post="{{ url }}" hx-target="{{ target }}" hx-swap="outerHTML" hx-disabled-elt="find button"{% if confirm %} hx-confirm="{{ confirm }}"{% endif %}>
+  {% csrf_token %}
+  <button type="submit" class="whitespace-nowrap rounded border border-slate-400 bg-white px-2.5 py-1 hover:bg-slate-100 disabled:opacity-50">{{ label }}</button>
+</form>

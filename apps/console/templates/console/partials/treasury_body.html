@@ -1,0 +1,146 @@
+{% load console_tags %}
+<div id="treasury-body" class="space-y-4">
+  {% include "console/partials/messages.html" %}
+
+  <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+    <div class="rounded border bg-white p-3 {% if float.level == 'critical' %}border-2 border-red-500{% elif float.level == 'warning' %}border-2 border-amber-400{% endif %}">
+      <div class="text-slate-500">Float (grand livre)</div>
+      <div class="text-2xl font-semibold tabular-nums">{{ float.balance|htg }}</div>
+      <div class="text-xs text-slate-500">seuils : avertissement {{ float.thresholds.warning|htg }} · critique {{ float.thresholds.critical|htg }}</div>
+    </div>
+    <div class="rounded border bg-white p-3">
+      <div class="text-slate-500">Engagements en cours</div>
+      <div class="text-2xl font-semibold tabular-nums">{{ float.liability|htg }}</div>
+      <div class="text-xs text-slate-500">net du aux beneficiaires</div>
+    </div>
+    <div class="rounded border bg-white p-3 {% if not float.coverage_ok %}border-2 border-red-500 bg-red-50{% endif %}">
+      <div class="text-slate-500">Couverture</div>
+      <div class="text-2xl font-semibold tabular-nums">{% if float.coverage_ratio is None %}—{% else %}{{ float.coverage_ratio|percent }}{% endif %}</div>
+      {% if float.coverage_ok %}
+        <div class="text-xs text-emerald-700">{% if float.coverage_ratio is None %}aucun engagement en cours{% else %}le float couvre les engagements{% endif %}</div>
+      {% else %}
+        <div class="text-xs font-semibold text-red-700">NE couvre PAS les engagements · manque {{ float.coverage_gap|htg }}</div>
+      {% endif %}
+    </div>
+    <div class="rounded border bg-white p-3">
+      <div class="text-slate-500">Burn 24 h</div>
+      <div class="text-2xl font-semibold tabular-nums">{{ float.burn_24h|htg }}</div>
+      <div class="text-xs text-slate-500">net verse + frais operateur reels</div>
+    </div>
+    <div class="rounded border bg-white p-3">
+      <div class="text-slate-500">Runway</div>
+      <div class="text-2xl font-semibold tabular-nums">{{ float.runway_hours|hours_duration }}</div>
+      <div class="text-xs text-slate-500">{% if float.runway_hours is None %}aucun decaissement sur 24 h{% else %}au rythme des 24 dernieres heures{% endif %}</div>
+    </div>
+  </div>
+
+  {% if float.message %}
+  <div class="rounded border px-3 py-2 {% if float.level == 'critical' %}border-red-300 bg-red-50 text-red-800{% else %}border-amber-300 bg-amber-50 text-amber-900{% endif %}">{{ float.message }}</div>
+  {% endif %}
+
+  <div class="grid gap-4 xl:grid-cols-3">
+    <section class="rounded border bg-white {% if request.user.can_act %}xl:col-span-2{% else %}xl:col-span-3{% endif %}">
+      <h2 class="border-b px-3 py-2 font-medium">Alertes non acquittees <span class="font-normal text-slate-500">{{ open_alerts|length }}</span></h2>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+            <tr><th class="px-3 py-1.5">Date</th><th class="px-3 py-1.5">Niveau</th><th class="px-3 py-1.5 text-right">Solde</th><th class="px-3 py-1.5">Message</th>{% if request.user.can_act %}<th class="px-3 py-1.5"></th>{% endif %}</tr>
+          </thead>
+          <tbody class="divide-y">
+            {% for alert in open_alerts %}
+            <tr class="align-top">
+              <td class="whitespace-nowrap px-3 py-1.5">{{ alert.created_at|date:"d/m H:i" }}</td>
+              <td class="px-3 py-1.5"><span class="rounded px-1.5 py-0.5 text-xs font-medium {% if alert.level == 'critical' %}bg-red-100 text-red-800{% else %}bg-amber-100 text-amber-800{% endif %}">{{ alert.get_level_display }}</span></td>
+              <td class="px-3 py-1.5 text-right font-mono">{{ alert.balance|htg }}</td>
+              <td class="px-3 py-1.5">{{ alert.message }}</td>
+              {% if request.user.can_act %}
+              <td class="px-3 py-1.5 text-right">
+                {% url 'console:alert_acknowledge' alert.pk as ack_url %}
+                {% include "console/partials/action_button.html" with name="alert_ack" url=ack_url target="#treasury-body" label="Acquitter" %}
+              </td>
+              {% endif %}
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="px-3 py-2 text-slate-500">Aucune alerte en attente.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    {% if request.user.can_act %}
+    <section class="rounded border bg-white p-3">
+      <h2 class="mb-2 font-medium">Enregistrer un rechargement</h2>
+      <form data-console-action="topup" method="post" action="{% url 'console:float_topup' %}"
+            hx-post="{% url 'console:float_topup' %}" hx-target="#treasury-body" hx-swap="outerHTML"
+            hx-disabled-elt="find button" hx-confirm="Enregistrer ce rechargement au grand livre ?"
+            class="space-y-2">
+        {% csrf_token %}
+        <p class="text-slate-600">A enregistrer une fois le credit constate sur le compte plopplop. Une reference ne sert qu'une fois.</p>
+        {% if topup_form.non_field_errors %}<p class="text-red-700">{{ topup_form.non_field_errors|join:" " }}</p>{% endif %}
+        <label class="block">
+          <span class="text-slate-700">Montant (HTG)</span>
+          <input name="amount" type="number" step="0.01" min="0.01" required value="{{ topup_form.amount.value|default:'' }}"
+                 class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 font-mono">
+        </label>
+        {% if topup_form.amount.errors %}<p class="text-red-700">{{ topup_form.amount.errors|join:" " }}</p>{% endif %}
+        <label class="block">
+          <span class="text-slate-700">Reference du rechargement plopplop</span>
+          <input name="reference" required maxlength="64" value="{{ topup_form.reference.value|default:'' }}"
+                 class="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 font-mono">
+        </label>
+        {% if topup_form.reference.errors %}<p class="text-red-700">{{ topup_form.reference.errors|join:" " }}</p>{% endif %}
+        <button type="submit" class="rounded bg-slate-800 px-3 py-1 font-medium text-white hover:bg-slate-900 disabled:opacity-50">Enregistrer le rechargement</button>
+      </form>
+    </section>
+    {% endif %}
+  </div>
+
+  <section class="rounded border bg-white">
+    <h2 class="border-b px-3 py-2 font-medium">Releves du float <span class="font-normal text-slate-500">solde plopplop vs grand livre</span></h2>
+    {% if snapshots %}
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+          <tr><th class="px-3 py-1.5">Date</th><th class="px-3 py-1.5 text-right">Solde plopplop</th><th class="px-3 py-1.5 text-right">Solde grand livre</th><th class="px-3 py-1.5 text-right">Drift</th><th class="px-3 py-1.5">Transaction</th></tr>
+        </thead>
+        <tbody class="divide-y">
+          {% for snapshot in snapshots %}
+          {% with drift=snapshot.drift %}
+          <tr>
+            <td class="whitespace-nowrap px-3 py-1.5">{{ snapshot.created_at|date:"d/m H:i:s" }}</td>
+            <td class="px-3 py-1.5 text-right font-mono">{{ snapshot.provider_balance|htg }}</td>
+            <td class="px-3 py-1.5 text-right font-mono">{{ snapshot.ledger_balance|htg }}</td>
+            <td class="px-3 py-1.5 text-right font-mono {% if drift != 0 %}font-semibold text-red-700{% else %}text-slate-400{% endif %}">{% if drift > 0 %}+{% endif %}{{ drift|htg }}</td>
+            <td class="px-3 py-1.5 font-mono">{% if snapshot.transaction %}<a class="underline decoration-slate-300 hover:decoration-slate-700" href="{% url 'console:transaction_detail' snapshot.transaction.reference %}">{{ snapshot.transaction.reference }}</a>{% else %}—{% endif %}</td>
+          </tr>
+          {% endwith %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="px-3 py-2 text-slate-500">Aucun releve. Un releve est pris a chaque decaissement reussi qui renvoie balance_after.</p>
+    {% endif %}
+  </section>
+
+  {% if acknowledged_alerts %}
+  <section class="rounded border bg-white">
+    <h2 class="border-b px-3 py-2 font-medium">Dernieres alertes acquittees</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-slate-600">
+        <tbody class="divide-y">
+          {% for alert in acknowledged_alerts %}
+          <tr>
+            <td class="whitespace-nowrap px-3 py-1.5">{{ alert.created_at|date:"d/m H:i" }}</td>
+            <td class="px-3 py-1.5">{{ alert.get_level_display }}</td>
+            <td class="px-3 py-1.5">{{ alert.message }}</td>
+            <td class="whitespace-nowrap px-3 py-1.5">acquittee par {{ alert.acknowledged_by|default:"?" }} le {{ alert.acknowledged_at|date:"d/m H:i" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+</div>

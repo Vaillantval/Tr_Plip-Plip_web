@@ -1,0 +1,136 @@
+{% load console_tags %}
+<div id="txn-detail" class="space-y-4">
+  {% include "console/partials/messages.html" %}
+
+  <header class="flex flex-wrap items-center gap-x-3 gap-y-1">
+    <h1 class="font-mono text-lg font-semibold">{{ txn.reference }}</h1>
+    {% include "console/partials/state_badge.html" with state=txn.state %}
+    <span class="text-slate-700">{{ txn.get_source_wallet_display }} → {{ txn.get_destination_wallet_display }}</span>
+    <span class="text-slate-500">beneficiaire <span class="font-mono text-slate-700">{{ txn.recipient_phone }}</span>{% if txn.sender_phone %} · payeur <span class="font-mono text-slate-700">{{ txn.sender_phone }}</span>{% endif %}</span>
+    <span class="ml-auto text-slate-500">creee le {{ txn.created_at|date:"d/m/Y H:i:s" }}{% if txn.created_by %} par {{ txn.created_by }}{% endif %}</span>
+  </header>
+
+  {% if txn.failure_code %}
+  <div class="rounded border border-red-300 bg-red-50 px-3 py-2 text-red-800">
+    <span class="font-mono font-medium">{{ txn.failure_code }}</span> — {{ txn.failure_message }}
+  </div>
+  {% endif %}
+
+  {% if request.user.can_act %}{% if actions.retry or actions.verify or actions.refund %}
+  <section class="rounded border bg-white p-3">
+    <h2 class="mb-2 font-medium">Actions</h2>
+    <div class="flex flex-wrap items-start gap-3">
+      {% if actions.retry %}
+        {% url 'console:payout_retry' txn.reference as retry_url %}
+        {% include "console/partials/action_button.html" with name="retry" url=retry_url target="#txn-detail" label="Relancer le decaissement" confirm="Remettre cette transaction en file de decaissement ?" %}
+        {% if txn.failure_code == "INSUFFICIENT_BALANCE" or txn.failure_code == "METHOD_NOT_CONFIGURED" %}
+          <p class="self-center text-red-700">Cause systemique : corriger (float, configuration) avant de relancer.</p>
+        {% endif %}
+      {% endif %}
+      {% if actions.verify %}
+        {% url 'console:payout_verify' txn.reference as verify_url %}
+        {% include "console/partials/action_button.html" with name="verify" url=verify_url target="#txn-detail" label="Verifier aupres de l'operateur" %}
+      {% endif %}
+      {% if actions.refund %}
+        <div class="w-full max-w-xl">{% include "console/partials/refund_form.html" with form=refund_form target="#txn-detail" %}</div>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}{% endif %}
+
+  <div class="grid gap-4 lg:grid-cols-2">
+    <section class="rounded border bg-white">
+      <h2 class="border-b px-3 py-2 font-medium">Devis</h2>
+      <table class="w-full">
+        <tbody class="divide-y">
+          <tr><td class="px-3 py-1.5 text-slate-600">Montant net au beneficiaire</td><td class="px-3 py-1.5 text-right font-mono">{{ txn.net_amount|htg }}</td></tr>
+          <tr><td class="px-3 py-1.5 text-slate-600">Frais entree</td><td class="px-3 py-1.5 text-right font-mono">{{ txn.fee_in|htg }}</td></tr>
+          <tr><td class="px-3 py-1.5 text-slate-600">Frais sortie</td><td class="px-3 py-1.5 text-right font-mono">{{ txn.fee_out|htg }}</td></tr>
+          <tr><td class="px-3 py-1.5 text-slate-600">Commission plateforme</td><td class="px-3 py-1.5 text-right font-mono">{{ txn.fee_platform|htg }}</td></tr>
+          <tr class="bg-slate-50 font-semibold"><td class="px-3 py-1.5">Total debite au payeur</td><td class="px-3 py-1.5 text-right font-mono">{{ txn.total_charged|htg }}</td></tr>
+          <tr><td class="px-3 py-1.5 text-slate-600">Frais operateur reels</td><td class="px-3 py-1.5 text-right font-mono">{% if txn.payout_fee_actual is not None %}{{ txn.payout_fee_actual|htg }}{% else %}<span class="font-sans text-slate-400">non verse</span>{% endif %}</td></tr>
+          <tr><td class="px-3 py-1.5 text-slate-600">Marge estimee</td><td class="px-3 py-1.5 text-right font-mono {% if txn.margin_estimate < 0 %}font-semibold text-red-700{% endif %}">{{ txn.margin_estimate|htg }}</td></tr>
+        </tbody>
+      </table>
+      <p class="border-t px-3 py-1.5 text-xs text-slate-400">Montants en HTG. Devis fige a la creation.</p>
+    </section>
+
+    <section class="rounded border bg-white">
+      <h2 class="border-b px-3 py-2 font-medium">Identifiants plopplop</h2>
+      <table class="w-full">
+        <tbody class="divide-y">
+          <tr><th colspan="2" class="bg-slate-50 px-3 py-1 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Encaissement</th></tr>
+          <tr><td class="px-3 py-1.5 text-slate-600">ID transaction</td><td class="px-3 py-1.5 font-mono">{{ txn.payment_provider_id|default:"—" }}</td></tr>
+          <tr><td class="px-3 py-1.5 text-slate-600">Confirme le</td><td class="px-3 py-1.5">{{ txn.payment_confirmed_at|date:"d/m/Y H:i:s"|default:"—" }}</td></tr>
+          <tr><td class="px-3 py-1.5 text-slate-600">Expiration</td><td class="px-3 py-1.5">{{ txn.payment_expires_at|date:"d/m/Y H:i:s"|default:"—" }}</td></tr>
+          <tr><td class="px-3 py-1.5 text-slate-600">Verifications</td><td class="px-3 py-1.5">{{ txn.poll_count }}{% if txn.last_polled_at %} <span class="text-slate-500">(derniere {{ txn.last_polled_at|date:"d/m H:i:s" }})</span>{% endif %}</td></tr>
+          <tr><th colspan="2" class="bg-slate-50 px-3 py-1 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Decaissement</th></tr>
+          <tr><td class="px-3 py-1.5 text-slate-600">Reference de retrait</td><td class="px-3 py-1.5 font-mono">{{ txn.payout_reference|default:"—" }}</td></tr>
+          <tr><td class="px-3 py-1.5 text-slate-600">ID transaction</td><td class="px-3 py-1.5 font-mono">{{ txn.payout_provider_id|default:"—" }}</td></tr>
+          <tr><td class="px-3 py-1.5 text-slate-600">Reference API</td><td class="px-3 py-1.5 font-mono">{{ txn.payout_api_reference|default:"—" }}</td></tr>
+          <tr><td class="px-3 py-1.5 text-slate-600">Tentatives</td><td class="px-3 py-1.5">{{ txn.payout_attempts }} <span class="text-slate-500">/ {{ max_attempts }} automatiques</span></td></tr>
+          <tr><td class="px-3 py-1.5 text-slate-600">Verse le</td><td class="px-3 py-1.5">{{ txn.payout_completed_at|date:"d/m/Y H:i:s"|default:"—" }}</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  <section class="rounded border bg-white">
+    <h2 class="border-b px-3 py-2 font-medium">Timeline <span class="font-normal text-slate-500">{{ events|length }}</span></h2>
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+          <tr><th class="px-3 py-1.5">Date</th><th class="px-3 py-1.5">Transition</th><th class="px-3 py-1.5">Acteur</th><th class="px-3 py-1.5">Note</th><th class="px-3 py-1.5">Donnees</th></tr>
+        </thead>
+        <tbody class="divide-y">
+          {% for event in events %}
+          <tr class="align-top">
+            <td class="whitespace-nowrap px-3 py-1.5 font-mono">{{ event.created_at|date:"d/m H:i:s" }}</td>
+            <td class="whitespace-nowrap px-3 py-1.5">{% if event.from_state == event.to_state %}<span class="text-slate-500">constat en</span> {% elif event.from_state %}<span class="text-slate-500">{{ event.from_state|state_label }}</span> → {% endif %}{% include "console/partials/state_badge.html" with state=event.to_state %}</td>
+            <td class="px-3 py-1.5">{{ event.actor|default:"systeme" }}</td>
+            <td class="px-3 py-1.5">{{ event.note }}</td>
+            <td class="px-3 py-1.5 font-mono text-xs text-slate-500">{% if event.data %}{{ event.data }}{% endif %}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="px-3 py-2 text-slate-500">Aucun evenement.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="rounded border bg-white">
+    <h2 class="border-b px-3 py-2 font-medium">Grand livre <span class="font-normal text-slate-500">{{ entries|length }} ecriture(s)</span></h2>
+    {% for item in entries %}
+    <div class="border-b last:border-b-0">
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-1 bg-slate-50 px-3 py-1.5">
+        <span class="font-mono font-medium">{{ item.entry.reference }}</span>
+        <span>{{ item.entry.description }}</span>
+        {% if item.entry.reverses %}<span class="text-slate-500">extourne de <span class="font-mono">{{ item.entry.reverses.reference }}</span></span>{% endif %}
+        {% if item.total != 0 %}<span class="font-semibold text-red-700">DESEQUILIBREE : {{ item.total|htg }}</span>{% endif %}
+        <span class="ml-auto text-slate-500">{{ item.entry.created_at|date:"d/m/Y H:i:s" }} · {{ item.entry.posted_by|default:"systeme" }}</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="text-left text-xs uppercase tracking-wide text-slate-500">
+            <tr><th class="px-3 py-1">Compte</th><th class="px-3 py-1">Libelle</th><th class="px-3 py-1 text-right">Debit</th><th class="px-3 py-1 text-right">Credit</th><th class="px-3 py-1">Memo</th></tr>
+          </thead>
+          <tbody>
+            {% for line in item.lines %}
+            <tr>
+              <td class="px-3 py-1 font-mono">{{ line.account.code }}</td>
+              <td class="px-3 py-1 text-slate-600">{{ line.account.label }}</td>
+              <td class="px-3 py-1 text-right font-mono">{% if line.amount > 0 %}{{ line.amount|htg }}{% endif %}</td>
+              <td class="px-3 py-1 text-right font-mono">{% if line.amount < 0 %}{{ line.amount|abs_htg }}{% endif %}</td>
+              <td class="px-3 py-1 text-slate-600">{{ line.memo }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% empty %}
+    <p class="px-3 py-2 text-slate-500">Aucune ecriture : rien n'a encore ete encaisse.</p>
+    {% endfor %}
+  </section>
+</div>
