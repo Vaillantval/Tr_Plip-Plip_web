@@ -15,7 +15,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Sum
+from django.db.models import Count, Q, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -27,7 +27,7 @@ from apps.transactions.states import IllegalTransition, State, can
 from apps.treasury import services as treasury
 from apps.treasury.models import FloatAlert, FloatSnapshot
 
-from .forms import RefundForm, TopupForm
+from .forms import RefundForm, ReleaseForm, TopupForm
 from .permissions import audit_failure, require_acting_role, require_superadmin
 
 EXCEPTION_STATES = (State.PAYOUT_FAILED, State.PAYOUT_UNKNOWN, State.PAYOUT_PENDING)
@@ -54,6 +54,7 @@ def available_actions(txn: Transaction) -> dict:
         "retry": txn.state == State.PAYOUT_FAILED,
         "verify": txn.state in (State.PAYOUT_UNKNOWN, State.PAYOUT_PENDING),
         "refund": can(txn.state, State.REFUNDED),
+        "release": txn_services.is_payment_held(txn),
     }
 
 
@@ -87,7 +88,7 @@ def transaction_list(request):
     )
 
 
-def _transaction_context(txn: Transaction, *, refund_form=None) -> dict:
+def _transaction_context(txn: Transaction, *, refund_form=None, release_form=None) -> dict:
     entries = []
     for entry in (
         txn.journal_entries.select_related("posted_by", "reverses")
@@ -102,6 +103,7 @@ def _transaction_context(txn: Transaction, *, refund_form=None) -> dict:
         "entries": entries,
         "actions": available_actions(txn),
         "refund_form": refund_form or RefundForm(),
+        "release_form": release_form or ReleaseForm(),
         "max_attempts": settings.PAYOUT_MAX_ATTEMPTS,
     }
 
@@ -150,16 +152,22 @@ def _exceptions_context() -> dict:
     now = timezone.now()
     stale_after = settings.PAYOUT_PENDING_STALE_SECONDS
     grouped = {state: [] for state in EXCEPTION_STATES}
+    held = []
     stale = []
     stuck = (
-        Transaction.objects.filter(state__in=EXCEPTION_STATES)
+        Transaction.objects.filter(
+            Q(state__in=EXCEPTION_STATES)
+            | Q(state=State.PAYMENT_CONFIRMED, failure_code__in=txn_services.HOLD_CODES)
+        )
         .with_state_since()
-        .order_by("state_since", "id")[: LIST_LIMIT * len(EXCEPTION_STATES)]
+        .order_by("state_since", "id")[: LIST_LIMIT * (len(EXCEPTION_STATES) + 1)]
     )
     for txn in stuck:
         since = _seconds_since(txn.state_since or txn.updated_at, now)
         row = {"txn": txn, "since_seconds": since, "actions": available_actions(txn), "stale": False}
-        if txn.state == State.PAYOUT_PENDING and since >= stale_after:
+        if txn.state == State.PAYMENT_CONFIRMED:
+            held.append(row)
+        elif txn.state == State.PAYOUT_PENDING and since >= stale_after:
             row["stale"] = True
             stale.append(row)
         else:
@@ -167,8 +175,10 @@ def _exceptions_context() -> dict:
     return {
         "stale": stale,
         "stale_after": stale_after,
+        "held": held,
         "groups": [{"state": s, "label": s.label, "rows": grouped[s]} for s in EXCEPTION_STATES],
         "refund_form": RefundForm(),
+        "release_form": ReleaseForm(),
     }
 
 
@@ -208,14 +218,16 @@ def _after_methods_action(request):
 # ----------------------------------------------------------------------
 # Actions
 # ----------------------------------------------------------------------
-def _after_transaction_action(request, reference: str, *, refund_form=None):
+def _after_transaction_action(request, reference: str, *, refund_form=None, release_form=None):
     if not _is_htmx(request):
         return redirect("console:transaction_detail", reference=reference)
     if request.headers.get("HX-Target") == "exceptions-body":
         return render(request, "console/partials/exceptions_body.html", _exceptions_context())
     txn = get_object_or_404(Transaction, reference=reference)
     return render(
-        request, "console/partials/transaction_body.html", _transaction_context(txn, refund_form=refund_form)
+        request,
+        "console/partials/transaction_body.html",
+        _transaction_context(txn, refund_form=refund_form, release_form=release_form),
     )
 
 
@@ -270,7 +282,7 @@ def payout_verify(request, reference: str):
 
 @login_required
 @require_POST
-@require_acting_role("transaction.refund", audit_fields=("reason", "transfer_reference"))
+@require_acting_role("transaction.refund", audit_fields=("reason", "transfer_reference", "refunded_amount"))
 def transaction_refund(request, reference: str):
     txn = get_object_or_404(Transaction, reference=reference)
     form = RefundForm(request.POST)
@@ -289,6 +301,27 @@ def transaction_refund(request, reference: str):
         request,
         f"Remboursement enregistre pour {reference} (transfert {form.cleaned_data['transfer_reference']}).",
     )
+    return _after_transaction_action(request, reference)
+
+
+@login_required
+@require_POST
+@require_acting_role("payment.release", audit_fields=("verified_amount", "reason"))
+def payment_release(request, reference: str):
+    txn = get_object_or_404(Transaction, reference=reference)
+    form = ReleaseForm(request.POST)
+    if form.is_valid():
+        try:
+            txn_services.release_held_payment(txn, actor=request.user, **form.cleaned_data)
+        except (IllegalTransition, txn_services.InvalidRelease) as exc:
+            form.add_error(None, str(exc))
+
+    if form.errors:
+        audit_failure(request, "payment.release", target=reference, error=_form_errors(form))
+        messages.error(request, f"Deblocage REFUSE : {_form_errors(form)}")
+        return _after_transaction_action(request, reference, release_form=form)
+
+    messages.success(request, f"{reference} debloque et mis en file de decaissement.")
     return _after_transaction_action(request, reference)
 
 

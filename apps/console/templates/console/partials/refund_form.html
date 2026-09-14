@@ -2,16 +2,31 @@
 <form data-console-action="refund" method="post" action="{% url 'console:transaction_refund' txn.reference %}"
       hx-post="{% url 'console:transaction_refund' txn.reference %}" hx-target="{{ target }}" hx-swap="outerHTML"
       hx-disabled-elt="find button"
-      hx-confirm="Le transfert manuel de {{ txn.total_charged|htg }} HTG vers le payeur a-t-il DEJA ete effectue ?"
+      hx-confirm="Le transfert manuel vers le payeur a-t-il DEJA ete effectue ?"
       class="space-y-2 rounded border border-amber-300 bg-amber-50 p-3">
   {% csrf_token %}
   <p class="text-amber-900">
     <strong>Aucun argent ne part d'ici.</strong>
-    Effectuer d'abord le transfert manuel de <span class="font-mono">{{ txn.total_charged|htg }}</span> HTG
+    Effectuer d'abord le transfert manuel de
+    {% if txn.failure_code == "AMOUNT_UNVERIFIED" %}
+      <strong>la somme reellement encaissee</strong> (non communiquee par plopplop : la verifier aupres de plopplop)
+    {% elif txn.failure_code == "AMOUNT_MISMATCH" %}
+      <span class="font-mono">{{ txn.payment_amount_received|htg }}</span> HTG, <strong>le montant reellement recu</strong> (et non le devis de {{ txn.total_charged|htg }})
+    {% else %}
+      <span class="font-mono">{{ txn.total_charged|htg }}</span> HTG
+    {% endif %}
     vers le payeur{% if txn.sender_phone %} (<span class="font-mono">{{ txn.sender_phone }}</span>){% endif %},
     puis enregistrer sa reference.
   </p>
   {% if form.non_field_errors %}<p class="text-red-700">{{ form.non_field_errors|join:" " }}</p>{% endif %}
+  {% if txn.failure_code == "AMOUNT_UNVERIFIED" %}
+  <label class="block">
+    <span class="text-slate-700">Montant verifie et rendu (HTG)</span>
+    <input name="refunded_amount" type="number" step="0.01" min="0.01" required value="{{ form.refunded_amount.value|default:'' }}"
+           class="mt-0.5 w-full rounded border border-slate-300 bg-white px-2 py-1 font-mono">
+  </label>
+  {% if form.refunded_amount.errors %}<p class="text-red-700">{{ form.refunded_amount.errors|join:" " }}</p>{% endif %}
+  {% endif %}
   <label class="block">
     <span class="text-slate-700">Motif</span>
     <input name="reason" required maxlength="{{ form.fields.reason.max_length }}" value="{{ form.reason.value|default:'' }}"

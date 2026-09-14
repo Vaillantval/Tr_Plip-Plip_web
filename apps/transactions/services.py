@@ -48,6 +48,20 @@ class InvalidRefund(ValueError):
     pass
 
 
+class InvalidRelease(ValueError):
+    pass
+
+
+#: Encaissement confirme mais bloque avant la file de decaissement.
+AMOUNT_MISMATCH = "AMOUNT_MISMATCH"  # plopplop declare un autre montant que le devis
+AMOUNT_UNVERIFIED = "AMOUNT_UNVERIFIED"  # plopplop ne communique pas le montant
+HOLD_CODES = (AMOUNT_MISMATCH, AMOUNT_UNVERIFIED)
+
+
+def is_payment_held(txn: Transaction) -> bool:
+    return txn.state == State.PAYMENT_CONFIRMED and txn.failure_code in HOLD_CODES
+
+
 DIRECTIONS = ("payment", "payout")
 
 
@@ -240,6 +254,10 @@ def poll_payment(txn: Transaction) -> Transaction:
     txn.save(update_fields=["last_polled_at", "poll_count", "updated_at"])
 
     if status.confirmed:
+        if status.amount is None:
+            # plopplop confirme sans dire combien : on ne verse rien sur
+            # un montant non verifie.
+            return _hold_payment(txn, received=None, code=AMOUNT_UNVERIFIED)
         return confirm_payment(txn, provider_amount=status.amount)
 
     if txn.payment_expires_at and timezone.now() > txn.payment_expires_at:
@@ -256,24 +274,95 @@ def confirm_payment(txn: Transaction, *, provider_amount: Decimal | None = None)
 
     A partir d'ici nous detenons l'argent du client. Tout etat entre ce
     point et COMPLETED est une dette.
+
+    Tout ecart entre `provider_amount` et le devis bloque la transaction
+    avant la file, dans les deux sens : un paiement insuffisant ferait
+    verser le net complet sur le float, un trop-percu laisserait un
+    excedent du au payeur sans trace. Le montant absent de la reponse
+    plopplop est traite dans poll_payment, seul appelant qui interroge
+    l'operateur ; ici, provider_amount=None signifie que le montant a ete
+    verifie par ailleurs.
     """
     if provider_amount is not None and provider_amount != txn.total_charged:
-        # On n'interrompt pas -- l'argent est deja encaisse -- mais
-        # l'ecart doit remonter en exception pour traitement manuel.
-        logger.error(
-            "Ecart de montant sur %s : attendu %s, recu %s",
-            txn.reference,
-            txn.total_charged,
-            provider_amount,
-        )
+        return _hold_payment(txn, received=provider_amount, code=AMOUNT_MISMATCH)
 
     txn.transition(
         State.PAYMENT_CONFIRMED,
         note="Paiement confirme par plopplop",
         data={"provider_amount": str(provider_amount) if provider_amount else None},
     )
+    if provider_amount is not None:
+        txn.payment_amount_received = provider_amount
+        txn.save(update_fields=["payment_amount_received", "updated_at"])
     ledger.record_payment_received(txn)
     txn.transition(State.PAYOUT_QUEUED, note="Mise en file de decaissement")
+    return txn
+
+
+@db_transaction.atomic
+def _hold_payment(txn: Transaction, *, received: Decimal | None, code: str) -> Transaction:
+    """Encaissement non conforme : confirme, jamais mis en file.
+
+    La transaction reste en PAYMENT_CONFIRMED et remonte sur l'ecran
+    exceptions. Sortie par l'operateur uniquement : remboursement du
+    montant recu, ou deblocage apres verification du montant exact.
+    """
+    if code == AMOUNT_MISMATCH:
+        message = f"Montant recu {received} HTG different du devis {txn.total_charged} HTG"
+    else:
+        message = f"Montant encaisse non communique par plopplop (devis {txn.total_charged} HTG)"
+    logger.error("Encaissement bloque sur %s : %s", txn.reference, message)
+
+    txn.payment_amount_received = received
+    txn.failure_code = code
+    txn.failure_message = message
+    txn.save(update_fields=["payment_amount_received", "failure_code", "failure_message", "updated_at"])
+    txn.transition(
+        State.PAYMENT_CONFIRMED,
+        note=f"Paiement confirme mais bloque : {message}",
+        data={"code": code, "expected": str(txn.total_charged), "received": str(received) if received is not None else None},
+    )
+    if received is not None:
+        ledger.record_payment_held(txn, received=received)
+    return txn
+
+
+@db_transaction.atomic
+def release_held_payment(txn: Transaction, *, verified_amount: Decimal, reason: str, actor=None) -> Transaction:
+    """Debloque un encaissement apres verification manuelle chez plopplop.
+
+    Uniquement si le montant verifie est EXACTEMENT celui du devis : un
+    ecart reel ne se debloque pas, il se rembourse. L'ecriture de blocage
+    est extournee et remplacee par l'ecriture d'encaissement normale.
+    """
+    reason = (reason or "").strip()
+    if not is_payment_held(txn):
+        raise InvalidRelease(f"{txn.reference} n'est pas un encaissement bloque")
+    if not reason:
+        raise InvalidRelease("Motif du deblocage obligatoire")
+    if len(reason) > REFUND_REASON_MAX_LENGTH:
+        raise InvalidRelease(f"Motif trop long (max {REFUND_REASON_MAX_LENGTH} caracteres)")
+    if verified_amount != txn.total_charged:
+        raise InvalidRelease(
+            f"Montant verifie {verified_amount} HTG different du devis {txn.total_charged} HTG : "
+            "seul un remboursement est possible"
+        )
+
+    hold_entry = txn.journal_entries.filter(reference=f"{txn.reference}-HOLD", reverses__isnull=True).first()
+    if hold_entry is not None:
+        ledger.reverse(hold_entry, reason=f"deblocage — {reason}", posted_by=actor)
+    previous_code = txn.failure_code
+    txn.payment_amount_received = verified_amount
+    txn.failure_code = ""
+    txn.failure_message = ""
+    txn.save(update_fields=["payment_amount_received", "failure_code", "failure_message", "updated_at"])
+    ledger.record_payment_received(txn)
+    txn.transition(
+        State.PAYOUT_QUEUED,
+        actor=actor,
+        note=f"Encaissement debloque apres verification ({verified_amount} HTG) — {reason}",
+        data={"released_from": previous_code, "verified_amount": str(verified_amount), "reason": reason},
+    )
     return txn
 
 
@@ -530,12 +619,25 @@ def _fail_payout(txn, *, code: str, message: str, actor=None) -> Transaction:
 
 
 @db_transaction.atomic
-def refund(txn: Transaction, *, reason: str, transfer_reference: str, actor=None) -> Transaction:
+def refund(
+    txn: Transaction,
+    *,
+    reason: str,
+    transfer_reference: str,
+    refunded_amount: Decimal | None = None,
+    actor=None,
+) -> Transaction:
     """Constate un remboursement deja effectue, depuis la console.
 
     Aucun argent ne part d'ici : plopplop n'expose pas de remboursement.
     Le transfert vers le payeur a ete fait a la main, et sa reference est
     exigee pour imposer l'ordre : envoyer d'abord, enregistrer ensuite.
+
+    Encaissement bloque : on rend ce qui a ete RECU, pas le devis.
+      - montant declare par plopplop : `refunded_amount` doit lui etre egal
+        (ou etre omis) ;
+      - montant non communique : `refunded_amount` est obligatoire, c'est
+        le montant verifie chez plopplop et rendu au payeur.
     """
     reason = (reason or "").strip()
     transfer_reference = (transfer_reference or "").strip()
@@ -548,11 +650,35 @@ def refund(txn: Transaction, *, reason: str, transfer_reference: str, actor=None
     if len(transfer_reference) > TRANSFER_REFERENCE_MAX_LENGTH:
         raise InvalidRefund(f"Reference trop longue (max {TRANSFER_REFERENCE_MAX_LENGTH} caracteres)")
 
+    if not is_payment_held(txn):
+        txn.transition(
+            State.REFUNDED,
+            actor=actor,
+            note=f"{reason} — transfert {transfer_reference}",
+            data={"reason": reason, "transfer_reference": transfer_reference},
+        )
+        ledger.record_refund(txn, reason=reason, transfer_reference=transfer_reference, posted_by=actor)
+        return txn
+
+    received = txn.payment_amount_received
+    if received is None:
+        if refunded_amount is None or refunded_amount <= 0:
+            raise InvalidRefund("Montant encaisse non communique : saisir le montant verifie et rembourse")
+        amount = refunded_amount
+    else:
+        if refunded_amount is not None and refunded_amount != received:
+            raise InvalidRefund(f"Montant rembourse {refunded_amount} HTG different du montant recu {received} HTG")
+        amount = received
+
     txn.transition(
         State.REFUNDED,
         actor=actor,
-        note=f"{reason} — transfert {transfer_reference}",
-        data={"reason": reason, "transfer_reference": transfer_reference},
+        note=f"{reason} — transfert {transfer_reference} — {amount} HTG rendus",
+        data={"reason": reason, "transfer_reference": transfer_reference, "refunded_amount": str(amount)},
     )
-    ledger.record_refund(txn, reason=reason, transfer_reference=transfer_reference, posted_by=actor)
+    if received is None:
+        ledger.record_payment_held(txn, received=amount, posted_by=actor, memo="montant constate par l'operateur")
+    ledger.record_held_refund(
+        txn, amount=amount, reason=reason, transfer_reference=transfer_reference, posted_by=actor
+    )
     return txn

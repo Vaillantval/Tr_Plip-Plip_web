@@ -78,6 +78,15 @@ faut deux 404 pour la même référence, espacés d'au moins
 déjà reconnu comme « en attente » (`PAYOUT_PENDING`) ne remet jamais en
 file : il se traite à la main.
 
+**Un encaissement non conforme ne part jamais en décaissement.**
+Si plopplop confirme un paiement d'un autre montant que le devis — en
+plus ou en moins — ou sans communiquer le montant, la transaction reste
+en `PAYMENT_CONFIRMED` (`AMOUNT_MISMATCH` / `AMOUNT_UNVERIFIED`) et
+remonte sur l'écran exceptions. Le grand livre constate le montant
+réellement reçu, entièrement dû au payeur. Sorties : remboursement du
+montant reçu, ou déblocage si l'opérateur vérifie chez plopplop que le
+montant exact du devis a été encaissé.
+
 **Tout mouvement d'argent produit une écriture équilibrée.**
 Le grand livre refuse une écriture dont la somme n'est pas nulle, et
 n'accepte ni modification ni suppression. Une erreur se corrige par une
@@ -146,7 +155,6 @@ donc possible dès le MVP, ce que la note n'envisageait pas.
 ## À construire ensuite
 
 - Front web et app Flutter sur l'API v1
-- Paiement reçu d'un montant différent du devis : ne pas le mettre en file
 - Désactivation d'un client depuis la console
 - Notifications SMS/e-mail de suivi des transferts
 - Réconciliation : comparaison `FloatSnapshot.provider_balance` vs solde

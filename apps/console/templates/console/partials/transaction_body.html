@@ -16,7 +16,16 @@
   </div>
   {% endif %}
 
-  {% if request.user.can_act %}{% if actions.retry or actions.verify or actions.refund %}
+  {% if actions.release %}
+  <div class="rounded border-2 border-red-500 bg-red-50 px-3 py-2 text-red-900">
+    <strong>Encaissement bloque avant decaissement.</strong>
+    Devis <span class="font-mono">{{ txn.total_charged|htg }}</span> HTG ·
+    recu {% if txn.payment_amount_received is not None %}<span class="font-mono">{{ txn.payment_amount_received|htg }}</span> HTG{% else %}<strong>non communique par plopplop</strong>{% endif %}.
+    Rien n'a ete verse au beneficiaire.
+  </div>
+  {% endif %}
+
+  {% if request.user.can_act %}{% if actions.retry or actions.verify or actions.refund or actions.release %}
   <section class="rounded border bg-white p-3">
     <h2 class="mb-2 font-medium">Actions</h2>
     <div class="flex flex-wrap items-start gap-3">
@@ -33,6 +42,9 @@
       {% endif %}
       {% if actions.refund %}
         <div class="w-full max-w-xl">{% include "console/partials/refund_form.html" with form=refund_form target="#txn-detail" %}</div>
+      {% endif %}
+      {% if actions.release %}
+        <div class="w-full max-w-xl">{% include "console/partials/release_form.html" with form=release_form target="#txn-detail" %}</div>
       {% endif %}
     </div>
   </section>
@@ -61,6 +73,7 @@
         <tbody class="divide-y">
           <tr><th colspan="2" class="bg-slate-50 px-3 py-1 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Encaissement</th></tr>
           <tr><td class="px-3 py-1.5 text-slate-600">ID transaction</td><td class="px-3 py-1.5 font-mono">{{ txn.payment_provider_id|default:"—" }}</td></tr>
+          <tr><td class="px-3 py-1.5 text-slate-600">Montant encaisse</td><td class="px-3 py-1.5 font-mono {% if actions.release %}font-semibold text-red-700{% endif %}">{% if txn.payment_amount_received is not None %}{{ txn.payment_amount_received|htg }}{% else %}—{% endif %}</td></tr>
           <tr><td class="px-3 py-1.5 text-slate-600">Confirme le</td><td class="px-3 py-1.5">{{ txn.payment_confirmed_at|date:"d/m/Y H:i:s"|default:"—" }}</td></tr>
           <tr><td class="px-3 py-1.5 text-slate-600">Expiration</td><td class="px-3 py-1.5">{{ txn.payment_expires_at|date:"d/m/Y H:i:s"|default:"—" }}</td></tr>
           <tr><td class="px-3 py-1.5 text-slate-600">Verifications</td><td class="px-3 py-1.5">{{ txn.poll_count }}{% if txn.last_polled_at %} <span class="text-slate-500">(derniere {{ txn.last_polled_at|date:"d/m H:i:s" }})</span>{% endif %}</td></tr>

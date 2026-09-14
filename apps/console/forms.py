@@ -15,6 +15,19 @@ class RefundForm(forms.Form):
         label="Reference du transfert manuel deja effectue",
         max_length=TRANSFER_REFERENCE_MAX_LENGTH,
     )
+    # Encaissement bloque sans montant communique : montant verifie et rendu.
+    refunded_amount = forms.DecimalField(
+        label="Montant rendu (HTG)", required=False, max_digits=12, decimal_places=2, min_value=Decimal("0.01")
+    )
+
+
+class ReleaseForm(forms.Form):
+    """Deblocage d'un encaissement apres verification chez plopplop."""
+
+    verified_amount = forms.DecimalField(
+        label="Montant verifie chez plopplop (HTG)", max_digits=12, decimal_places=2, min_value=Decimal("0.01")
+    )
+    reason = forms.CharField(label="Motif / source de la verification", max_length=REFUND_REASON_MAX_LENGTH)
 
 
 class TopupForm(forms.Form):

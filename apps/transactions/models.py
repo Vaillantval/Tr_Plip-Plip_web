@@ -122,6 +122,9 @@ class Transaction(models.Model):
     payment_provider_id = models.CharField(max_length=64, blank=True)
     payment_redirect_url = models.URLField(blank=True, max_length=500)
     payment_confirmed_at = models.DateTimeField(null=True, blank=True)
+    # Montant que plopplop declare avoir encaisse. Vide s'il ne l'a pas
+    # communique : la transaction est alors bloquee (AMOUNT_UNVERIFIED).
+    payment_amount_received = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     payment_expires_at = models.DateTimeField(null=True, blank=True)
     last_polled_at = models.DateTimeField(null=True, blank=True)
     poll_count = models.PositiveIntegerField(default=0)

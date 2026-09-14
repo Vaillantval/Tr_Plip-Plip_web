@@ -14,6 +14,7 @@ urlpatterns = [
     path("transactions/<str:reference>/retry/", views.payout_retry, name="payout_retry"),
     path("transactions/<str:reference>/verify/", views.payout_verify, name="payout_verify"),
     path("transactions/<str:reference>/refund/", views.transaction_refund, name="transaction_refund"),
+    path("transactions/<str:reference>/release/", views.payment_release, name="payment_release"),
     path("queue/", views.payout_queue, name="queue"),
     path("exceptions/", views.exceptions, name="exceptions"),
     path("treasury/", views.treasury_view, name="treasury"),

@@ -151,6 +151,39 @@ def record_refund(txn, *, reason: str, transfer_reference: str, posted_by=None) 
     )
 
 
+def record_payment_held(txn, *, received: Decimal, posted_by=None, memo: str = "montant reellement recu") -> JournalEntry:
+    """Encaissement non conforme au devis : on constate ce qui est entre,
+    et la totalite en est due au payeur. Aucune commission n'est reconnue
+    tant que le transfert n'a pas ete debloque.
+    """
+    return post(
+        reference=f"{txn.reference}-HOLD",
+        description=f"Encaissement non conforme — attendu {txn.total_charged}, recu {received}",
+        transaction=txn,
+        posted_by=posted_by,
+        lines=[
+            (CASH_SETTLEMENT, received, memo),
+            (CLIENTS_PAYABLE, -received, "du au payeur, transfert bloque"),
+        ],
+    )
+
+
+def record_held_refund(txn, *, amount: Decimal, reason: str, transfer_reference: str, posted_by=None) -> JournalEntry:
+    """Remboursement d'un encaissement bloque : on rend ce qui a ete recu,
+    il n'y a pas de frais a restituer.
+    """
+    return post(
+        reference=f"{txn.reference}-REFUND",
+        description=f"Remboursement — {reason} — transfert {transfer_reference}",
+        transaction=txn,
+        posted_by=posted_by,
+        lines=[
+            (CLIENTS_PAYABLE, amount, "dette eteinte par remboursement"),
+            (CASH_SETTLEMENT, -amount, "montant rendu au payeur"),
+        ],
+    )
+
+
 def record_float_topup(amount: Decimal, *, reference: str, posted_by=None) -> JournalEntry:
     """Rechargement du float, constate chez plopplop.
 

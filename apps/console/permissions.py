@@ -74,7 +74,9 @@ def _require(action: str, allowed_for, *, target_kwarg: str, audit_fields: tuple
         @wraps(view)
         def wrapper(request, *args, **kwargs):
             target = str(kwargs.get(target_kwarg, ""))
-            submitted = {name: request.POST.get(name, "")[:AUDIT_VALUE_MAX_LENGTH] for name in audit_fields}
+            submitted = {
+                name: request.POST[name][:AUDIT_VALUE_MAX_LENGTH] for name in audit_fields if name in request.POST
+            }
             if not request.user.is_authenticated or not allowed_for(request.user):
                 audit(request, action, target=target, allowed=False, **submitted)
                 raise PermissionDenied("Role insuffisant pour cette action")

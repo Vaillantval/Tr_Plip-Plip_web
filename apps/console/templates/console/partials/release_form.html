@@ -1,0 +1,26 @@
+{% load console_tags %}
+<form data-console-action="release" method="post" action="{% url 'console:payment_release' txn.reference %}"
+      hx-post="{% url 'console:payment_release' txn.reference %}" hx-target="{{ target }}" hx-swap="outerHTML"
+      hx-disabled-elt="find button"
+      hx-confirm="Le montant de {{ txn.total_charged|htg }} HTG a-t-il ete verifie aupres de plopplop ? Le transfert partira en decaissement."
+      class="space-y-2 rounded border border-slate-300 bg-slate-50 p-3">
+  {% csrf_token %}
+  <p class="text-slate-700">
+    A n'utiliser que si plopplop confirme avoir encaisse <strong>exactement</strong>
+    <span class="font-mono">{{ txn.total_charged|htg }}</span> HTG. Tout autre montant est refuse : il se rembourse.
+  </p>
+  {% if form.non_field_errors %}<p class="text-red-700">{{ form.non_field_errors|join:" " }}</p>{% endif %}
+  <label class="block">
+    <span class="text-slate-700">Montant verifie chez plopplop (HTG)</span>
+    <input name="verified_amount" type="number" step="0.01" min="0.01" required value="{{ form.verified_amount.value|default:'' }}"
+           class="mt-0.5 w-full rounded border border-slate-300 bg-white px-2 py-1 font-mono">
+  </label>
+  {% if form.verified_amount.errors %}<p class="text-red-700">{{ form.verified_amount.errors|join:" " }}</p>{% endif %}
+  <label class="block">
+    <span class="text-slate-700">Motif / source de la verification</span>
+    <input name="reason" required maxlength="{{ form.fields.reason.max_length }}" value="{{ form.reason.value|default:'' }}"
+           class="mt-0.5 w-full rounded border border-slate-300 bg-white px-2 py-1">
+  </label>
+  {% if form.reason.errors %}<p class="text-red-700">{{ form.reason.errors|join:" " }}</p>{% endif %}
+  <button type="submit" class="rounded bg-slate-800 px-3 py-1 font-medium text-white hover:bg-slate-900 disabled:opacity-50">Debloquer et mettre en file</button>
+</form>
