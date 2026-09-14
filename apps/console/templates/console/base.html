@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Console Plip-Plip{% endblock %}</title>
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <nav class="border-b bg-white px-6 py-3 flex gap-6 text-sm">
+    <span class="font-medium">Plip-Plip</span>
+    <a href="{% url 'console:dashboard' %}">Tableau de bord</a>
+    <a href="{% url 'console:queue' %}">File</a>
+    <a href="{% url 'console:transactions' %}">Transactions</a>
+    <a href="{% url 'console:exceptions' %}">Exceptions</a>
+    <a href="{% url 'console:treasury' %}">Tresorerie</a>
+    <span class="ml-auto text-slate-500">{{ request.user }} — {{ request.user.get_role_display }}</span>
+  </nav>
+  <main class="p-6">{% block content %}{% endblock %}</main>
+</body>
+</html>

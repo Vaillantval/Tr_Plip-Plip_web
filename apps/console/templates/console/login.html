@@ -1,0 +1,7 @@
+{% extends "console/base.html" %}
+{% block content %}
+<form method="post" class="max-w-sm space-y-3">
+  {% csrf_token %}{{ form.as_p }}
+  <button class="rounded bg-slate-900 px-4 py-2 text-white">Connexion</button>
+</form>
+{% endblock %}

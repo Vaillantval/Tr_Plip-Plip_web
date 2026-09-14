@@ -1,0 +1,192 @@
+from __future__ import annotations
+
+import secrets
+from decimal import Decimal
+
+from django.conf import settings
+from django.db import models, transaction as db_transaction
+from django.utils import timezone
+
+from .states import LIABILITY_STATES, State, check
+
+REFERENCE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+
+
+def make_reference() -> str:
+    """Reference unique Plip-Plip, lisible a voix haute au telephone.
+
+    Pas de 0/O ni 1/I : ces references sont dictees au support par des
+    utilisateurs qui les lisent sur un SMS.
+    """
+    body = "".join(secrets.choice(REFERENCE_ALPHABET) for _ in range(8))
+    return f"PP-{timezone.now():%y%m}-{body}"
+
+
+class Wallet(models.TextChoices):
+    MONCASH = "moncash", "MonCash"
+    NATCASH = "natcash", "NatCash"
+    KASHPAW = "kashpaw", "Kashpaw"
+    CARTE = "carte", "Carte bancaire"
+
+
+#: Seuls MonCash et NatCash acceptent un decaissement. Kashpaw et carte
+#: ne peuvent servir que de source.
+PAYOUT_CAPABLE = (Wallet.MONCASH, Wallet.NATCASH)
+
+
+class TransactionQuerySet(models.QuerySet):
+    def liabilities(self):
+        """Transactions ou nous detenons les fonds du client."""
+        return self.filter(state__in=list(LIABILITY_STATES))
+
+    def awaiting_payment(self):
+        return self.filter(state=State.AWAITING_PAYMENT)
+
+    def payable(self):
+        return self.filter(state=State.PAYOUT_QUEUED).order_by("payment_confirmed_at")
+
+
+class Transaction(models.Model):
+    """Une conversion wallet -> wallet.
+
+    `state` n'est jamais assigne directement : passer par transition().
+    """
+
+    reference = models.CharField(max_length=32, unique=True, default=make_reference, editable=False)
+    state = models.CharField(max_length=32, choices=State.choices, default=State.CREATED, db_index=True)
+
+    source_wallet = models.CharField(max_length=16, choices=Wallet.choices)
+    destination_wallet = models.CharField(max_length=16, choices=Wallet.choices)
+    sender_phone = models.CharField(max_length=16, blank=True)
+    recipient_phone = models.CharField(max_length=16)
+
+    # Devis fige a la creation. On ne le recalcule jamais : si les taux
+    # changent, les transactions en cours gardent leur devis d'origine.
+    net_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    fee_in = models.DecimalField(max_digits=12, decimal_places=2)
+    fee_out = models.DecimalField(max_digits=12, decimal_places=2)
+    fee_platform = models.DecimalField(max_digits=12, decimal_places=2)
+    total_charged = models.DecimalField(max_digits=12, decimal_places=2)
+
+    # Cote encaissement
+    payment_provider_id = models.CharField(max_length=64, blank=True)
+    payment_redirect_url = models.URLField(blank=True, max_length=500)
+    payment_confirmed_at = models.DateTimeField(null=True, blank=True)
+    payment_expires_at = models.DateTimeField(null=True, blank=True)
+    last_polled_at = models.DateTimeField(null=True, blank=True)
+    poll_count = models.PositiveIntegerField(default=0)
+
+    # Cote decaissement
+    payout_reference = models.CharField(max_length=40, blank=True, db_index=True)
+    payout_provider_id = models.CharField(max_length=64, blank=True)
+    payout_api_reference = models.CharField(max_length=64, blank=True)
+    payout_fee_actual = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    payout_attempts = models.PositiveIntegerField(default=0)
+    payout_completed_at = models.DateTimeField(null=True, blank=True)
+
+    failure_code = models.CharField(max_length=64, blank=True)
+    failure_message = models.TextField(blank=True)
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="transactions"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = TransactionQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=["state", "created_at"]),
+            models.Index(fields=["recipient_phone"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.reference} ({self.get_state_display()})"
+
+    # ------------------------------------------------------------------
+    @property
+    def margin_estimate(self) -> Decimal:
+        """Marge estimee. Negative si les frais reels depassent le devis."""
+        collected = self.fee_in + self.fee_out + self.fee_platform
+        if self.payout_fee_actual is None:
+            return collected
+        return collected - self.payout_fee_actual
+
+    @property
+    def is_liability(self) -> bool:
+        return self.state in LIABILITY_STATES
+
+    def build_payout_reference(self) -> str:
+        """Reference envoyee a plopplop pour le retrait.
+
+        Suffixee par le numero de tentative : plopplop bloque en 409 une
+        reference deja utilisee, et la doc ne precise pas si une
+        reference liberee apres echec est reutilisable. On ne prend pas
+        le risque -- chaque tentative porte sa propre reference, et le
+        lien avec la transaction reste assure par le prefixe.
+        """
+        return f"{self.reference}-W{self.payout_attempts + 1}"
+
+    @db_transaction.atomic
+    def transition(self, target: str, *, actor=None, note: str = "", data: dict | None = None) -> "Transaction":
+        """Unique point d'entree pour changer d'etat.
+
+        Verrouille la ligne, valide la transition, journalise. Toute
+        tentative de transition interdite leve IllegalTransition avant
+        toute ecriture.
+        """
+        current = Transaction.objects.select_for_update().get(pk=self.pk)
+        check(current.state, target)
+
+        previous = current.state
+        current.state = target
+        if target == State.PAYMENT_CONFIRMED and current.payment_confirmed_at is None:
+            current.payment_confirmed_at = timezone.now()
+        if target == State.COMPLETED and current.payout_completed_at is None:
+            current.payout_completed_at = timezone.now()
+        current.save(update_fields=["state", "payment_confirmed_at", "payout_completed_at", "updated_at"])
+
+        TransactionEvent.objects.create(
+            transaction=current,
+            from_state=previous,
+            to_state=target,
+            actor=actor,
+            note=note,
+            data=data or {},
+        )
+        self.state = target
+        return current
+
+
+class TransactionEvent(models.Model):
+    """Journal append-only. Aucune mise a jour, aucune suppression.
+
+    C'est la timeline affichee dans la console et la piece justificative
+    en cas de reclamation.
+    """
+
+    transaction = models.ForeignKey(Transaction, on_delete=models.PROTECT, related_name="events")
+    from_state = models.CharField(max_length=32, blank=True)
+    to_state = models.CharField(max_length=32)
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="transaction_events"
+    )
+    note = models.TextField(blank=True)
+    data = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("created_at", "id")
+
+    def __str__(self) -> str:
+        return f"{self.transaction.reference}: {self.from_state} -> {self.to_state}"
+
+    def save(self, *args, **kwargs):
+        if self.pk is not None:
+            raise RuntimeError("TransactionEvent est append-only")
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise RuntimeError("TransactionEvent est append-only")
