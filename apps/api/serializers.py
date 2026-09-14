@@ -6,9 +6,8 @@ from rest_framework import serializers
 
 from apps.accounts.phone import InvalidPhone, normalize
 from apps.transactions.models import Wallet
-from apps.transactions.states import State
 
-from .status import LABELS, PublicStatus, public_status
+from .status import LABELS, payment_instructions, public_status
 
 MONEY = {"max_digits": 12, "decimal_places": 2}
 
@@ -155,27 +154,11 @@ class TransferSerializer(serializers.Serializer):
                     "total_fees": txn.fee_in + txn.fee_out + txn.fee_platform,
                     "total_charged": txn.total_charged,
                 },
-                "payment": _payment_instructions(txn, status),
+                "payment": payment_instructions(txn, status),
                 "created_at": txn.created_at,
                 "delivered_at": txn.payout_completed_at,
             }
         )
-
-
-def _payment_instructions(txn, status: str) -> dict:
-    if status != PublicStatus.AWAITING_PAYMENT:
-        return {"mode": "none", "redirect_url": None, "expires_at": None}
-    if txn.state == State.CREATED or not txn.payment_provider_id:
-        mode = "unavailable"
-    elif txn.payment_redirect_url:
-        mode = "redirect"
-    else:
-        mode = "ussd"
-    return {
-        "mode": mode,
-        "redirect_url": txn.payment_redirect_url or None,
-        "expires_at": txn.payment_expires_at,
-    }
 
 
 class ErrorSerializer(serializers.Serializer):

@@ -1,0 +1,38 @@
+{% extends "web/base.html" %}
+{% load i18n web_tags %}
+{% block title %}{% translate "Mes transferts" %} — Plip-Plip{% endblock %}
+{% block content %}
+<h1>{% translate "Mes transferts" %}</h1>
+
+{% if page.object_list %}
+<section class="card">
+  <ul class="list">
+    {% for txn in page.object_list %}
+    {% with status=txn|status_of %}
+    <li>
+      <a href="{% url 'web:transfer_detail' txn.reference %}">
+        <span class="mono">{{ txn.reference }}</span>
+        <span class="pill {{ status }}">{{ status|status_label }}</span>
+        <span class="amount">{{ txn.net_amount|htg }} HTG</span>
+        <span class="muted" style="width:100%">
+          {{ txn.source_wallet|wallet }} → {{ txn.destination_wallet|wallet }} · <span class="mono">{{ txn.recipient_phone }}</span> · {{ txn.created_at|date:"d/m/Y H:i" }}
+        </span>
+      </a>
+    </li>
+    {% endwith %}
+    {% endfor %}
+  </ul>
+</section>
+{% if page.has_other_pages %}
+<p>
+  {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}">{% translate "Plus récents" %}</a>{% endif %}
+  {% if page.has_next %}<a href="?page={{ page.next_page_number }}" style="float:right">{% translate "Plus anciens" %}</a>{% endif %}
+</p>
+{% endif %}
+{% else %}
+<section class="card">
+  <p>{% translate "Vous n'avez encore envoyé aucun transfert." %}</p>
+  <a class="button block" href="{% url 'web:home' %}">{% translate "Faire un envoi" %}</a>
+</section>
+{% endif %}
+{% endblock %}

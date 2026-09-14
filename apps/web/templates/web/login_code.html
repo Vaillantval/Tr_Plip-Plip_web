@@ -1,0 +1,23 @@
+{% extends "web/base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Connexion" %} — Plip-Plip{% endblock %}
+{% block content %}
+<h1>{% translate "Saisissez le code" %}</h1>
+<p class="lead">
+  {% blocktranslate trimmed %}Code envoyé par SMS au <strong class="mono">+{{ phone }}</strong>.{% endblocktranslate %}
+</p>
+
+<form class="card" method="post" action="{% url 'web:login_code' %}" onsubmit="this.querySelector('button').disabled = true;">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next }}">
+  {% for error in form.non_field_errors %}<p class="alert error">{{ error }}</p>{% endfor %}
+  <div class="field">
+    <label for="id_code">{{ form.code.label }}</label>
+    <input id="id_code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" required
+           class="mono">
+    {% for error in form.code.errors %}<p class="error">{{ error }}</p>{% endfor %}
+  </div>
+  <button type="submit" class="block">{% translate "Se connecter" %}</button>
+</form>
+<p class="muted"><a href="{% url 'web:login' %}?next={{ next|urlencode }}">{% translate "Changer de numéro ou recevoir un nouveau code" %}</a></p>
+{% endblock %}

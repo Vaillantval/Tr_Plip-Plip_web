@@ -1,0 +1,47 @@
+{% extends "web/base.html" %}
+{% load i18n web_tags %}
+{% block content %}
+<h1>{% translate "Envoyer de l'argent d'un portefeuille à l'autre" %}</h1>
+<p class="lead">{% translate "Le bénéficiaire reçoit exactement le montant annoncé. Les frais sont affichés avant de payer." %}</p>
+
+{% if not form.fields.source_wallet.choices or not form.fields.destination_wallet.choices %}
+  <p class="alert warning">{% translate "Le service est momentanément indisponible. Réessayez plus tard." %}</p>
+{% else %}
+<form class="card" method="post" action="{% url 'web:send' %}" novalidate
+      hx-post="{% url 'web:quote' %}" hx-trigger="load, input delay:400ms, change" hx-target="#quote" hx-swap="innerHTML">
+  {% csrf_token %}
+  {% for error in form.non_field_errors %}<p class="alert error">{{ error }}</p>{% endfor %}
+
+  <div class="row two">
+    {% include "web/partials/field.html" with field=form.source_wallet %}
+    {% include "web/partials/field.html" with field=form.destination_wallet %}
+  </div>
+  {% include "web/partials/field.html" with field=form.recipient_phone %}
+  {% include "web/partials/field.html" with field=form.net_amount %}
+  {% include "web/partials/field.html" with field=form.sender_phone hidden_unless="moncash" %}
+
+  <div id="quote" aria-live="polite">
+    {% include "web/partials/quote.html" %}
+  </div>
+
+  <button type="submit" class="block">{% translate "Continuer" %}</button>
+</form>
+{% endif %}
+
+<p class="muted">{% blocktranslate trimmed with amount=min_net|htg %}Montant minimum : {{ amount }} HTG.{% endblocktranslate %}</p>
+
+<script>
+  // Le numero du payeur ne sert qu'a MonCash (demande USSD).
+  (function () {
+    var source = document.getElementById("id_source_wallet");
+    if (!source) return;
+    function sync() {
+      document.querySelectorAll("[data-show-if-source]").forEach(function (el) {
+        el.hidden = source.value !== el.getAttribute("data-show-if-source");
+      });
+    }
+    source.addEventListener("change", sync);
+    sync();
+  })();
+</script>
+{% endblock %}

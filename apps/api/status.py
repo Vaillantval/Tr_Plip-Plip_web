@@ -48,3 +48,29 @@ MAPPING = {
 
 def public_status(state: str) -> str:
     return MAPPING[State(state)]
+
+
+def payment_instructions(txn, status: str | None = None) -> dict:
+    """Comment payer, pour l'API comme pour le site web.
+
+    mode : redirect (ouvrir redirect_url), ussd (valider sur le telephone),
+    unavailable (lien non obtenu : ne pas recreer de transfert tout de
+    suite), none (plus de paiement attendu).
+    """
+    status = status or public_status(txn.state)
+    if status != PublicStatus.AWAITING_PAYMENT:
+        return {"mode": "none", "redirect_url": None, "expires_at": None}
+    redirect_url = txn.payment_redirect_url or ""
+    if not redirect_url.startswith(("https://", "http://")):
+        redirect_url = ""
+    if txn.state == State.CREATED or not txn.payment_provider_id:
+        mode = "unavailable"
+    elif redirect_url:
+        mode = "redirect"
+    else:
+        mode = "ussd"
+    return {
+        "mode": mode,
+        "redirect_url": redirect_url or None,
+        "expires_at": txn.payment_expires_at,
+    }

@@ -1,0 +1,31 @@
+{% extends "web/base.html" %}
+{% load i18n l10n web_tags %}
+{% block title %}{% translate "Vérifiez votre envoi" %} — Plip-Plip{% endblock %}
+{% block content %}
+<h1>{% translate "Vérifiez votre envoi" %}</h1>
+
+<section class="card">
+  <p>
+    {% blocktranslate trimmed with phone=draft.recipient_phone wallet=draft.destination_wallet|wallet %}
+      Vers le {{ wallet }} du <strong class="mono">{{ phone }}</strong>
+    {% endblocktranslate %}
+  </p>
+  <p class="muted">
+    {% blocktranslate trimmed with wallet=draft.source_wallet|wallet %}Payé avec {{ wallet }}{% endblocktranslate %}{% if draft.sender_phone and draft.source_wallet == "moncash" %} · <span class="mono">{{ draft.sender_phone }}</span>{% endif %}
+  </p>
+  {% include "web/partials/fees.html" with quote=quote %}
+</section>
+
+<form method="post" action="{% url 'web:confirm' %}" onsubmit="this.querySelector('button').disabled = true;">
+  {% csrf_token %}
+  <input type="hidden" name="idempotency_key" value="{{ idempotency_key }}">
+  {# Valeur machine : sans unlocalize, le francais ecrit 1090,00 et le serveur ne la relit pas. #}
+  <input type="hidden" name="expected_total" value="{{ quote.total_charged|unlocalize }}">
+  <button type="submit" class="block">
+    {% blocktranslate trimmed with total=quote.total_charged|htg %}Payer {{ total }} HTG{% endblocktranslate %}
+  </button>
+</form>
+<p class="muted" style="margin-top:.75rem">
+  <a href="{% url 'web:home' %}">{% translate "Modifier l'envoi" %}</a>
+</p>
+{% endblock %}

@@ -46,10 +46,10 @@ def request_code(phone: str) -> str:
 
 
 @db_transaction.atomic
-def verify_code(phone: str, code: str) -> tuple[Customer, str, CustomerToken]:
-    """Valide le code, cree le client au premier passage, emet un jeton.
+def authenticate_code(phone: str, code: str) -> Customer:
+    """Valide le code et cree le client au premier passage. N'emet aucun jeton.
 
-    Le jeton en clair n'est retourne qu'ici : il n'est stocke que hache.
+    Utilise tel quel par le site web (session), et par verify_code pour l'API.
     """
     phone = normalize(phone)
     code = (code or "").strip()
@@ -60,7 +60,16 @@ def verify_code(phone: str, code: str) -> tuple[Customer, str, CustomerToken]:
     if not customer.is_active:
         raise CustomerDisabled("Compte desactive")
     Customer.objects.filter(pk=customer.pk).update(last_login_at=timezone.now())
+    return customer
 
+
+@db_transaction.atomic
+def verify_code(phone: str, code: str) -> tuple[Customer, str, CustomerToken]:
+    """Valide le code, cree le client au premier passage, emet un jeton d'API.
+
+    Le jeton en clair n'est retourne qu'ici : il n'est stocke que hache.
+    """
+    customer = authenticate_code(phone, code)
     raw = TOKEN_PREFIX + secrets.token_urlsafe(32)
     token = CustomerToken.objects.create(
         customer=customer,

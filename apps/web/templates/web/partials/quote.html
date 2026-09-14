@@ -1,0 +1,8 @@
+{% load i18n %}
+{% if error %}
+  <p class="alert error">{{ error }}</p>
+{% elif quote %}
+  {% include "web/partials/fees.html" with quote=quote %}
+{% else %}
+  <p class="muted">{% translate "Saisissez un montant pour voir les frais et le total." %}</p>
+{% endif %}

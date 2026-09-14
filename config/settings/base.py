@@ -4,6 +4,8 @@ import os
 from decimal import Decimal
 from pathlib import Path
 
+from django.conf.locale import LANG_INFO
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
@@ -33,16 +35,19 @@ INSTALLED_APPS = [
     "apps.treasury",
     "apps.console",
     "apps.api",
+    "apps.web",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "apps.web.middleware.CustomerSessionMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -76,7 +81,16 @@ DATABASES = {
     }
 }
 
-LANGUAGE_CODE = "fr-ht"
+# Site client : francais par defaut, creole et anglais. La console reste
+# en francais. Django ne connait pas le creole haitien : il est declare
+# ici, ses traductions vivent dans apps/web/locale/ht.
+LANGUAGE_CODE = "fr"
+LANGUAGES = [
+    ("fr", "Français"),
+    ("ht", "Kreyòl ayisyen"),
+    ("en", "English"),
+]
+LANG_INFO.setdefault("ht", {"bidi": False, "code": "ht", "name": "Haitian Creole", "name_local": "Kreyòl ayisyen"})
 TIME_ZONE = "America/Port-au-Prince"
 USE_I18N = True
 USE_TZ = True
@@ -87,6 +101,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOGIN_URL = "console:login"
 LOGIN_REDIRECT_URL = "console:dashboard"
+LOGOUT_REDIRECT_URL = "console:login"
+
+# Session client du site web : deconnexion apres 30 min d'inactivite.
+WEB_SESSION_IDLE_SECONDS = int(env("WEB_SESSION_IDLE_SECONDS", "1800"))
 
 # ----------------------------------------------------------------------
 # plopplop

@@ -1,0 +1,39 @@
+{% load i18n web_tags %}
+<section id="transfer-status" class="card" aria-live="polite"
+  {% if live %}hx-get="{% url 'web:transfer_status' txn.reference %}" hx-trigger="every 5s" hx-swap="outerHTML"{% endif %}>
+  <span class="pill {{ status }}">{{ status|status_label }}</span>
+
+  {% if status == "awaiting_payment" or status == "in_progress" or status == "delivered" %}
+  <ol class="steps">
+    <li class="done">{% translate "Paiement" %}</li>
+    <li class="{% if status != 'awaiting_payment' %}done{% endif %}">{% translate "Transfert" %}</li>
+    <li class="{% if status == 'delivered' %}done{% endif %}">{% translate "Reçu" %}</li>
+  </ol>
+  {% endif %}
+
+  {% if status == "awaiting_payment" %}
+    {% if payment.mode == "redirect" %}
+      <p>{% translate "Payez pour lancer le transfert. La page de paiement s'ouvre dans un nouvel onglet ; revenez ici ensuite, cette page se met à jour toute seule." %}</p>
+      <a class="button block" href="{{ payment.redirect_url }}" target="_blank" rel="noopener noreferrer">{% translate "Payer maintenant" %}</a>
+    {% elif payment.mode == "ussd" %}
+      <p>{% translate "Une demande de paiement a été envoyée sur votre téléphone MonCash. Validez-la pour lancer le transfert." %}</p>
+    {% else %}
+      <p class="alert warning">{% translate "Le lien de paiement n'a pas pu être obtenu. Ne relancez pas de nouveau transfert tout de suite : si une demande de paiement vous parvient, vous pouvez la valider, cette page le détectera." %}</p>
+    {% endif %}
+    {% if payment.expires_at %}
+      <p class="muted">{% blocktranslate trimmed with time=payment.expires_at|time:"H:i" %}À payer avant {{ time }}.{% endblocktranslate %}</p>
+    {% endif %}
+  {% elif status == "in_progress" %}
+    <p>{% translate "Paiement reçu. Le transfert vers le bénéficiaire est en cours ; les envois partent l'un après l'autre, comptez quelques minutes." %}</p>
+  {% elif status == "delivered" %}
+    <p>{% blocktranslate trimmed with amount=txn.net_amount|htg %}Le bénéficiaire a reçu {{ amount }} HTG.{% endblocktranslate %}</p>
+  {% elif status == "expired" %}
+    <p>{% translate "Aucun paiement n'a été reçu à temps. Rien n'a été débité." %}</p>
+    <a class="button secondary block" href="{% url 'web:home' %}">{% translate "Nouvel envoi" %}</a>
+  {% elif status == "refunded" %}
+    <p>{% translate "Ce transfert a été remboursé." %}</p>
+  {% elif status == "cancelled" %}
+    <p>{% translate "Ce transfert a été annulé. Aucun montant n'a été débité." %}</p>
+    <a class="button secondary block" href="{% url 'web:home' %}">{% translate "Nouvel envoi" %}</a>
+  {% endif %}
+</section>

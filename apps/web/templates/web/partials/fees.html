@@ -1,0 +1,28 @@
+{% load i18n web_tags %}
+<table class="fees">
+  <tbody>
+    <tr class="receive">
+      <td>{% translate "Le bénéficiaire reçoit" %}</td>
+      <td>{{ quote.net_amount|htg }} HTG</td>
+    </tr>
+    <tr>
+      <td>{% blocktranslate trimmed with wallet=quote.source_wallet|wallet %}Frais {{ wallet }}{% endblocktranslate %}</td>
+      <td>{{ quote.fee_in|htg }} HTG</td>
+    </tr>
+    <tr>
+      <td>{% blocktranslate trimmed with wallet=quote.destination_wallet|wallet %}Frais {{ wallet }}{% endblocktranslate %}</td>
+      <td>{{ quote.fee_out|htg }} HTG</td>
+    </tr>
+    <tr>
+      <td>{% translate "Frais Plip-Plip" %}</td>
+      <td>{{ quote.fee_platform|htg }} HTG</td>
+    </tr>
+    <tr class="total">
+      <td>{% translate "Total à payer" %}</td>
+      <td>{{ quote.total_charged|htg }} HTG</td>
+    </tr>
+  </tbody>
+</table>
+{% if quote.source_wallet == "carte" %}
+  <p class="muted">{% translate "Par carte, le paiement est débité en dollars américains, après conversion par notre prestataire de paiement." %}</p>
+{% endif %}

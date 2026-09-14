@@ -1,0 +1,22 @@
+{% extends "web/base.html" %}
+{% load i18n web_tags %}
+{% block title %}{{ txn.reference }} — Plip-Plip{% endblock %}
+{% block content %}
+<p class="muted">{% translate "Référence du transfert" %}</p>
+<h1 class="reference mono">{{ txn.reference }}</h1>
+<p class="muted">{% translate "Gardez cette référence : elle vous sera demandée en cas de réclamation." %}</p>
+
+{% include "web/partials/transfer_status.html" %}
+
+<section class="card">
+  <p>
+    {% blocktranslate trimmed with phone=txn.recipient_phone wallet=txn.destination_wallet|wallet %}
+      Vers le {{ wallet }} du <strong class="mono">{{ phone }}</strong>
+    {% endblocktranslate %}
+  </p>
+  <p class="muted">{{ txn.created_at|date:"d/m/Y H:i" }}</p>
+  {% include "web/partials/fees.html" with quote=txn %}
+</section>
+
+<p><a href="{% url 'web:transfers' %}">{% translate "Tous mes transferts" %}</a></p>
+{% endblock %}

@@ -1,0 +1,317 @@
+# Plip-Plip — site client, traduction anglaise.
+# Langue source : francais.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Plip-Plip web\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-14 17:40-0400\n"
+"PO-Revision-Date: 2026-09-14 17:45-0400\n"
+"Last-Translator: \n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Numéro invalide : 8 chiffres d'un mobile haïtien, avec ou sans +509."
+msgstr "Invalid number: 8 digits of a Haitian mobile number, with or without +509."
+
+msgid "Votre numéro de téléphone"
+msgstr "Your phone number"
+
+msgid "Code reçu par SMS"
+msgstr "Code received by SMS"
+
+msgid "Saisissez les chiffres du code reçu par SMS."
+msgstr "Enter the digits of the code you received by SMS."
+
+msgid "J'envoie depuis"
+msgstr "I'm sending from"
+
+msgid "Le bénéficiaire reçoit sur"
+msgstr "The recipient receives on"
+
+msgid "Numéro du bénéficiaire"
+msgstr "Recipient's number"
+
+msgid "Montant reçu par le bénéficiaire (HTG)"
+msgstr "Amount the recipient receives (HTG)"
+
+msgid "Numéro MonCash qui paie (facultatif)"
+msgstr "MonCash number paying (optional)"
+
+msgid ""
+"Renseigné, vous recevez la demande de paiement directement sur ce téléphone."
+msgstr "If filled in, the payment request is sent straight to this phone."
+
+msgid "Choisissez un portefeuille différent de celui d'envoi."
+msgstr "Choose a different wallet from the one you're sending from."
+
+msgid "Carte bancaire"
+msgstr "Bank card"
+
+msgid "En attente de paiement"
+msgstr "Awaiting payment"
+
+msgid "En cours"
+msgstr "In progress"
+
+msgid "Livré"
+msgstr "Delivered"
+
+msgid "Expiré"
+msgstr "Expired"
+
+msgid "Remboursé"
+msgstr "Refunded"
+
+msgid "Annulé"
+msgstr "Cancelled"
+
+msgid "Mes transferts"
+msgstr "My transfers"
+
+msgid "Déconnexion"
+msgstr "Log out"
+
+msgid "Se connecter"
+msgstr "Log in"
+
+msgid "Un portefeuille vers l'autre. Simplement."
+msgstr "From one wallet to another. Simply."
+
+msgid "Langue"
+msgstr "Language"
+
+msgid "OK"
+msgstr "OK"
+
+msgid "Vérifiez votre envoi"
+msgstr "Check your transfer"
+
+#, python-format
+msgid "Vers le %(wallet)s du <strong class=\"mono\">%(phone)s</strong>"
+msgstr "To the %(wallet)s account <strong class=\"mono\">%(phone)s</strong>"
+
+#, python-format
+msgid "Payé avec %(wallet)s"
+msgstr "Paid with %(wallet)s"
+
+#, python-format
+msgid "Payer %(total)s HTG"
+msgstr "Pay %(total)s HTG"
+
+msgid "Modifier l'envoi"
+msgstr "Edit transfer"
+
+msgid "Envoyer de l'argent d'un portefeuille à l'autre"
+msgstr "Send money from one wallet to another"
+
+msgid ""
+"Le bénéficiaire reçoit exactement le montant annoncé. Les frais sont "
+"affichés avant de payer."
+msgstr ""
+"The recipient receives exactly the amount shown. Fees are displayed before "
+"you pay."
+
+msgid "Le service est momentanément indisponible. Réessayez plus tard."
+msgstr "The service is temporarily unavailable. Please try again later."
+
+msgid "Continuer"
+msgstr "Continue"
+
+#, python-format
+msgid "Montant minimum : %(amount)s HTG."
+msgstr "Minimum amount: %(amount)s HTG."
+
+msgid "Connexion"
+msgstr "Log in"
+
+msgid "Nous vous envoyons un code par SMS. Aucun mot de passe à retenir."
+msgstr "We send you a code by SMS. No password to remember."
+
+msgid "Recevoir un code"
+msgstr "Get a code"
+
+msgid "Saisissez le code"
+msgstr "Enter the code"
+
+#, python-format
+msgid "Code envoyé par SMS au <strong class=\"mono\">+%(phone)s</strong>."
+msgstr "Code sent by SMS to <strong class=\"mono\">+%(phone)s</strong>."
+
+msgid "Changer de numéro ou recevoir un nouveau code"
+msgstr "Change number or get a new code"
+
+msgid "Le bénéficiaire reçoit"
+msgstr "Recipient receives"
+
+#, python-format
+msgid "Frais %(wallet)s"
+msgstr "%(wallet)s fee"
+
+msgid "Frais Plip-Plip"
+msgstr "Plip-Plip fee"
+
+msgid "Total à payer"
+msgstr "Total to pay"
+
+msgid ""
+"Par carte, le paiement est débité en dollars américains, après conversion "
+"par notre prestataire de paiement."
+msgstr ""
+"Card payments are charged in US dollars, converted by our payment provider."
+
+msgid "Saisissez un montant pour voir les frais et le total."
+msgstr "Enter an amount to see the fees and the total."
+
+msgid "Paiement"
+msgstr "Payment"
+
+msgid "Transfert"
+msgstr "Transfer"
+
+msgid "Reçu"
+msgstr "Received"
+
+msgid ""
+"Payez pour lancer le transfert. La page de paiement s'ouvre dans un nouvel "
+"onglet ; revenez ici ensuite, cette page se met à jour toute seule."
+msgstr ""
+"Pay to start the transfer. The payment page opens in a new tab; come back "
+"here afterwards, this page updates by itself."
+
+msgid "Payer maintenant"
+msgstr "Pay now"
+
+msgid ""
+"Une demande de paiement a été envoyée sur votre téléphone MonCash. Validez-"
+"la pour lancer le transfert."
+msgstr ""
+"A payment request was sent to your MonCash phone. Approve it to start the "
+"transfer."
+
+msgid ""
+"Le lien de paiement n'a pas pu être obtenu. Ne relancez pas de nouveau "
+"transfert tout de suite : si une demande de paiement vous parvient, vous "
+"pouvez la valider, cette page le détectera."
+msgstr ""
+"We couldn't get the payment link. Don't start a new transfer right away: if "
+"a payment request reaches you, you can approve it and this page will detect "
+"it."
+
+#, python-format
+msgid "À payer avant %(time)s."
+msgstr "Pay before %(time)s."
+
+msgid ""
+"Paiement reçu. Le transfert vers le bénéficiaire est en cours ; les envois "
+"partent l'un après l'autre, comptez quelques minutes."
+msgstr ""
+"Payment received. The transfer to the recipient is under way; transfers go "
+"out one after another, so allow a few minutes."
+
+#, python-format
+msgid "Le bénéficiaire a reçu %(amount)s HTG."
+msgstr "The recipient received %(amount)s HTG."
+
+msgid "Aucun paiement n'a été reçu à temps. Rien n'a été débité."
+msgstr "No payment was received in time. Nothing was charged."
+
+msgid "Nouvel envoi"
+msgstr "New transfer"
+
+msgid "Ce transfert a été remboursé."
+msgstr "This transfer was refunded."
+
+msgid "Ce transfert a été annulé. Aucun montant n'a été débité."
+msgstr "This transfer was cancelled. Nothing was charged."
+
+msgid "Référence du transfert"
+msgstr "Transfer reference"
+
+msgid "Gardez cette référence : elle vous sera demandée en cas de réclamation."
+msgstr "Keep this reference: you'll be asked for it if you make a claim."
+
+msgid "Tous mes transferts"
+msgstr "All my transfers"
+
+msgid "Plus récents"
+msgstr "Newer"
+
+msgid "Plus anciens"
+msgstr "Older"
+
+msgid "Vous n'avez encore envoyé aucun transfert."
+msgstr "You haven't sent any transfers yet."
+
+msgid "Faire un envoi"
+msgstr "Send money"
+
+msgid ""
+"Ce moyen de paiement est momentanément indisponible. Choisissez-en un autre."
+msgstr "This payment method is temporarily unavailable. Please choose another."
+
+#, python-format
+msgid "Le montant minimum est de %(amount)s HTG."
+msgstr "The minimum amount is %(amount)s HTG."
+
+#, python-format
+msgid "Le montant maximum est de %(amount)s HTG."
+msgstr "The maximum amount is %(amount)s HTG."
+
+msgid "Cette combinaison de portefeuilles n'est pas proposée."
+msgstr "This combination of wallets isn't available."
+
+msgid "Trop de demandes. Patientez une minute."
+msgstr "Too many requests. Please wait a minute."
+
+msgid "Cette confirmation a expiré. Vérifiez à nouveau votre envoi."
+msgstr "This confirmation has expired. Please check your transfer again."
+
+msgid "Trop de transferts en peu de temps. Réessayez plus tard."
+msgstr "Too many transfers in a short time. Please try again later."
+
+msgid ""
+"Les frais ont changé depuis votre saisie. Vérifiez le nouveau total avant de "
+"confirmer."
+msgstr ""
+"The fees have changed since you started. Check the new total before "
+"confirming."
+
+msgid "Cette demande est déjà en cours de traitement."
+msgstr "This request is already being processed."
+
+msgid ""
+"Le paiement n'a pas pu être créé. Aucun montant n'a été débité. Vous pouvez "
+"réessayer."
+msgstr "The payment couldn't be created. Nothing was charged. You can try again."
+
+msgid "Trop de demandes de code pour ce numéro. Patientez avant de réessayer."
+msgstr "Too many code requests for this number. Please wait before trying again."
+
+msgid "Ce numéro ne peut pas recevoir de SMS."
+msgstr "This number can't receive SMS."
+
+msgid ""
+"L'envoi du SMS est momentanément impossible. Réessayez dans quelques minutes."
+msgstr "We can't send the SMS right now. Please try again in a few minutes."
+
+msgid "Trop de tentatives. Demandez un nouveau code plus tard."
+msgstr "Too many attempts. Request a new code later."
+
+msgid "Code invalide ou expiré."
+msgstr "Invalid or expired code."
+
+msgid "Ce compte est désactivé. Contactez le support."
+msgstr "This account is disabled. Please contact support."
+
+msgid "Trop de tentatives. Demandez un nouveau code."
+msgstr "Too many attempts. Request a new code."
+
+msgid ""
+"La vérification est momentanément impossible. Réessayez dans quelques "
+"minutes."
+msgstr "Verification isn't possible right now. Please try again in a few minutes."

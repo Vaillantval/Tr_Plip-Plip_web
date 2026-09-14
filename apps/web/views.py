@@ -1,0 +1,297 @@
+"""Site client.
+
+Les vues appellent les memes services que l'API (identification, devis,
+creation idempotente, statuts publics) : aucune regle metier n'est
+dupliquee ici, et aucun modele n'est modifie directement.
+"""
+
+from __future__ import annotations
+
+import secrets
+from decimal import Decimal, InvalidOperation
+from urllib.parse import urlencode
+
+from django.conf import settings
+from django.contrib import messages
+from django.core.paginator import Paginator
+from django.http import Http404
+from django.shortcuts import redirect, render
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.translation import gettext as _
+from django.views.decorators.http import require_http_methods, require_POST
+
+from apps.accounts import otp
+from apps.accounts import services as accounts
+from apps.api import services as api_services
+from apps.api.status import payment_instructions, public_status
+from apps.transactions import services as transactions
+from apps.transactions.models import Transaction
+from apps.transactions.pricing import MIN_NET, AmountTooLarge, AmountTooSmall
+
+from . import ratelimit
+from .forms import CodeForm, PhoneForm, TransferForm
+from .labels import LIVE_STATUSES
+from .session import customer_required, get_customer, login_customer, logout_customer
+
+DRAFT_KEY = "web:draft"
+PENDING_KEY = "web:pending"
+LOGIN_PHONE_KEY = "web:login_phone"
+#: Demandes de confirmation gardees en session (une par cle d'idempotence).
+MAX_PENDING = 5
+
+
+def _route_error_message(exc: Exception) -> str:
+    if isinstance(exc, transactions.MethodDisabled):
+        return _("Ce moyen de paiement est momentanément indisponible. Choisissez-en un autre.")
+    if isinstance(exc, AmountTooSmall):
+        return _("Le montant minimum est de %(amount)s HTG.") % {"amount": MIN_NET}
+    if isinstance(exc, AmountTooLarge):
+        return _("Le montant maximum est de %(amount)s HTG.") % {"amount": settings.PRICING["MAX_NET_AMOUNT"]}
+    return _("Cette combinaison de portefeuilles n'est pas proposée.")
+
+
+ROUTE_ERRORS = (transactions.UnsupportedRoute, AmountTooSmall, AmountTooLarge)
+
+
+def _safe_next(request, default: str) -> str:
+    target = request.POST.get("next") or request.GET.get("next") or ""
+    if target and url_has_allowed_host_and_scheme(target, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        return target
+    return default
+
+
+# ----------------------------------------------------------------------
+# Envoi
+# ----------------------------------------------------------------------
+def home(request):
+    wallets = transactions.wallet_availability()
+    form = TransferForm(initial=request.session.get(DRAFT_KEY), wallets=wallets)
+    return render(request, "web/home.html", {"form": form, "min_net": MIN_NET})
+
+
+@require_POST
+def quote(request):
+    """Fragment HTMX : devis en direct pendant la saisie."""
+    if not ratelimit.allow("quote_ip", ratelimit.client_ip(request)):
+        return render(request, "web/partials/quote.html", {"error": _("Trop de demandes. Patientez une minute.")})
+    try:
+        net_amount = Decimal(request.POST.get("net_amount", "").replace(",", "."))
+    except InvalidOperation:
+        return render(request, "web/partials/quote.html", {})
+    try:
+        q = transactions.quote_transfer(
+            source_wallet=request.POST.get("source_wallet", ""),
+            destination_wallet=request.POST.get("destination_wallet", ""),
+            net_amount=net_amount,
+        )
+    except ROUTE_ERRORS as exc:
+        return render(request, "web/partials/quote.html", {"error": _route_error_message(exc)})
+    return render(request, "web/partials/quote.html", {"quote": q})
+
+
+@require_POST
+def send(request):
+    wallets = transactions.wallet_availability()
+    form = TransferForm(request.POST, wallets=wallets)
+    if form.is_valid():
+        data = form.cleaned_data
+        try:
+            transactions.quote_transfer(
+                source_wallet=data["source_wallet"],
+                destination_wallet=data["destination_wallet"],
+                net_amount=data["net_amount"],
+            )
+        except ROUTE_ERRORS as exc:
+            form.add_error(None, _route_error_message(exc))
+    if not form.is_valid():
+        return render(request, "web/home.html", {"form": form, "min_net": MIN_NET}, status=400)
+
+    request.session[DRAFT_KEY] = {k: str(v) for k, v in form.cleaned_data.items()}
+    return redirect("web:confirm")
+
+
+@customer_required
+@require_http_methods(["GET", "POST"])
+def confirm(request):
+    if request.method == "POST":
+        return _confirm_post(request)
+
+    draft = request.session.get(DRAFT_KEY)
+    if not draft:
+        return redirect("web:home")
+    try:
+        q = transactions.quote_transfer(
+            source_wallet=draft["source_wallet"],
+            destination_wallet=draft["destination_wallet"],
+            net_amount=Decimal(draft["net_amount"]),
+        )
+    except ROUTE_ERRORS as exc:
+        messages.error(request, _route_error_message(exc))
+        return redirect("web:home")
+    return _render_confirm(request, draft, q)
+
+
+def _render_confirm(request, draft: dict, q, *, status: int = 200):
+    # Une cle par page de confirmation : un double envoi du formulaire rejoue
+    # la meme cle, et ne cree qu'un seul transfert.
+    key = secrets.token_urlsafe(18)
+    pending = request.session.get(PENDING_KEY, {})
+    pending[key] = draft
+    request.session[PENDING_KEY] = dict(list(pending.items())[-MAX_PENDING:])
+    return render(
+        request,
+        "web/confirm.html",
+        {"draft": draft, "quote": q, "idempotency_key": key},
+        status=status,
+    )
+
+
+def _confirm_post(request):
+    key = request.POST.get("idempotency_key", "")
+    draft = request.session.get(PENDING_KEY, {}).get(key)
+    if draft is None:
+        messages.error(request, _("Cette confirmation a expiré. Vérifiez à nouveau votre envoi."))
+        return redirect("web:confirm" if request.session.get(DRAFT_KEY) else "web:home")
+    try:
+        expected_total = Decimal(request.POST.get("expected_total", ""))
+    except InvalidOperation:
+        messages.error(request, _("Cette confirmation a expiré. Vérifiez à nouveau votre envoi."))
+        return redirect("web:confirm")
+
+    if not ratelimit.allow("transfer_create_customer", request.customer.pk):
+        messages.error(request, _("Trop de transferts en peu de temps. Réessayez plus tard."))
+        return redirect("web:transfers")
+
+    try:
+        outcome = api_services.create_transfer(
+            customer=request.customer,
+            idempotency_key=key,
+            source_wallet=draft["source_wallet"],
+            destination_wallet=draft["destination_wallet"],
+            recipient_phone=draft["recipient_phone"],
+            sender_phone=draft.get("sender_phone", ""),
+            net_amount=Decimal(draft["net_amount"]),
+            expected_total=expected_total,
+        )
+    except api_services.QuoteChanged as exc:
+        messages.warning(request, _("Les frais ont changé depuis votre saisie. Vérifiez le nouveau total avant de confirmer."))
+        return _render_confirm(request, draft, exc.quote, status=409)
+    except ROUTE_ERRORS as exc:
+        messages.error(request, _route_error_message(exc))
+        return redirect("web:home")
+    except (api_services.IdempotencyKeyReused, api_services.IdempotencyInProgress):
+        messages.error(request, _("Cette demande est déjà en cours de traitement."))
+        return redirect("web:transfers")
+
+    if outcome.payment_failed:
+        messages.error(request, _("Le paiement n'a pas pu être créé. Aucun montant n'a été débité. Vous pouvez réessayer."))
+    request.session.pop(DRAFT_KEY, None)
+    return redirect("web:transfer_detail", reference=outcome.transaction.reference)
+
+
+# ----------------------------------------------------------------------
+# Suivi
+# ----------------------------------------------------------------------
+@customer_required
+def transfers(request):
+    page = Paginator(Transaction.objects.filter(customer=request.customer).order_by("-created_at", "-id"), 20)
+    return render(request, "web/transfers.html", {"page": page.get_page(request.GET.get("page"))})
+
+
+def _own_transfer(request, reference: str) -> Transaction:
+    # 404 pour la transaction d'un autre client : ne pas confirmer qu'elle existe.
+    txn = Transaction.objects.filter(customer=request.customer, reference=reference).first()
+    if txn is None:
+        raise Http404
+    return txn
+
+
+def _transfer_context(txn: Transaction) -> dict:
+    status = public_status(txn.state)
+    return {
+        "txn": txn,
+        "status": status,
+        "live": status in LIVE_STATUSES,
+        "payment": payment_instructions(txn, status),
+    }
+
+
+@customer_required
+def transfer_detail(request, reference: str):
+    return render(request, "web/transfer_detail.html", _transfer_context(_own_transfer(request, reference)))
+
+
+@customer_required
+def transfer_status(request, reference: str):
+    """Fragment HTMX rafraichi tant que le transfert n'est pas termine."""
+    return render(request, "web/partials/transfer_status.html", _transfer_context(_own_transfer(request, reference)))
+
+
+# ----------------------------------------------------------------------
+# Connexion
+# ----------------------------------------------------------------------
+@require_http_methods(["GET", "POST"])
+def login(request):
+    next_url = _safe_next(request, reverse("web:transfers"))
+    if get_customer(request) is not None:
+        return redirect(next_url)
+    form = PhoneForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        phone = form.cleaned_data["phone"]
+        ip = ratelimit.client_ip(request)
+        allowed = (
+            ratelimit.allow("otp_request_phone_burst", phone)
+            and ratelimit.allow("otp_request_phone", phone)
+            and ratelimit.allow("otp_request_ip", ip)
+        )
+        if not allowed:
+            form.add_error(None, _("Trop de demandes de code pour ce numéro. Patientez avant de réessayer."))
+        else:
+            try:
+                accounts.request_code(phone)
+            except otp.OTPRateLimited:
+                form.add_error(None, _("Trop de demandes de code pour ce numéro. Patientez avant de réessayer."))
+            except otp.OTPInvalidPhone:
+                form.add_error("phone", _("Ce numéro ne peut pas recevoir de SMS."))
+            except otp.OTPUnavailable:
+                form.add_error(None, _("L'envoi du SMS est momentanément impossible. Réessayez dans quelques minutes."))
+            else:
+                request.session[LOGIN_PHONE_KEY] = phone
+                return redirect(f"{reverse('web:login_code')}?{urlencode({'next': next_url})}")
+    return render(request, "web/login.html", {"form": form, "next": next_url})
+
+
+@require_http_methods(["GET", "POST"])
+def login_code(request):
+    next_url = _safe_next(request, reverse("web:transfers"))
+    phone = request.session.get(LOGIN_PHONE_KEY)
+    if not phone:
+        return redirect("web:login")
+    form = CodeForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        if not ratelimit.allow("otp_verify_phone", phone):
+            form.add_error(None, _("Trop de tentatives. Demandez un nouveau code plus tard."))
+        else:
+            try:
+                customer = accounts.authenticate_code(phone, form.cleaned_data["code"])
+            except accounts.InvalidCode:
+                form.add_error("code", _("Code invalide ou expiré."))
+            except accounts.CustomerDisabled:
+                form.add_error(None, _("Ce compte est désactivé. Contactez le support."))
+            except otp.OTPRateLimited:
+                form.add_error(None, _("Trop de tentatives. Demandez un nouveau code."))
+            except otp.OTPUnavailable:
+                form.add_error(None, _("La vérification est momentanément impossible. Réessayez dans quelques minutes."))
+            else:
+                # cycle_key() conserve la session : le brouillon d'envoi survit.
+                login_customer(request, customer)
+                request.session.pop(LOGIN_PHONE_KEY, None)
+                return redirect(next_url)
+    return render(request, "web/login_code.html", {"form": form, "phone": phone, "next": next_url})
+
+
+@require_POST
+def logout(request):
+    logout_customer(request)
+    return redirect("web:home")

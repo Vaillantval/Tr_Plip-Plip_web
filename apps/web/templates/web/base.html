@@ -1,0 +1,52 @@
+{% load static i18n %}<!doctype html>
+{% get_current_language as LANGUAGE_CODE %}
+<html lang="{{ LANGUAGE_CODE }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Plip-Plip{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'web/app.css' %}">
+  <script src="{% static 'web/htmx-2.0.4.min.js' %}" defer></script>
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  <header class="top">
+    <a class="brand" href="{% url 'web:home' %}">Plip<span>-</span>Plip</a>
+    <nav>
+      {% if request.customer %}
+        <a href="{% url 'web:transfers' %}">{% translate "Mes transferts" %}</a>
+        <form method="post" action="{% url 'web:logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="link">{% translate "Déconnexion" %}</button>
+        </form>
+      {% else %}
+        <a href="{% url 'web:login' %}">{% translate "Se connecter" %}</a>
+      {% endif %}
+    </nav>
+  </header>
+
+  <main class="wrap">
+    {% if messages %}
+      {% for message in messages %}
+        <p class="alert {{ message.level_tag }}" role="status">{{ message }}</p>
+      {% endfor %}
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="foot">
+    <span>{% translate "Un portefeuille vers l'autre. Simplement." %}</span>
+    <form method="post" action="{% url 'set_language' %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      <label for="language" class="muted">{% translate "Langue" %}</label>
+      <select id="language" name="language">
+        {% get_available_languages as LANGUAGES %}
+        {% for code, name in LANGUAGES %}
+          <option value="{{ code }}"{% if code == LANGUAGE_CODE %} selected{% endif %}>{{ name }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="secondary">{% translate "OK" %}</button>
+    </form>
+  </footer>
+</body>
+</html>

@@ -25,9 +25,39 @@ pytest
 | `apps/ledger` | Grand livre en partie double, append-only. |
 | `apps/treasury` | Suivi du float, seuils, projection de rupture. |
 | `apps/accounts` | Utilisateurs, rôles d'exploitation, journal d'audit. |
-| `apps/console` | Dashboard superadmin (Django templates + HTMX). |
+| `apps/web` | Site client (`/`) : envoi, paiement, suivi. Français, créole, anglais. |
+| `apps/console` | Console d'exploitation (`/console/`, Django templates + HTMX). |
 | `apps/api` | API publique v1 (DRF) pour le front web et l'app Flutter. |
 | `apps/providers/twilio` | Seul module qui parle à Twilio Verify (codes SMS). |
+
+## Site client — `/`
+
+Pages Django + HTMX, mobile d'abord, sans dépendance à un CDN (HTMX 2.0.4
+est embarqué dans `apps/web/static/web/`). Les vues appellent les mêmes
+services que l'API : aucune règle métier n'y est dupliquée.
+
+- **Parcours** : envoi avec devis en direct → connexion par code SMS →
+  confirmation (« Payer X HTG ») → paiement plopplop dans un nouvel onglet
+  ou demande USSD → page de suivi rafraîchie toutes les 5 s → historique.
+- **Session client** en cookie `HttpOnly`, distincte de la console : une
+  session client n'ouvre pas la console et inversement. Identifiant de
+  session renouvelé à la connexion, déconnexion après 30 min d'inactivité
+  (`WEB_SESSION_IDLE_SECONDS`).
+- **Double clic** : chaque page de confirmation porte sa clé d'idempotence ;
+  un double envoi ne crée qu'un transfert.
+- **Langues** : français par défaut, créole haïtien (`ht`) et anglais,
+  choix en pied de page. Après modification d'un texte :
+
+  ```bash
+  python manage.py makemessages -l en -l ht --no-location --ignore ".venv/*"
+  # traduire dans apps/web/locale/<langue>/LC_MESSAGES/django.po, puis :
+  python manage.py compilemessages --ignore ".venv/*"
+  ```
+
+  Les `.mo` compilés sont versionnés. La traduction créole est à faire
+  relire par un locuteur natif.
+- **Production** : fichiers statiques servis par WhiteNoise
+  (`python manage.py collectstatic`).
 
 ## API publique — `/api/v1/`
 
@@ -92,7 +122,72 @@ Le grand livre refuse une écriture dont la somme n'est pas nulle, et
 n'accepte ni modification ni suppression. Une erreur se corrige par une
 contre-écriture.
 
-## Déploiement — la contrainte du cooldown
+## Déploiement Railway
+
+Une seule image (`Dockerfile`, Python 3.13), quatre services qui ne
+diffèrent que par leur commande de démarrage, plus Postgres et Redis.
+
+| Service Railway | Config-as-code path | Rôle | Répliques |
+|---|---|---|---|
+| `web` | `/railway.toml` (défaut) | Site, API, console. Pré-déploiement `manage.py predeploy`, healthcheck `/health/` | 1 ou plus |
+| `celery-payouts` | `/railway-celery-payouts.toml` | **Seul** exécutant des retraits plopplop (file `payouts`, concurrence 1) | **1, jamais plus** |
+| `celery-worker` | `/railway-celery.toml` | Polling des paiements, vérifications, float (file `celery`) | 1 ou plus |
+| `celery-beat` | `/railway-beat.toml` | Planificateur | **1, jamais plus** |
+| `Postgres` | — | Base (service Railway) | — |
+| `Redis` | — | Broker Celery, cache, verrou des retraits (service Railway) | — |
+
+Mise en place :
+
+1. Créer le projet, ajouter **Postgres** et **Redis**.
+2. Créer les 4 services depuis le dépôt GitHub. Pour chacun sauf `web` :
+   *Settings → Config-as-code → path* vers son fichier `.toml`.
+3. Renseigner les variables (ci-dessous). Les variables marquées « tous »
+   doivent être présentes sur les 4 services : les workers chargent les
+   mêmes réglages de production et refusent de démarrer sans elles.
+4. Générer un domaine public sur `web` uniquement.
+5. Créer le premier compte de la console :
+   `railway ssh --service web -- python manage.py createsuperuser`, puis
+   lui donner le rôle `superadmin` et valider la tarification.
+
+`manage.py predeploy` (avant chaque mise en service de `web`) exécute
+`check --deploy`, les migrations et `init_ledger` ; s'il échoue, l'ancienne
+version reste en ligne.
+
+### Variables d'environnement
+
+| Variable | Services | Valeur |
+|---|---|---|
+| `DJANGO_SECRET_KEY` | tous | Chaîne aléatoire d'au moins 50 caractères |
+| `DATABASE_URL` | tous | `${{Postgres.DATABASE_URL}}` |
+| `REDIS_URL` | tous | `${{Redis.REDIS_URL}}` |
+| `PLOPPLOP_CLIENT_ID` · `PLOPPLOP_CLIENT_SECRET` | tous | Identifiants marchand plopplop |
+| `TWILIO_ACCOUNT_SID` · `TWILIO_AUTH_TOKEN` · `TWILIO_VERIFY_SERVICE_SID` | tous | Compte et service Twilio Verify |
+| `DJANGO_ALLOWED_HOSTS` | web | Domaines personnalisés, séparés par des virgules (le domaine `*.up.railway.app` est ajouté automatiquement) |
+| `CSRF_TRUSTED_ORIGINS` | web | Facultatif : origines `https://…` supplémentaires |
+| `API_NUM_PROXIES` | web | `1` (proxy Railway devant l'application ; sans cela, les limites par IP se basent sur l'adresse du proxy) |
+| `DATABASE_SSL_REQUIRE` | tous | Facultatif, `1` pour exiger TLS vers Postgres |
+
+Réglages facultatifs, valeurs par défaut dans `.env.example` :
+`PAYOUT_COOLDOWN_SECONDS`, `PAYOUT_MAX_ATTEMPTS`, `PAYMENT_EXPIRY_SECONDS`,
+`PAYOUT_PENDING_STALE_SECONDS`, `PAYOUT_VERIFY_GRACE_SECONDS`,
+`MAX_NET_AMOUNT`, `FLOAT_WARNING`, `FLOAT_CRITICAL`,
+`API_TOKEN_TTL_SECONDS`, `WEB_SESSION_IDLE_SECONDS`, `API_DOCS_ENABLED`.
+
+`DJANGO_SETTINGS_MODULE=config.settings.prod` est fixé dans l'image.
+
+### Points de vigilance
+
+- **Config as Code est déprécié par Railway** : les fichiers `railway*.toml`
+  fonctionnent jusqu'au **1er décembre 2026**. Migrer avant vers
+  l'Infrastructure as Code (`railway config migrate`).
+- **IP de sortie.** Le cooldown plopplop est compté par IP. Si plopplop
+  doit mettre notre IP en liste blanche, il faut une IP sortante fixe
+  (option Railway « Static Outbound IPs ») sur `celery-payouts`, et sur
+  `web` / `celery-worker` si plopplop filtre aussi l'encaissement.
+- **Pas d'environnement de test chez plopplop** : le premier déploiement
+  parle à la production plopplop. Recette avec de petits montants.
+
+## La contrainte du cooldown
 
 plopplop impose **120 secondes entre deux retraits, par IP**. La limite
 est donc globale à la plateforme, pas par utilisateur. Le décaissement
