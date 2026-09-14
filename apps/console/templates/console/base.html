@@ -16,7 +16,7 @@
     <a href="{% url 'console:transactions' %}" class="{% if current == 'transactions' or current == 'transaction_detail' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Transactions</a>
     <a href="{% url 'console:exceptions' %}" class="{% if current == 'exceptions' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Exceptions</a>
     <a href="{% url 'console:treasury' %}" class="{% if current == 'treasury' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Tresorerie</a>
-    <a href="{% url 'console:methods' %}" class="{% if current == 'methods' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Methodes</a>
+    <a href="{% url 'console:methods' %}" class="{% if current == 'methods' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Methodes et tarifs</a>
     <span class="ml-auto text-slate-500">{{ request.user }} — {{ request.user.get_role_display }}</span>
   </nav>
   {% endwith %}

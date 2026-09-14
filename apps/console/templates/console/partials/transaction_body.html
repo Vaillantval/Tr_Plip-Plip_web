@@ -60,6 +60,8 @@
           <tr><td class="px-3 py-1.5 text-slate-600">Frais sortie</td><td class="px-3 py-1.5 text-right font-mono">{{ txn.fee_out|htg }}</td></tr>
           <tr><td class="px-3 py-1.5 text-slate-600">Commission plateforme</td><td class="px-3 py-1.5 text-right font-mono">{{ txn.fee_platform|htg }}</td></tr>
           <tr class="bg-slate-50 font-semibold"><td class="px-3 py-1.5">Total debite au payeur</td><td class="px-3 py-1.5 text-right font-mono">{{ txn.total_charged|htg }}</td></tr>
+          <tr><td class="px-3 py-1.5 text-slate-600">Cout encaissement plopplop (estime)</td><td class="px-3 py-1.5 text-right font-mono">{{ txn.provider_fee_in|htg }}</td></tr>
+          <tr><td class="px-3 py-1.5 text-slate-600">Cout retrait plopplop (estime)</td><td class="px-3 py-1.5 text-right font-mono">{{ txn.provider_fee_out_estimate|htg }}</td></tr>
           <tr><td class="px-3 py-1.5 text-slate-600">Frais operateur reels</td><td class="px-3 py-1.5 text-right font-mono">{% if txn.payout_fee_actual is not None %}{{ txn.payout_fee_actual|htg }}{% else %}<span class="font-sans text-slate-400">non verse</span>{% endif %}</td></tr>
           <tr><td class="px-3 py-1.5 text-slate-600">Marge estimee</td><td class="px-3 py-1.5 text-right font-mono {% if txn.margin_estimate < 0 %}font-semibold text-red-700{% endif %}">{{ txn.margin_estimate|htg }}</td></tr>
         </tbody>

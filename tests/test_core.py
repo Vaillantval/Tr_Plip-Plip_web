@@ -168,9 +168,11 @@ def test_full_conversion_keeps_books_balanced():
     assert txn.state == State.COMPLETED
     assert txn.payout_fee_actual == Decimal("25")
 
-    # La dette est eteinte et le float a baisse de 1025.
+    # La dette est eteinte. Le float a recu les 1090 encaisses -- doc plopplop :
+    # « les paiements clients creditent votre solde marchand (prepaye) » --
+    # puis perdu les 1025 decaisses : 10000 + 1090 - 1025.
     assert LedgerAccount.objects.get(code=ledger.CLIENTS_PAYABLE).balance() == Decimal("0.00")
-    assert LedgerAccount.objects.get(code=ledger.FLOAT).balance() == Decimal("8975.00")
+    assert LedgerAccount.objects.get(code=ledger.FLOAT).balance() == Decimal("10065.00")
 
     # Marge = 90 encaisses - 25 de frais reels.
     assert txn.margin_estimate == Decimal("65.00")

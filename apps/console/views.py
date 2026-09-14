@@ -22,12 +22,12 @@ from django.views.decorators.http import require_POST
 
 from apps.ledger import services as ledger
 from apps.transactions import services as txn_services
-from apps.transactions.models import Transaction
+from apps.transactions.models import Transaction, Wallet
 from apps.transactions.states import IllegalTransition, State, can
 from apps.treasury import services as treasury
 from apps.treasury.models import FloatAlert, FloatSnapshot
 
-from .forms import RefundForm, ReleaseForm, TopupForm
+from .forms import RATE_INPUTS, PricingForm, RefundForm, ReleaseForm, TopupForm, pricing_field_name
 from .permissions import audit_failure, require_acting_role, require_superadmin
 
 EXCEPTION_STATES = (State.PAYOUT_FAILED, State.PAYOUT_UNKNOWN, State.PAYOUT_PENDING)
@@ -65,6 +65,7 @@ def available_actions(txn: Transaction) -> dict:
 def dashboard(request):
     liabilities = Transaction.objects.liabilities()
     context = {
+        "pricing": txn_services.pricing_overview(),
         "float": treasury.float_status(),
         "liability_count": liabilities.count(),
         "liability_total": liabilities.aggregate(t=Sum("net_amount"))["t"] or 0,
@@ -204,15 +205,86 @@ def treasury_view(request):
     return render(request, "console/treasury.html", _treasury_context())
 
 
+def _percent(rate) -> Decimal:
+    return (rate * 100).quantize(Decimal("0.01"))
+
+
+def _methods_context(*, pricing_form=None) -> dict:
+    overview = txn_services.pricing_overview()
+    if pricing_form is None:
+        initial = {"platform_fee_rate": _percent(overview["policy"].platform_fee_rate)}
+        for wallet in overview["wallets"]:
+            for field, _, _ in RATE_INPUTS:
+                initial[pricing_field_name(wallet["wallet"], field)] = _percent(wallet[field])
+        pricing_form = PricingForm(initial=initial, wallets=overview["wallets"])
+    rate_rows = [
+        {
+            "wallet": wallet,
+            "cells": [
+                {
+                    "field": field,
+                    "label": label,
+                    "applicable": wallet["payout_capable"] or not payout_only,
+                    "bound": pricing_form[pricing_field_name(wallet["wallet"], field)]
+                    if wallet["payout_capable"] or not payout_only
+                    else None,
+                    "percent": _percent(wallet[field]),
+                }
+                for field, label, payout_only in RATE_INPUTS
+            ],
+        }
+        for wallet in overview["wallets"]
+    ]
+    return {
+        "rows": overview["wallets"],
+        "pricing": overview,
+        "pricing_form": pricing_form,
+        "rate_rows": rate_rows,
+        "rate_labels": [label for _, label, _ in RATE_INPUTS],
+    }
+
+
 @login_required
 def payment_methods(request):
-    return render(request, "console/methods.html", {"rows": txn_services.wallet_availability()})
+    return render(request, "console/methods.html", _methods_context())
 
 
-def _after_methods_action(request):
+def _after_methods_action(request, *, pricing_form=None):
     if not _is_htmx(request):
         return redirect("console:methods")
-    return render(request, "console/partials/methods_body.html", {"rows": txn_services.wallet_availability()})
+    return render(request, "console/partials/methods_body.html", _methods_context(pricing_form=pricing_form))
+
+
+PRICING_AUDIT_FIELDS = ("platform_fee_rate",) + tuple(
+    pricing_field_name(wallet, field) for wallet in Wallet.values for field, _, _ in RATE_INPUTS
+)
+
+
+@login_required
+@require_POST
+@require_superadmin("pricing.update", audit_fields=PRICING_AUDIT_FIELDS)
+def pricing_update(request):
+    form = PricingForm(request.POST, wallets=txn_services.wallet_availability())
+    if form.is_valid():
+        platform_fee_rate, wallet_rates = form.rates()
+        try:
+            txn_services.update_pricing(
+                platform_fee_rate=platform_fee_rate, wallet_rates=wallet_rates, actor=request.user
+            )
+        except txn_services.InvalidPricing as exc:
+            form.add_error(None, str(exc))
+
+    if form.errors:
+        audit_failure(request, "pricing.update", error=_form_errors(form))
+        messages.error(request, f"Tarification NON enregistree : {_form_errors(form)}")
+        return _after_methods_action(request, pricing_form=form)
+
+    messages.success(
+        request,
+        "Tarification enregistree et validee. Elle s'applique aux nouveaux devis ; "
+        "les transactions deja creees gardent leur devis.",
+    )
+    return _after_methods_action(request)
 
 
 # ----------------------------------------------------------------------

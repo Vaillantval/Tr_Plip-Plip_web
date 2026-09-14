@@ -51,6 +51,18 @@ class WalletSetting(models.Model):
     wallet = models.CharField(max_length=16, choices=Wallet.choices, unique=True)
     payment_enabled = models.BooleanField(default=False)
     payout_enabled = models.BooleanField(default=False)
+
+    # Tarif CLIENT : ce que Plip-Plip facture, en taux decimal (0.03 = 3 %).
+    # payment_fee_rate s'applique quand le portefeuille est la source,
+    # payout_fee_rate quand il est la destination. Base : montant net.
+    payment_fee_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0)
+    payout_fee_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0)
+    # Cout PLOPPLOP : ce que plopplop retient, pour les estimations
+    # (grand livre, couverture, marge). Encaissement : base = montant paye.
+    # Retrait : base = montant net (doc : fee 12,5 sur 500 en NatCash).
+    # Le montant reel retourne par l'API prime toujours sur l'estimation.
+    payment_cost_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0)
+    payout_cost_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0)
     updated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
@@ -67,6 +79,23 @@ class WalletSetting(models.Model):
 
     def __str__(self) -> str:
         return f"{self.get_wallet_display()} (entree={self.payment_enabled}, sortie={self.payout_enabled})"
+
+
+class PricingPolicy(models.Model):
+    """Reglages de tarification globaux. Une seule ligne (pk=1).
+
+    `reviewed_at` reste vide tant qu'un superadmin n'a pas enregistre la
+    tarification depuis la console : le tableau de bord le lui signale.
+    """
+
+    platform_fee_rate = models.DecimalField(max_digits=6, decimal_places=4, default=0)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self) -> str:
+        return f"Commission plateforme {self.platform_fee_rate}"
 
 
 class TransactionQuerySet(models.QuerySet):
@@ -117,6 +146,9 @@ class Transaction(models.Model):
     fee_out = models.DecimalField(max_digits=12, decimal_places=2)
     fee_platform = models.DecimalField(max_digits=12, decimal_places=2)
     total_charged = models.DecimalField(max_digits=12, decimal_places=2)
+    # Couts plopplop estimes, figes a la creation avec le devis.
+    provider_fee_in = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    provider_fee_out_estimate = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
     # Cote encaissement
     payment_provider_id = models.CharField(max_length=64, blank=True)
@@ -166,11 +198,14 @@ class Transaction(models.Model):
     # ------------------------------------------------------------------
     @property
     def margin_estimate(self) -> Decimal:
-        """Marge estimee. Negative si les frais reels depassent le devis."""
+        """Marge estimee : frais factures moins couts plopplop.
+
+        Frais de retrait reels des qu'ils sont connus, estimation figee
+        sinon. Negative si les couts depassent le devis.
+        """
         collected = self.fee_in + self.fee_out + self.fee_platform
-        if self.payout_fee_actual is None:
-            return collected
-        return collected - self.payout_fee_actual
+        payout_cost = self.payout_fee_actual if self.payout_fee_actual is not None else self.provider_fee_out_estimate
+        return collected - self.provider_fee_in - payout_cost
 
     @property
     def is_liability(self) -> bool:

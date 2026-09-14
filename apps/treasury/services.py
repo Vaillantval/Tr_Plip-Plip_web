@@ -7,7 +7,7 @@ from django.conf import settings
 from django.db.models import Sum
 from django.utils import timezone
 
-from apps.ledger.models import LedgerAccount
+from apps.ledger.models import LedgerAccount, LedgerLine
 from apps.ledger.services import FLOAT
 from apps.transactions.models import Transaction
 from apps.transactions.states import LIABILITY_STATES, State
@@ -59,15 +59,32 @@ def burn_rate(hours: int = 24) -> Decimal:
     return (agg["net"] or ZERO) + (agg["fees"] or ZERO)
 
 
-def _runway(balance: Decimal, burn_24h: Decimal) -> Decimal | None:
-    if burn_24h <= ZERO:
+def float_net_flow(hours: int = 24) -> Decimal:
+    """Variation du float due a l'activite sur la periode (hors rechargements).
+
+    Les encaissements creditent le float, les decaissements le debitent :
+    en regime normal le flux net est positif. Seules les ecritures liees a
+    une transaction sont comptees, pour exclure rechargements et
+    mouvements de tresorerie.
+    """
+    since = timezone.now() - timedelta(hours=hours)
+    agg = LedgerLine.objects.filter(
+        account__code=FLOAT, entry__transaction__isnull=False, entry__created_at__gte=since
+    ).aggregate(total=Sum("amount"))
+    # Ramene au centime : SQLite somme les decimales en virgule flottante.
+    return Decimal(agg["total"] or 0).quantize(Decimal("0.01"))
+
+
+def _runway(balance: Decimal, net_flow_24h: Decimal) -> Decimal | None:
+    """None quand l'activite ne consomme pas le float."""
+    if net_flow_24h >= ZERO:
         return None
-    return (balance / burn_24h) * Decimal("24")
+    return (balance / -net_flow_24h) * Decimal("24")
 
 
 def runway_hours() -> Decimal | None:
-    """Heures restantes avant rupture, au rythme des dernieres 24 h."""
-    return _runway(ledger_float_balance(), burn_rate(24))
+    """Heures restantes avant rupture, au flux net des dernieres 24 h."""
+    return _runway(ledger_float_balance(), float_net_flow(24))
 
 
 def _alert_level(balance: Decimal, liability: Decimal) -> tuple[str | None, str]:
@@ -95,6 +112,7 @@ def float_status() -> dict:
     balance = ledger_float_balance()
     liability = outstanding_liability()
     burn = burn_rate(24)
+    net_flow = float_net_flow(24)
     level, message = _alert_level(balance, liability)
     return {
         "balance": balance,
@@ -105,7 +123,8 @@ def float_status() -> dict:
         "level": level or "ok",
         "message": message,
         "burn_24h": burn,
-        "runway_hours": _runway(balance, burn),
+        "net_flow_24h": net_flow,
+        "runway_hours": _runway(balance, net_flow),
         "thresholds": settings.TREASURY["THRESHOLDS"],
     }
 
@@ -147,28 +166,33 @@ def queue_coverage() -> dict:
     les decaissements deja lances mais pas encore comptabilises (en vol,
     indetermines, en attente) : ceux-la passent avant.
 
-    Chaque decaissement consomme le net plus les frais operateur, estimes
-    comme dans _settle_payout (fee_in + fee_out) tant que le montant reel
-    n'est pas connu.
+    Chaque decaissement consomme le net plus le cout de retrait plopplop
+    estime et fige sur la transaction (provider_fee_out_estimate), comme
+    dans _settle_payout tant que le montant reel n'est pas connu.
+
+    Les encaissements de la file sont deja sur le float (ils le creditent
+    a la confirmation) : en regime normal la file se finance elle-meme, et
+    un calage signale une anomalie -- couts sous-estimes, remboursements,
+    retrait de tresorerie, ou encaissements bloques.
 
     `stall_rank` est le rang (1 = prochain decaisse) de la premiere
     transaction que le float ne couvre pas ; None si toute la file passe.
     """
     balance = ledger_float_balance()
     engaged = ZERO
-    for net, fee_in, fee_out in Transaction.objects.filter(
-        state__in=list(ENGAGED_OUTSIDE_QUEUE)
-    ).values_list("net_amount", "fee_in", "fee_out"):
-        engaged += net + fee_in + fee_out
+    for net, cost in Transaction.objects.filter(state__in=list(ENGAGED_OUTSIDE_QUEUE)).values_list(
+        "net_amount", "provider_fee_out_estimate"
+    ):
+        engaged += net + cost
     available = balance - engaged
 
     depth = 0
     total_net = total_debit = ZERO
     stall_rank = None
-    for net, fee_in, fee_out in Transaction.objects.payable().values_list("net_amount", "fee_in", "fee_out"):
+    for net, cost in Transaction.objects.payable().values_list("net_amount", "provider_fee_out_estimate"):
         depth += 1
         total_net += net
-        total_debit += net + fee_in + fee_out
+        total_debit += net + cost
         if stall_rank is None and total_debit > available:
             stall_rank = depth
 

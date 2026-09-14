@@ -101,17 +101,26 @@ def reverse(entry: JournalEntry, *, reason: str, posted_by=None) -> JournalEntry
 def record_payment_received(txn) -> JournalEntry:
     """Encaissement confirme : l'argent entre, et nous devenons debiteurs
     du montant net envers le beneficiaire.
+
+    L'argent arrive sur le FLOAT : d'apres la documentation plopplop, « les
+    paiements clients creditent votre solde marchand (prepaye) ». Le cout
+    d'encaissement plopplop estime (fige sur la transaction) en est deduit
+    et passe en charge ; l'ecart avec la realite remontera dans le drift des
+    releves de float.
     """
     fees = txn.fee_in + txn.fee_out + txn.fee_platform
+    lines = [
+        (FLOAT, txn.total_charged - txn.provider_fee_in, "credit du solde plopplop"),
+        (CLIENTS_PAYABLE, -txn.net_amount, "du au beneficiaire"),
+        (REVENUE_COMMISSION, -fees, "frais et commission encaisses"),
+    ]
+    if txn.provider_fee_in:
+        lines.append((EXPENSE_FEES, txn.provider_fee_in, "frais d'encaissement plopplop (estimes)"))
     return post(
         reference=txn.reference,
         description="Encaissement confirme",
         transaction=txn,
-        lines=[
-            (CASH_SETTLEMENT, txn.total_charged, "montant debite au payeur"),
-            (CLIENTS_PAYABLE, -txn.net_amount, "du au beneficiaire"),
-            (REVENUE_COMMISSION, -fees, "frais et commission encaisses"),
-        ],
+        lines=lines,
     )
 
 
@@ -134,8 +143,10 @@ def record_payout_executed(txn, *, actual_fee: Decimal) -> JournalEntry:
 def record_refund(txn, *, reason: str, transfer_reference: str, posted_by=None) -> JournalEntry:
     """Remboursement constate : on rend le total debite et on renonce aux frais.
 
-    Le transfert vers le payeur a deja ete fait hors systeme ; sa
-    reference figure dans la description, a cote du motif.
+    Le transfert vers le payeur a deja ete fait hors systeme, depuis la
+    tresorerie de l'entreprise (cash.settlement) : l'encaissement, lui,
+    reste sur le float. Sa reference figure dans la description, a cote
+    du motif. Un eventuel cout d'encaissement plopplop reste en charge.
     """
     fees = txn.fee_in + txn.fee_out + txn.fee_platform
     return post(
@@ -152,9 +163,9 @@ def record_refund(txn, *, reason: str, transfer_reference: str, posted_by=None) 
 
 
 def record_payment_held(txn, *, received: Decimal, posted_by=None, memo: str = "montant reellement recu") -> JournalEntry:
-    """Encaissement non conforme au devis : on constate ce qui est entre,
-    et la totalite en est due au payeur. Aucune commission n'est reconnue
-    tant que le transfert n'a pas ete debloque.
+    """Encaissement non conforme au devis : on constate ce qui est entre sur
+    le float, et la totalite en est due au payeur. Aucune commission n'est
+    reconnue tant que le transfert n'a pas ete debloque.
     """
     return post(
         reference=f"{txn.reference}-HOLD",
@@ -162,7 +173,7 @@ def record_payment_held(txn, *, received: Decimal, posted_by=None, memo: str = "
         transaction=txn,
         posted_by=posted_by,
         lines=[
-            (CASH_SETTLEMENT, received, memo),
+            (FLOAT, received, memo),
             (CLIENTS_PAYABLE, -received, "du au payeur, transfert bloque"),
         ],
     )

@@ -1,21 +1,57 @@
 {% extends "console/base.html" %}
+{% load console_tags %}
 {% block content %}
-<div class="grid grid-cols-3 gap-4">
-  <div class="rounded border bg-white p-4">
-    <div class="text-sm text-slate-500">Float disponible</div>
-    <div class="text-2xl">{{ float.balance }} HTG</div>
-    {% if not float.coverage_ok %}
-      <div class="mt-2 text-sm text-red-600">Ne couvre pas les engagements en cours</div>
-    {% endif %}
+<div class="space-y-4">
+  {% include "console/partials/pricing_banner.html" %}
+
+  <div class="grid grid-cols-3 gap-4">
+    <div class="rounded border bg-white p-4">
+      <div class="text-sm text-slate-500">Float disponible</div>
+      <div class="text-2xl">{{ float.balance|htg }} HTG</div>
+      {% if not float.coverage_ok %}
+        <div class="mt-2 text-sm text-red-600">Ne couvre pas les engagements en cours</div>
+      {% endif %}
+    </div>
+    <div class="rounded border bg-white p-4">
+      <div class="text-sm text-slate-500">Engagements</div>
+      <div class="text-2xl">{{ liability_total|htg }} HTG</div>
+      <div class="text-sm text-slate-500">{{ liability_count }} transaction(s)</div>
+    </div>
+    <div class="rounded border bg-white p-4">
+      <div class="text-sm text-slate-500">File de decaissement</div>
+      <div class="text-2xl">{{ queue_depth }}</div>
+    </div>
   </div>
-  <div class="rounded border bg-white p-4">
-    <div class="text-sm text-slate-500">Engagements</div>
-    <div class="text-2xl">{{ liability_total }} HTG</div>
-    <div class="text-sm text-slate-500">{{ liability_count }} transaction(s)</div>
+
+  {% if request.user.is_superadmin %}
+  <div data-pricing-card class="rounded border bg-white p-4">
+    <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+      <span class="font-medium">Tarification</span>
+      <span class="text-slate-500">commission Plip-Plip {{ pricing.policy.platform_fee_rate|percent_rate }}</span>
+      <span class="text-slate-500">
+        {% if pricing.unreviewed %}jamais validee{% else %}validee le {{ pricing.policy.reviewed_at|date:"d/m/Y H:i" }} par {{ pricing.policy.reviewed_by|default:"?" }}{% endif %}
+      </span>
+      <a class="ml-auto underline" href="{% url 'console:methods' %}#tarification">Modifier</a>
+    </div>
+    <div class="mt-2 overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="text-left text-xs uppercase tracking-wide text-slate-500">
+          <tr><th class="py-1 pr-3">Route ouverte</th><th class="py-1 pr-3 text-right">Client paie</th><th class="py-1 pr-3 text-right">Couts plopplop</th><th class="py-1 text-right">Marge</th></tr>
+        </thead>
+        <tbody class="divide-y">
+          {% for route in pricing.routes %}{% if route.open %}
+          <tr>
+            <td class="py-1 pr-3">{{ route.source.label }} → {{ route.destination.label }}</td>
+            <td class="py-1 pr-3 text-right font-mono">{{ route.quote.total_charged|htg }}</td>
+            <td class="py-1 pr-3 text-right font-mono">{{ route.cost_in|add_htg:route.cost_out|htg }}</td>
+            <td class="py-1 text-right font-mono {% if route.margin < 0 %}font-semibold text-red-700{% endif %}">{{ route.margin|htg }}</td>
+          </tr>
+          {% endif %}{% endfor %}
+        </tbody>
+      </table>
+      <p class="mt-1 text-xs text-slate-400">Pour {{ pricing.preview_net_amount|htg }} HTG recus par le beneficiaire.</p>
+    </div>
   </div>
-  <div class="rounded border bg-white p-4">
-    <div class="text-sm text-slate-500">File de decaissement</div>
-    <div class="text-2xl">{{ queue_depth }}</div>
-  </div>
+  {% endif %}
 </div>
 {% endblock %}

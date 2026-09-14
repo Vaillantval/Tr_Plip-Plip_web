@@ -60,6 +60,20 @@ def percent(ratio):
 
 
 @register.filter
+def percent_rate(rate):
+    """Taux decimal -> pourcentage lisible : 0.025 -> « 2,5 % »."""
+    if rate is None or rate == "":
+        return EMPTY
+    value = (Decimal(rate) * 100).quantize(Decimal("0.01")).normalize()
+    return f"{value:f}".replace(".", ",") + " %"
+
+
+@register.filter
+def add_htg(a, b):
+    return Decimal(a or 0) + Decimal(b or 0)
+
+
+@register.filter
 def state_label(value):
     try:
         return State(value).label

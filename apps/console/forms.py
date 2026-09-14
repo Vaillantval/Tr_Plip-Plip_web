@@ -21,6 +21,50 @@ class RefundForm(forms.Form):
     )
 
 
+def _percent_field(label: str) -> forms.DecimalField:
+    return forms.DecimalField(
+        label=label, max_digits=5, decimal_places=2, min_value=Decimal("0"), max_value=Decimal("49.99")
+    )
+
+
+#: (champ, libelle, sortie uniquement)
+RATE_INPUTS = (
+    ("payment_fee_rate", "Frais client a l'envoi", False),
+    ("payout_fee_rate", "Frais client a la reception", True),
+    ("payment_cost_rate", "Cout plopplop a l'encaissement", False),
+    ("payout_cost_rate", "Cout plopplop au retrait", True),
+)
+
+
+def pricing_field_name(wallet: str, field: str) -> str:
+    return f"{wallet}__{field}"
+
+
+class PricingForm(forms.Form):
+    """Tarifs saisis en POURCENTAGES (2,5 = 2,5 %), stockes en taux decimaux."""
+
+    platform_fee_rate = _percent_field("Commission Plip-Plip")
+
+    def __init__(self, *args, wallets, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.wallets = wallets
+        for wallet in wallets:
+            for field, label, payout_only in RATE_INPUTS:
+                if payout_only and not wallet["payout_capable"]:
+                    continue
+                self.fields[pricing_field_name(wallet["wallet"], field)] = _percent_field(f"{wallet['label']} — {label}")
+
+    def rates(self) -> tuple[Decimal, dict]:
+        data = self.cleaned_data
+        wallet_rates = {}
+        for wallet in self.wallets:
+            wallet_rates[wallet["wallet"]] = {
+                field: data.get(pricing_field_name(wallet["wallet"], field), Decimal("0")) / 100
+                for field, _, _ in RATE_INPUTS
+            }
+        return data["platform_fee_rate"] / 100, wallet_rates
+
+
 class ReleaseForm(forms.Form):
     """Deblocage d'un encaissement apres verification chez plopplop."""
 

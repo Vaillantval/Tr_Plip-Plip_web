@@ -123,14 +123,9 @@ PAYOUT_VERIFY_GRACE_SECONDS = int(env("PAYOUT_VERIFY_GRACE_SECONDS", "600"))
 # ----------------------------------------------------------------------
 # Tarification
 # ----------------------------------------------------------------------
-# Taux issus de la note conceptuelle, PAS d'une mesure. A recalibrer des
-# que plopplop aura communique ce qu'il retient sur un encaissement.
+# Les taux (frais client, couts plopplop, commission) se reglent dans la
+# console par le superadmin : ecran « Methodes et tarifs ».
 PRICING = {
-    "RATES": {
-        "in": Decimal(env("RATE_IN", "0.03")),
-        "out": Decimal(env("RATE_OUT", "0.03")),
-        "platform": Decimal(env("RATE_PLATFORM", "0.03")),
-    },
     "MAX_NET_AMOUNT": Decimal(env("MAX_NET_AMOUNT", "50000")),
 }
 

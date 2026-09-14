@@ -16,6 +16,18 @@ from decimal import Decimal
 from django.conf import settings
 from django.db import models
 
+CENT = Decimal("0.01")
+
+
+def _sum_to_cents(total) -> Decimal:
+    """Somme d'agregat ramenee au centime.
+
+    SQLite additionne les DecimalField en virgule flottante : une ecriture
+    equilibree peut sommer a -9e-14 au lieu de 0. Les montants ayant deux
+    decimales, l'arrondi au centime est exact. Sans effet sur Postgres.
+    """
+    return Decimal(total or 0).quantize(CENT)
+
 
 class AccountType(models.TextChoices):
     ASSET = "asset", "Actif"
@@ -48,7 +60,7 @@ class LedgerAccount(models.Model):
 
     def balance(self) -> Decimal:
         agg = self.lines.aggregate(total=models.Sum("amount"))
-        return agg["total"] or Decimal("0")
+        return _sum_to_cents(agg["total"])
 
 
 class JournalEntry(models.Model):
@@ -80,7 +92,7 @@ class JournalEntry(models.Model):
 
     def total(self) -> Decimal:
         agg = self.lines.aggregate(total=models.Sum("amount"))
-        return agg["total"] or Decimal("0")
+        return _sum_to_cents(agg["total"])
 
     def is_balanced(self) -> bool:
         return self.total() == Decimal("0")

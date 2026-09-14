@@ -1,0 +1,16 @@
+{% load console_tags %}
+{% if request.user.is_superadmin and pricing.unreviewed %}
+<div data-pricing-banner="unreviewed" class="rounded border-2 border-amber-400 bg-amber-50 px-3 py-2 text-amber-900">
+  <strong>Tarification a valider.</strong>
+  Les frais factures aux clients, les couts plopplop et la commission Plip-Plip sont reglables par vous seul, portefeuille par portefeuille.
+  Les valeurs actuelles sont celles de depart (frais client 3 % par cote, commission 3 %, retrait plopplop MonCash 4 % / NatCash 2,5 %, cout d'encaissement inconnu : 0 %).
+  <a class="font-medium underline" href="{% url 'console:methods' %}#tarification">Verifier et valider</a>
+</div>
+{% endif %}
+{% if pricing.loss_routes %}
+<div data-pricing-banner="loss" class="rounded border-2 border-red-500 bg-red-50 px-3 py-2 text-red-900">
+  <strong>Marge negative estimee</strong> sur {{ pricing.loss_routes|length }} route(s) ouverte(s) :
+  {% for route in pricing.loss_routes %}{{ route.source.label }} → {{ route.destination.label }} ({{ route.margin|htg }} HTG pour {{ pricing.preview_net_amount|htg }}){% if not forloop.last %}, {% endif %}{% endfor %}.
+  {% if request.user.is_superadmin %}<a class="font-medium underline" href="{% url 'console:methods' %}#tarification">Ajuster la tarification</a>{% endif %}
+</div>
+{% endif %}

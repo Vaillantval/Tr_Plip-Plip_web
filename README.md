@@ -114,25 +114,52 @@ un lot de 200 employés demanderait près de 7 heures. Le Payroll ne peut
 pas être construit sur ce dispositif tant que le plafond n'a pas été
 relevé.
 
+## Tarification
+
+Réglée par le **superadmin** dans la console (écran « Méthodes et tarifs »),
+jamais dans `.env`. Tant qu'elle n'a pas été validée, le tableau de bord
+le lui signale dès la connexion.
+
+- **Frais client** par portefeuille : à l'envoi (portefeuille source) et à
+  la réception (destination), plus la **commission Plip-Plip**. Base : le
+  montant reçu par le bénéficiaire.
+- **Coûts plopplop** par portefeuille : à l'encaissement et au retrait.
+  Ils servent aux estimations (grand livre, couverture de la file, marge) ;
+  le `fee` réel retourné par plopplop prime dès qu'il est connu.
+- Un devis et ses coûts estimés sont **figés** sur la transaction : changer
+  les taux ne touche que les nouveaux devis.
+- Une route ouverte à marge estimée négative est signalée à tous sur le
+  tableau de bord.
+
+Tarifs de départ : frais client 3 % par côté et commission 3 % (note
+conceptuelle), retrait plopplop MonCash 4 % et NatCash 2,5 % (plopplop),
+coût d'encaissement inconnu (0 %).
+
+**Les encaissements créditent le float.** Doc plopplop : « Les paiements
+clients créditent votre solde marchand (prépayé) ». Chaque transfert
+finance donc son propre décaissement ; le float ne sert que de tampon.
+
 ## Questions ouvertes à poser à plopplop
 
-Ces quatre points bloquent des décisions qu'on ne peut pas prendre seuls.
+Réponses de la documentation v1.6 (`/paiement-doc`) : les paiements
+créditent le solde prépayé ; `paiement-verify` renvoie `montant` ; les
+frais de retrait viennent de la configuration des moyens de paiement
+(2,5 % NatCash dans l'exemple) ; aucun environnement de test ; aucun
+webhook. Restent :
 
-1. **Que retient plopplop sur un encaissement ?** Non documenté. Sans ce
-   chiffre, le 3 + 3 + 3 = 9 % de la note conceptuelle est une hypothèse
-   et la marge affichée par le dashboard reste une estimation.
-2. **Quel est le barème réel du champ `fee` au retrait ?** L'exemple de
-   la doc donne 2,5 %, à confirmer et à ventiler par méthode.
-3. **Le cooldown de 120 s peut-il être relevé ou notre IP mise en liste
+1. **Que retient plopplop sur un encaissement ?** Non documenté. Réglé à
+   0 % en attendant ; le drift des relevés de float révélera l'écart.
+2. **Le cooldown de 120 s peut-il être relevé ou notre IP mise en liste
    blanche ?** Détermine si le Payroll est réalisable.
-4. **Une référence est-elle réutilisable après un retrait échoué ?** La
-   doc ne décrit `DUPLICATE_REFERENCE` que pour les retraits réussis. En
-   attendant, chaque tentative porte un suffixe `-W1`, `-W2`… et on ne
+3. **Une référence est-elle réutilisable après un retrait échoué ?** Non
+   documenté. Chaque tentative porte un suffixe `-W1`, `-W2`… et on ne
    réutilise jamais.
+4. **Carte : dans quelle devise `paiement-verify` renvoie-t-il `montant` ?**
+   La doc indique un débit en USD après conversion. S'il renvoie des USD,
+   chaque paiement carte sera bloqué en « montant non conforme ».
 
-Point mineur à faire trancher aussi : la doc se contredit sur la durée du
-jeton d'authentification — texte « ~1 minute », champ `expires_in: 300`.
-Le code ne met aucun jeton en cache.
+Pas d'environnement de test : la recette se fait en production, sur de
+petits montants (20 HTG minimum).
 
 ## Écarts assumés avec la note conceptuelle
 

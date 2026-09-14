@@ -80,9 +80,9 @@ def test_any_amount_difference_holds_the_transfer_before_the_queue(books, receiv
     assert (txn.failure_code, txn.payment_amount_received) == (services.AMOUNT_MISMATCH, received)
     assert services.is_payment_held(txn)
     assert not Transaction.objects.payable().exists()
-    # Le grand livre constate ce qui est entre, integralement du au payeur,
-    # sans commission.
-    assert _balance(ledger.CASH_SETTLEMENT) == received
+    # Le grand livre constate ce qui est entre sur le float, integralement du
+    # au payeur, sans commission.
+    assert _balance(ledger.FLOAT) == received
     assert _balance(ledger.CLIENTS_PAYABLE) == -received
     assert _balance(ledger.REVENUE_COMMISSION) == Decimal("0")
     _assert_books_balanced()
@@ -139,8 +139,10 @@ def test_refund_of_a_mismatch_returns_what_was_received_and_zeroes_the_books(cli
 
     txn.refresh_from_db()
     assert txn.state == State.REFUNDED
-    for code in (ledger.CASH_SETTLEMENT, ledger.CLIENTS_PAYABLE, ledger.REVENUE_COMMISSION):
+    for code in (ledger.CLIENTS_PAYABLE, ledger.REVENUE_COMMISSION):
         assert _balance(code) == Decimal("0"), code
+    # Les 100 recus restent sur le float ; le remboursement sort de la tresorerie.
+    assert (_balance(ledger.FLOAT), _balance(ledger.CASH_SETTLEMENT)) == (Decimal("100.00"), Decimal("-100.00"))
     refund = JournalEntry.objects.get(reference=f"{txn.reference}-REFUND")
     assert "MC-555" in refund.description
     assert txn.events.last().data["refunded_amount"] == "100.00"
@@ -174,7 +176,7 @@ def test_refund_of_an_unverified_amount_requires_the_verified_amount(client, boo
 
     txn.refresh_from_db()
     assert txn.state == State.REFUNDED
-    assert _balance(ledger.CASH_SETTLEMENT) == Decimal("0")
+    assert (_balance(ledger.FLOAT), _balance(ledger.CASH_SETTLEMENT)) == (EXPECTED, -EXPECTED)
     assert _balance(ledger.CLIENTS_PAYABLE) == Decimal("0")
     assert JournalEntry.objects.filter(transaction=txn).count() == 2  # constat + remboursement
     _assert_books_balanced()
@@ -201,7 +203,7 @@ def test_release_after_verifying_the_exact_amount_queues_with_normal_books(clien
     assert (txn.state, txn.failure_code, txn.payment_amount_received) == (State.PAYOUT_QUEUED, "", EXPECTED)
     assert txn.events.last().actor == operator
     # Blocage extourne, encaissement normal : dette = net, commission = frais.
-    assert _balance(ledger.CASH_SETTLEMENT) == EXPECTED
+    assert _balance(ledger.FLOAT) == EXPECTED
     assert _balance(ledger.CLIENTS_PAYABLE) == Decimal("-1000.00")
     assert _balance(ledger.REVENUE_COMMISSION) == Decimal("-90.00")
     assert JournalEntry.objects.filter(reference=f"{txn.reference}-HOLD-REV").exists()

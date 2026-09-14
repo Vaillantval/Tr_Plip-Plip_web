@@ -272,8 +272,11 @@ def test_refund_balances_the_ledger(client, books, operator):
     assert txn.state == State.REFUNDED
 
     assert all(entry.is_balanced() for entry in JournalEntry.objects.all())
-    for code in (ledger.CLIENTS_PAYABLE, ledger.REVENUE_COMMISSION, ledger.CASH_SETTLEMENT):
+    for code in (ledger.CLIENTS_PAYABLE, ledger.REVENUE_COMMISSION):
         assert LedgerAccount.objects.get(code=code).balance() == Decimal("0"), code
+    # L'encaissement reste sur le float ; le remboursement manuel sort de la tresorerie.
+    assert LedgerAccount.objects.get(code=ledger.FLOAT).balance() == txn.total_charged
+    assert LedgerAccount.objects.get(code=ledger.CASH_SETTLEMENT).balance() == -txn.total_charged
 
     entry = JournalEntry.objects.get(reference=f"{txn.reference}-REFUND")
     assert "Beneficiaire injoignable" in entry.description
@@ -464,7 +467,7 @@ def test_pending_stuck_beyond_threshold_comes_first_on_exceptions_screen(client,
 # ----------------------------------------------------------------------
 @pytest.mark.django_db
 def test_displaying_the_float_never_creates_an_alert(client, books):
-    _queued_txn()  # 1000 HTG dus, float a zero : couverture KO
+    _queued_txn()  # float de 1090 HTG, sous le seuil critique : alerte attendue
     client.force_login(_user(Role.SUPPORT))
 
     for name in ("console:dashboard", "console:treasury", "console:queue"):
@@ -487,26 +490,33 @@ def test_successful_payout_records_a_float_snapshot(books):
     ledger.record_float_topup(Decimal("10000"), reference="RCH-1")
     txn = _queued_txn()
 
-    _settle(txn, fee=Decimal("25"), balance_after=Decimal("8970"))
+    _settle(txn, fee=Decimal("25"), balance_after=Decimal("10060"))
 
     snapshot = FloatSnapshot.objects.get()
     assert snapshot.transaction_id == txn.pk
-    assert snapshot.provider_balance == Decimal("8970")
-    assert snapshot.ledger_balance == Decimal("8975")
+    assert snapshot.provider_balance == Decimal("10060")
+    # 10000 recharges + 1090 encaisses - 1025 decaisses.
+    assert snapshot.ledger_balance == Decimal("10065")
     assert snapshot.drift == Decimal("-5")
 
 
 @pytest.mark.django_db
 def test_queue_coverage_shows_the_rank_where_the_queue_stalls(books):
-    ledger.record_float_topup(Decimal("10000"), reference="RCH-1")
-    _unknown_txn()  # 1000 net + 60 de frais estimes, engages avant la file
+    _unknown_txn()  # 1000 net + 25 de retrait NatCash estime, engages avant la file
     queued = [_queued_txn(Decimal("2000")) for _ in range(5)]
-    assert queued[0].fee_in + queued[0].fee_out == Decimal("120")  # hypothese de tarif du test
+    assert queued[0].provider_fee_out_estimate == Decimal("50")  # NatCash 2,5 %, tarif de depart
+    # Les encaissements creditent le float (1090 + 5 x 2180 = 11990) : la file
+    # se finance seule. Pour la faire caler, on simule une sortie de tresorerie.
+    ledger.post(
+        reference="SORTIE-1",
+        description="Retrait de tresorerie",
+        lines=[(ledger.FLOAT, Decimal("-1965"), ""), (ledger.CASH_SETTLEMENT, Decimal("1965"), "")],
+    )
 
     coverage = treasury.queue_coverage()
 
-    # 10000 - 1060 = 8940 disponibles ; 4 x 2120 = 8480 passent, pas 5 x 2120.
-    assert coverage["available"] == Decimal("8940")
+    # 10025 - 1025 = 9000 disponibles ; 4 x 2050 = 8200 passent, pas 5 x 2050.
+    assert coverage["available"] == Decimal("9000")
     assert coverage["depth"] == 5
     assert coverage["total_net"] == Decimal("10000")
     assert coverage["stall_rank"] == 5
@@ -523,7 +533,8 @@ def test_queue_screen_orders_by_confirmation_and_shows_drain_time(client, books,
 
     assert response.context["drain_seconds"] == 375
     assert [row["txn"].pk for row in response.context["rows"]] == [first.pk, second.pk, third.pk]
-    assert response.context["coverage"]["stall_rank"] == 1  # aucun float
+    # Les encaissements de la file sont deja sur le float : elle passe entiere.
+    assert response.context["coverage"]["stall_rank"] is None
 
     fragment = client.get(reverse("console:queue"), **HTMX)
     assert b'id="queue-body"' in fragment.content

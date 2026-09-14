@@ -20,8 +20,8 @@ from apps.providers.plopplop import exceptions as pp
 from apps.providers.plopplop.client import get_client
 from apps.treasury import services as treasury
 
-from .models import PAYOUT_CAPABLE, Transaction, Wallet, WalletSetting
-from .pricing import Quote, quote_from_settings
+from .models import PAYOUT_CAPABLE, PricingPolicy, Transaction, Wallet, WalletSetting
+from .pricing import Quote, quote, round_htg
 from .states import IllegalTransition, State
 
 logger = logging.getLogger(__name__)
@@ -52,6 +52,10 @@ class InvalidRelease(ValueError):
     pass
 
 
+class InvalidPricing(ValueError):
+    pass
+
+
 #: Encaissement confirme mais bloque avant la file de decaissement.
 AMOUNT_MISMATCH = "AMOUNT_MISMATCH"  # plopplop declare un autre montant que le devis
 AMOUNT_UNVERIFIED = "AMOUNT_UNVERIFIED"  # plopplop ne communique pas le montant
@@ -68,24 +72,131 @@ DIRECTIONS = ("payment", "payout")
 # ----------------------------------------------------------------------
 # Moyens de paiement
 # ----------------------------------------------------------------------
+RATE_FIELDS = ("payment_fee_rate", "payout_fee_rate", "payment_cost_rate", "payout_cost_rate")
+#: Taux autorises : [0 ; 50 %[. Au-dela, c'est une erreur de saisie.
+MAX_RATE = Decimal("0.5")
+ZERO = Decimal("0")
+#: Montant de reference pour l'apercu des marges par route.
+PREVIEW_NET_AMOUNT = Decimal("1000")
+
+
 def wallet_availability() -> list[dict]:
     """Etat de chaque portefeuille, dans l'ordre de Wallet. Lecture seule."""
     settings_by_wallet = {s.wallet: s for s in WalletSetting.objects.select_related("updated_by")}
     rows = []
     for wallet in Wallet:
         setting = settings_by_wallet.get(wallet.value)
-        rows.append(
-            {
-                "wallet": wallet.value,
-                "label": wallet.label,
-                "payout_capable": wallet in PAYOUT_CAPABLE,
-                "payment_enabled": bool(setting and setting.payment_enabled),
-                "payout_enabled": bool(setting and setting.payout_enabled),
-                "updated_by": setting.updated_by if setting else None,
-                "updated_at": setting.updated_at if setting else None,
-            }
-        )
+        row = {
+            "wallet": wallet.value,
+            "label": wallet.label,
+            "payout_capable": wallet in PAYOUT_CAPABLE,
+            "payment_enabled": bool(setting and setting.payment_enabled),
+            "payout_enabled": bool(setting and setting.payout_enabled),
+            "updated_by": setting.updated_by if setting else None,
+            "updated_at": setting.updated_at if setting else None,
+        }
+        for field in RATE_FIELDS:
+            row[field] = getattr(setting, field) if setting else ZERO
+        rows.append(row)
     return rows
+
+
+def pricing_policy() -> PricingPolicy:
+    policy, _ = PricingPolicy.objects.get_or_create(pk=1)
+    return policy
+
+
+def pricing_overview() -> dict:
+    """Tarifs, couts et marge estimee de chaque route ouverte. Lecture seule.
+
+    `loss_routes` : routes ouvertes dont la marge estimee est negative
+    sur PREVIEW_NET_AMOUNT. `unreviewed` : aucun superadmin n'a encore
+    enregistre la tarification.
+    """
+    policy = PricingPolicy.objects.select_related("reviewed_by").filter(pk=1).first() or PricingPolicy(pk=1)
+    wallets = wallet_availability()
+    by_code = {w["wallet"]: w for w in wallets}
+    routes = []
+    for source in wallets:
+        for destination in wallets:
+            if source is destination or not destination["payout_capable"]:
+                continue
+            q = quote(
+                net_amount=PREVIEW_NET_AMOUNT,
+                source_wallet=source["wallet"],
+                destination_wallet=destination["wallet"],
+                rates={
+                    "in": source["payment_fee_rate"],
+                    "out": destination["payout_fee_rate"],
+                    "platform": policy.platform_fee_rate,
+                },
+            )
+            cost_in, cost_out = _provider_costs(q, by_code[source["wallet"]], by_code[destination["wallet"]])
+            margin = q.total_fees - cost_in - cost_out
+            routes.append(
+                {
+                    "source": source,
+                    "destination": destination,
+                    "open": source["payment_enabled"] and destination["payout_enabled"],
+                    "quote": q,
+                    "cost_in": cost_in,
+                    "cost_out": cost_out,
+                    "margin": margin,
+                }
+            )
+    return {
+        "policy": policy,
+        "wallets": wallets,
+        "routes": routes,
+        "preview_net_amount": PREVIEW_NET_AMOUNT,
+        "unreviewed": policy.reviewed_at is None,
+        "loss_routes": [r for r in routes if r["open"] and r["margin"] < 0],
+    }
+
+
+@db_transaction.atomic
+def update_pricing(*, platform_fee_rate: Decimal, wallet_rates: dict[str, dict[str, Decimal]], actor) -> PricingPolicy:
+    """Enregistre tarifs client et couts plopplop. Vaut validation.
+
+    Ne touche aucune transaction existante : le devis et les couts
+    estimes sont figes sur chaque transaction a sa creation.
+    """
+    _check_rate("Commission Plip-Plip", platform_fee_rate)
+    for wallet, rates in wallet_rates.items():
+        if wallet not in Wallet.values:
+            raise InvalidPricing(f"Portefeuille inconnu : {wallet}")
+        label = Wallet(wallet).label
+        for field in RATE_FIELDS:
+            _check_rate(f"{label} {field}", rates[field])
+        if wallet not in [w.value for w in PAYOUT_CAPABLE] and (rates["payout_fee_rate"] or rates["payout_cost_rate"]):
+            raise InvalidPricing(f"{label} ne recoit pas de decaissement : taux de sortie a 0")
+
+    for wallet, rates in wallet_rates.items():
+        setting, _ = WalletSetting.objects.select_for_update().get_or_create(wallet=wallet)
+        for field in RATE_FIELDS:
+            setattr(setting, field, rates[field])
+        setting.updated_by = actor
+        setting.save()
+
+    policy, _ = PricingPolicy.objects.select_for_update().get_or_create(pk=1)
+    policy.platform_fee_rate = platform_fee_rate
+    policy.reviewed_by = actor
+    policy.reviewed_at = timezone.now()
+    policy.save()
+    return policy
+
+
+def _check_rate(label: str, rate) -> None:
+    if rate is None or rate < ZERO or rate >= MAX_RATE:
+        raise InvalidPricing(f"{label} : taux attendu entre 0 et {MAX_RATE * 100:.0f} %")
+
+
+def _provider_costs(q: Quote, source, destination) -> tuple[Decimal, Decimal]:
+    """Couts plopplop estimes : encaissement sur le montant paye, retrait sur le net."""
+    return (
+        round_htg(q.total_charged * source["payment_cost_rate"]),
+        round_htg(q.net_amount * destination["payout_cost_rate"]),
+    )
 
 
 @db_transaction.atomic
@@ -108,7 +219,7 @@ def set_wallet_availability(wallet: str, *, direction: str, enabled: bool, actor
     return setting
 
 
-def _check_route(source_wallet: str, destination_wallet: str) -> None:
+def _check_route(source_wallet: str, destination_wallet: str) -> tuple[WalletSetting, WalletSetting]:
     if destination_wallet not in [w.value for w in PAYOUT_CAPABLE]:
         raise UnsupportedRoute(
             f"Decaissement impossible vers {destination_wallet} : "
@@ -125,18 +236,32 @@ def _check_route(source_wallet: str, destination_wallet: str) -> None:
         raise MethodDisabled(f"{Wallet(source_wallet).label} est momentanement indisponible en envoi")
     if destination is None or not destination.payout_enabled:
         raise MethodDisabled(f"{Wallet(destination_wallet).label} est momentanement indisponible en reception")
+    return source, destination
 
 
-def quote_transfer(*, source_wallet: str, destination_wallet: str, net_amount: Decimal) -> Quote:
-    """Devis pour une route ouverte. Leve UnsupportedRoute, MethodDisabled,
-    AmountTooSmall ou AmountTooLarge. N'ecrit rien.
-    """
-    _check_route(source_wallet, destination_wallet)
-    return quote_from_settings(
+def _quote_route(*, source_wallet: str, destination_wallet: str, net_amount: Decimal):
+    source, destination = _check_route(source_wallet, destination_wallet)
+    q = quote(
         net_amount=net_amount,
         source_wallet=source_wallet,
         destination_wallet=destination_wallet,
+        rates={
+            "in": source.payment_fee_rate,
+            "out": destination.payout_fee_rate,
+            "platform": pricing_policy().platform_fee_rate,
+        },
+        max_net=settings.PRICING["MAX_NET_AMOUNT"],
     )
+    return q, source, destination
+
+
+def quote_transfer(*, source_wallet: str, destination_wallet: str, net_amount: Decimal) -> Quote:
+    """Devis pour une route ouverte, aux tarifs regles par le superadmin.
+    Leve UnsupportedRoute, MethodDisabled, AmountTooSmall ou AmountTooLarge.
+    N'ecrit rien.
+    """
+    q, _, _ = _quote_route(source_wallet=source_wallet, destination_wallet=destination_wallet, net_amount=net_amount)
+    return q
 
 
 # ----------------------------------------------------------------------
@@ -153,12 +278,19 @@ def create_transaction(
     created_by=None,
     customer=None,
 ) -> Transaction:
-    q = quote_transfer(
+    q, source, destination = _quote_route(
         source_wallet=source_wallet,
         destination_wallet=destination_wallet,
         net_amount=net_amount,
     )
+    cost_in, cost_out = _provider_costs(
+        q,
+        {"payment_cost_rate": source.payment_cost_rate},
+        {"payout_cost_rate": destination.payout_cost_rate},
+    )
     return Transaction.objects.create(
+        provider_fee_in=cost_in,
+        provider_fee_out_estimate=cost_out,
         source_wallet=source_wallet,
         destination_wallet=destination_wallet,
         sender_phone=sender_phone,
@@ -584,7 +716,9 @@ def _settle_payout(
     balance_after: Decimal | None = None,
     actor=None,
 ) -> Transaction:
-    actual_fee = result_fee if result_fee is not None else (txn.fee_in + txn.fee_out)
+    # Sans champ `fee` (issue tranchee par verification), on retient le cout
+    # de retrait estime et fige a la creation.
+    actual_fee = result_fee if result_fee is not None else txn.provider_fee_out_estimate
     txn.payout_provider_id = provider_id
     txn.payout_api_reference = api_reference
     txn.payout_fee_actual = actual_fee

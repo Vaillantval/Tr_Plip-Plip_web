@@ -10,17 +10,11 @@ formules partent donc du net, jamais du brut.
     fee_platform  commission Plip-Plip
     total         net + fee_in + fee_out + fee_platform  (debite au payeur)
 
-ATTENTION -- les taux par defaut (3/3/3) viennent de la note
-conceptuelle, pas d'une mesure. Deux inconnues restent a lever aupres
-de plopplop avant de figer la tarification :
-
-  1. ce que plopplop retient sur un encaissement (non documente) ;
-  2. le bareme reel du champ `fee` retourne par api/withdraw/marchand
-     (2,5 % dans l'exemple de la doc, a confirmer par methode).
-
-Tant que ces deux chiffres ne sont pas connus, la marge affichee par le
-dashboard est une estimation. La reconciliation utilise les montants
-reellement retournes par l'API, jamais ces taux.
+Les taux ne sont pas ici : le superadmin les regle par portefeuille dans
+la console (WalletSetting, PricingPolicy), avec les couts plopplop qui
+servent aux estimations. Ce module ne fait que le calcul. La
+reconciliation utilise les montants reellement retournes par l'API,
+jamais ces taux.
 """
 
 from __future__ import annotations
@@ -95,15 +89,3 @@ def quote(
     )
 
 
-def quote_from_settings(
-    *, net_amount: Decimal, source_wallet: str, destination_wallet: str
-) -> Quote:
-    from django.conf import settings
-
-    return quote(
-        net_amount=net_amount,
-        source_wallet=source_wallet,
-        destination_wallet=destination_wallet,
-        rates=settings.PRICING["RATES"],
-        max_net=settings.PRICING["MAX_NET_AMOUNT"],
-    )

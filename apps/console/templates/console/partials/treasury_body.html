@@ -23,14 +23,14 @@
       {% endif %}
     </div>
     <div class="rounded border bg-white p-3">
-      <div class="text-slate-500">Burn 24 h</div>
-      <div class="text-2xl font-semibold tabular-nums">{{ float.burn_24h|htg }}</div>
-      <div class="text-xs text-slate-500">net verse + frais operateur reels</div>
+      <div class="text-slate-500">Flux net 24 h</div>
+      <div class="text-2xl font-semibold tabular-nums {% if float.net_flow_24h < 0 %}text-red-700{% endif %}">{% if float.net_flow_24h > 0 %}+{% endif %}{{ float.net_flow_24h|htg }}</div>
+      <div class="text-xs text-slate-500">encaissements − decaissements · sorties {{ float.burn_24h|htg }}</div>
     </div>
     <div class="rounded border bg-white p-3">
       <div class="text-slate-500">Runway</div>
       <div class="text-2xl font-semibold tabular-nums">{{ float.runway_hours|hours_duration }}</div>
-      <div class="text-xs text-slate-500">{% if float.runway_hours is None %}aucun decaissement sur 24 h{% else %}au rythme des 24 dernieres heures{% endif %}</div>
+      <div class="text-xs text-slate-500">{% if float.runway_hours is None %}l'activite ne consomme pas le float{% else %}au flux net des 24 dernieres heures{% endif %}</div>
     </div>
   </div>
 
