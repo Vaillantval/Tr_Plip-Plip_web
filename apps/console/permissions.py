@@ -41,7 +41,17 @@ def audit_failure(request, action: str, *, target: str = "", error: str, **detai
 
 
 def require_acting_role(action: str, *, target_kwarg: str = "reference", audit_fields: tuple[str, ...] = ()):
-    """Reserve une vue aux roles autorises a agir sur l'argent.
+    """Reserve une vue aux roles autorises a agir sur l'argent (User.can_act)."""
+    return _require(action, lambda user: user.can_act, target_kwarg=target_kwarg, audit_fields=audit_fields)
+
+
+def require_superadmin(action: str, *, target_kwarg: str = "", audit_fields: tuple[str, ...] = ()):
+    """Reserve une vue au superadmin : reglages qui engagent toute la plateforme."""
+    return _require(action, lambda user: user.is_superadmin, target_kwarg=target_kwarg, audit_fields=audit_fields)
+
+
+def _require(action: str, allowed_for, *, target_kwarg: str, audit_fields: tuple[str, ...]):
+    """Garde commune a require_acting_role et require_superadmin.
 
     Ecrit une ligne d'AuditLog AVANT d'executer la vue. Sur cette ligne,
     `allowed` signifie AUTORISE, pas REUSSI :
@@ -65,7 +75,7 @@ def require_acting_role(action: str, *, target_kwarg: str = "reference", audit_f
         def wrapper(request, *args, **kwargs):
             target = str(kwargs.get(target_kwarg, ""))
             submitted = {name: request.POST.get(name, "")[:AUDIT_VALUE_MAX_LENGTH] for name in audit_fields}
-            if not request.user.is_authenticated or not request.user.can_act:
+            if not request.user.is_authenticated or not allowed_for(request.user):
                 audit(request, action, target=target, allowed=False, **submitted)
                 raise PermissionDenied("Role insuffisant pour cette action")
             audit(request, action, target=target, allowed=True, **submitted)

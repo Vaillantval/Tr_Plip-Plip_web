@@ -6,7 +6,7 @@
     <h1 class="font-mono text-lg font-semibold">{{ txn.reference }}</h1>
     {% include "console/partials/state_badge.html" with state=txn.state %}
     <span class="text-slate-700">{{ txn.get_source_wallet_display }} → {{ txn.get_destination_wallet_display }}</span>
-    <span class="text-slate-500">beneficiaire <span class="font-mono text-slate-700">{{ txn.recipient_phone }}</span>{% if txn.sender_phone %} · payeur <span class="font-mono text-slate-700">{{ txn.sender_phone }}</span>{% endif %}</span>
+    <span class="text-slate-500">beneficiaire <span class="font-mono text-slate-700">{{ txn.recipient_phone }}</span>{% if txn.sender_phone %} · payeur <span class="font-mono text-slate-700">{{ txn.sender_phone }}</span>{% endif %}{% if txn.customer %} · client API <span class="font-mono text-slate-700">{{ txn.customer.phone }}</span>{% endif %}</span>
     <span class="ml-auto text-slate-500">creee le {{ txn.created_at|date:"d/m/Y H:i:s" }}{% if txn.created_by %} par {{ txn.created_by }}{% endif %}</span>
   </header>
 

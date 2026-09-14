@@ -26,6 +26,37 @@ pytest
 | `apps/treasury` | Suivi du float, seuils, projection de rupture. |
 | `apps/accounts` | Utilisateurs, rôles d'exploitation, journal d'audit. |
 | `apps/console` | Dashboard superadmin (Django templates + HTMX). |
+| `apps/api` | API publique v1 (DRF) pour le front web et l'app Flutter. |
+| `apps/providers/twilio` | Seul module qui parle à Twilio Verify (codes SMS). |
+
+## API publique — `/api/v1/`
+
+Documentation interactive : `/api/v1/docs` (schéma OpenAPI : `/api/v1/schema`).
+Désactivée par défaut en production (`API_DOCS_ENABLED=1` pour l'ouvrir).
+
+| Route | Accès | Rôle |
+|---|---|---|
+| `POST auth/otp/request` · `POST auth/otp/verify` | public | Code SMS, puis jeton `ppk_…` |
+| `POST auth/logout` · `GET me` | client | Révocation, profil |
+| `GET meta` · `POST quotes` | public | Portefeuilles ouverts, devis |
+| `GET/POST transfers` · `GET transfers/{reference}` | client | Historique, création, statut |
+
+- **Clients ≠ opérateurs.** Un `Customer` n'est pas un `User` Django : un
+  jeton client n'ouvre ni la console ni l'admin, et une session console
+  n'ouvre pas l'API.
+- **Idempotence.** `POST transfers` exige `Idempotency-Key`. Une clé
+  rejouée rend le transfert déjà créé, sans nouvel appel à plopplop.
+- **Devis confirmé.** Le client renvoie `expected_total` ; s'il ne
+  correspond plus au devis, refus 409 `QUOTE_CHANGED`.
+- **Statuts publics.** Les états internes ne sortent jamais :
+  `PAYOUT_UNKNOWN` et `PAYOUT_FAILED` s'affichent « en cours ».
+- **Création de paiement indéterminée.** Jamais recréée : la transaction
+  passe en attente de paiement et le polling la retrouve par référence.
+- **Codes SMS.** `OTP_BACKEND=console` en dev (code écrit dans les logs),
+  `twilio` imposé en production ; `check --deploy` refuse le backend console.
+- **Méthodes.** Le superadmin ouvre ou ferme chaque portefeuille en entrée
+  et en sortie (console → Méthodes). Seules les nouvelles transactions sont
+  concernées.
 
 ## Trois règles structurantes
 
@@ -114,9 +145,9 @@ donc possible dès le MVP, ce que la note n'envisageait pas.
 
 ## À construire ensuite
 
-- Écrans de la console : détail transaction, file, exceptions, trésorerie
-- Actions opérateur (relance, remboursement) avec journalisation d'audit
-- API DRF publique pour le front utilisateur et la future app Flutter
-- Notifications SMS/e-mail
+- Front web et app Flutter sur l'API v1
+- Paiement reçu d'un montant différent du devis : ne pas le mettre en file
+- Désactivation d'un client depuis la console
+- Notifications SMS/e-mail de suivi des transferts
 - Réconciliation : comparaison `FloatSnapshot.provider_balance` vs solde
   calculé au grand livre

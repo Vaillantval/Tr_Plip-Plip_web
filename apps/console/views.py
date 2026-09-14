@@ -28,7 +28,7 @@ from apps.treasury import services as treasury
 from apps.treasury.models import FloatAlert, FloatSnapshot
 
 from .forms import RefundForm, TopupForm
-from .permissions import audit_failure, require_acting_role
+from .permissions import audit_failure, require_acting_role, require_superadmin
 
 EXCEPTION_STATES = (State.PAYOUT_FAILED, State.PAYOUT_UNKNOWN, State.PAYOUT_PENDING)
 LIST_LIMIT = 200
@@ -194,6 +194,17 @@ def treasury_view(request):
     return render(request, "console/treasury.html", _treasury_context())
 
 
+@login_required
+def payment_methods(request):
+    return render(request, "console/methods.html", {"rows": txn_services.wallet_availability()})
+
+
+def _after_methods_action(request):
+    if not _is_htmx(request):
+        return redirect("console:methods")
+    return render(request, "console/partials/methods_body.html", {"rows": txn_services.wallet_availability()})
+
+
 # ----------------------------------------------------------------------
 # Actions
 # ----------------------------------------------------------------------
@@ -294,6 +305,26 @@ def alert_acknowledge(request, alert_id: int):
     else:
         messages.success(request, "Alerte acquittee.")
     return _after_treasury_action(request)
+
+
+@login_required
+@require_POST
+@require_superadmin("wallet.availability", target_kwarg="wallet", audit_fields=("direction", "enabled"))
+def wallet_availability_update(request, wallet: str):
+    direction = request.POST.get("direction", "")
+    enabled = request.POST.get("enabled")
+    try:
+        if enabled not in ("0", "1"):
+            raise txn_services.UnsupportedRoute("Valeur attendue : 0 ou 1")
+        txn_services.set_wallet_availability(wallet, direction=direction, enabled=enabled == "1", actor=request.user)
+    except txn_services.UnsupportedRoute as exc:
+        audit_failure(request, "wallet.availability", target=wallet, error=str(exc))
+        messages.error(request, f"Reglage refuse : {exc}")
+    else:
+        sens = "en entree" if direction == "payment" else "en sortie"
+        etat = "ouvert" if enabled == "1" else "ferme"
+        messages.success(request, f"{wallet} {etat} {sens}. Les transactions deja creees ne sont pas affectees.")
+    return _after_methods_action(request)
 
 
 @login_required

@@ -19,4 +19,6 @@ urlpatterns = [
     path("treasury/", views.treasury_view, name="treasury"),
     path("treasury/topup/", views.float_topup, name="float_topup"),
     path("treasury/alerts/<int:alert_id>/ack/", views.alert_acknowledge, name="alert_acknowledge"),
+    path("methods/", views.payment_methods, name="methods"),
+    path("methods/<str:wallet>/", views.wallet_availability_update, name="wallet_availability"),
 ]

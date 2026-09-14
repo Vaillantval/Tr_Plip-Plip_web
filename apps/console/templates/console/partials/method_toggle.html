@@ -1,0 +1,18 @@
+<div class="flex items-center gap-3">
+  {% if enabled %}
+    <span class="rounded bg-emerald-100 px-1.5 py-0.5 text-xs font-medium text-emerald-800">Ouvert</span>
+  {% else %}
+    <span class="rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">Ferme</span>
+  {% endif %}
+  {% if request.user.is_superadmin %}
+  {% url 'console:wallet_availability' row.wallet as toggle_url %}
+  <form data-console-action="wallet_availability" method="post" action="{{ toggle_url }}"
+        hx-post="{{ toggle_url }}" hx-target="#methods-body" hx-swap="outerHTML" hx-disabled-elt="find button"
+        {% if enabled %}hx-confirm="Fermer {{ row.label }} {% if direction == 'payment' %}en entree{% else %}en sortie{% endif %} ? Les nouvelles transactions seront refusees ; celles en cours continuent."{% endif %}>
+    {% csrf_token %}
+    <input type="hidden" name="direction" value="{{ direction }}">
+    <input type="hidden" name="enabled" value="{% if enabled %}0{% else %}1{% endif %}">
+    <button type="submit" class="rounded border border-slate-400 bg-white px-2.5 py-1 hover:bg-slate-100 disabled:opacity-50">{% if enabled %}Fermer{% else %}Ouvrir{% endif %}</button>
+  </form>
+  {% endif %}
+</div>

@@ -20,8 +20,8 @@ from apps.providers.plopplop import exceptions as pp
 from apps.providers.plopplop.client import get_client
 from apps.treasury import services as treasury
 
-from .models import PAYOUT_CAPABLE, Transaction, Wallet
-from .pricing import quote_from_settings
+from .models import PAYOUT_CAPABLE, Transaction, Wallet, WalletSetting
+from .pricing import Quote, quote_from_settings
 from .states import IllegalTransition, State
 
 logger = logging.getLogger(__name__)
@@ -36,8 +36,93 @@ class UnsupportedRoute(ValueError):
     pass
 
 
+class MethodDisabled(UnsupportedRoute):
+    """Moyen de paiement ferme par le superadmin."""
+
+
+class PaymentStartFailed(Exception):
+    """plopplop a refuse explicitement la creation du paiement."""
+
+
 class InvalidRefund(ValueError):
     pass
+
+
+DIRECTIONS = ("payment", "payout")
+
+
+# ----------------------------------------------------------------------
+# Moyens de paiement
+# ----------------------------------------------------------------------
+def wallet_availability() -> list[dict]:
+    """Etat de chaque portefeuille, dans l'ordre de Wallet. Lecture seule."""
+    settings_by_wallet = {s.wallet: s for s in WalletSetting.objects.select_related("updated_by")}
+    rows = []
+    for wallet in Wallet:
+        setting = settings_by_wallet.get(wallet.value)
+        rows.append(
+            {
+                "wallet": wallet.value,
+                "label": wallet.label,
+                "payout_capable": wallet in PAYOUT_CAPABLE,
+                "payment_enabled": bool(setting and setting.payment_enabled),
+                "payout_enabled": bool(setting and setting.payout_enabled),
+                "updated_by": setting.updated_by if setting else None,
+                "updated_at": setting.updated_at if setting else None,
+            }
+        )
+    return rows
+
+
+@db_transaction.atomic
+def set_wallet_availability(wallet: str, *, direction: str, enabled: bool, actor=None) -> WalletSetting:
+    """Ouvre ou ferme un portefeuille en entree ou en sortie.
+
+    Ne touche aucune transaction existante : voir WalletSetting.
+    """
+    if wallet not in Wallet.values:
+        raise UnsupportedRoute(f"Portefeuille inconnu : {wallet}")
+    if direction not in DIRECTIONS:
+        raise UnsupportedRoute(f"Sens inconnu : {direction}")
+    if direction == "payout" and enabled and wallet not in [w.value for w in PAYOUT_CAPABLE]:
+        raise UnsupportedRoute(f"{Wallet(wallet).label} ne peut pas recevoir de decaissement")
+
+    setting, _ = WalletSetting.objects.select_for_update().get_or_create(wallet=wallet)
+    setattr(setting, f"{direction}_enabled", enabled)
+    setting.updated_by = actor
+    setting.save()
+    return setting
+
+
+def _check_route(source_wallet: str, destination_wallet: str) -> None:
+    if destination_wallet not in [w.value for w in PAYOUT_CAPABLE]:
+        raise UnsupportedRoute(
+            f"Decaissement impossible vers {destination_wallet} : "
+            "seuls MonCash et NatCash acceptent un retrait"
+        )
+    if source_wallet == destination_wallet:
+        raise UnsupportedRoute("Les portefeuilles source et destination sont identiques")
+    if source_wallet not in Wallet.values:
+        raise UnsupportedRoute(f"Portefeuille source inconnu : {source_wallet}")
+
+    enabled = {s.wallet: s for s in WalletSetting.objects.filter(wallet__in=[source_wallet, destination_wallet])}
+    source, destination = enabled.get(source_wallet), enabled.get(destination_wallet)
+    if source is None or not source.payment_enabled:
+        raise MethodDisabled(f"{Wallet(source_wallet).label} est momentanement indisponible en envoi")
+    if destination is None or not destination.payout_enabled:
+        raise MethodDisabled(f"{Wallet(destination_wallet).label} est momentanement indisponible en reception")
+
+
+def quote_transfer(*, source_wallet: str, destination_wallet: str, net_amount: Decimal) -> Quote:
+    """Devis pour une route ouverte. Leve UnsupportedRoute, MethodDisabled,
+    AmountTooSmall ou AmountTooLarge. N'ecrit rien.
+    """
+    _check_route(source_wallet, destination_wallet)
+    return quote_from_settings(
+        net_amount=net_amount,
+        source_wallet=source_wallet,
+        destination_wallet=destination_wallet,
+    )
 
 
 # ----------------------------------------------------------------------
@@ -52,19 +137,12 @@ def create_transaction(
     net_amount: Decimal,
     sender_phone: str = "",
     created_by=None,
+    customer=None,
 ) -> Transaction:
-    if destination_wallet not in [w.value for w in PAYOUT_CAPABLE]:
-        raise UnsupportedRoute(
-            f"Decaissement impossible vers {destination_wallet} : "
-            "seuls MonCash et NatCash acceptent un retrait"
-        )
-    if source_wallet == destination_wallet:
-        raise UnsupportedRoute("Les portefeuilles source et destination sont identiques")
-
-    q = quote_from_settings(
-        net_amount=net_amount,
+    q = quote_transfer(
         source_wallet=source_wallet,
         destination_wallet=destination_wallet,
+        net_amount=net_amount,
     )
     return Transaction.objects.create(
         source_wallet=source_wallet,
@@ -77,11 +155,24 @@ def create_transaction(
         fee_platform=q.fee_platform,
         total_charged=q.total_charged,
         created_by=created_by,
+        customer=customer,
     )
 
 
 def start_payment(txn: Transaction) -> Transaction:
-    """Cree la jambe entrante chez plopplop et passe en attente paiement."""
+    """Cree la jambe entrante chez plopplop et passe en attente paiement.
+
+    A appeler UNE seule fois par transaction. Issue inconnue (timeout,
+    5xx) : on passe quand meme en AWAITING_PAYMENT, sans jamais rappeler
+    api/paiement-marchand pour cette reference. Un second appel pourrait
+    declencher une seconde demande USSD sur le telephone du payeur. C'est
+    sans risque de perte : api/paiement-verify interroge par REFERENCE,
+    le polling detectera donc un paiement meme sans identifiant plopplop,
+    et la transaction expirera sinon.
+
+    Refus explicite de plopplop : la transaction est annulee et
+    PaymentStartFailed est levee.
+    """
     if txn.state != State.CREATED:
         raise ValueError(f"start_payment appele sur une transaction en etat {txn.state}")
 
@@ -89,16 +180,32 @@ def start_payment(txn: Transaction) -> Transaction:
     if method == Wallet.MONCASH and txn.sender_phone:
         method = "moncash_ussd"
 
-    intent = get_client().create_payment(
-        reference=txn.reference,
-        amount=txn.total_charged,
-        method=method,
-        phone_number=txn.sender_phone or None,
-    )
+    txn.payment_expires_at = timezone.now() + timedelta(seconds=settings.PAYMENT_EXPIRY_SECONDS)
+    try:
+        intent = get_client().create_payment(
+            reference=txn.reference,
+            amount=txn.total_charged,
+            method=method,
+            phone_number=txn.sender_phone or None,
+        )
+    except pp.PlopPlopIndeterminate as exc:
+        logger.warning("Creation du paiement indeterminee sur %s : %s", txn.reference, exc)
+        txn.save(update_fields=["payment_expires_at", "updated_at"])
+        txn.transition(
+            State.AWAITING_PAYMENT,
+            note=f"Creation du paiement indeterminee ({method}) — suivi par reference, jamais recree",
+            data={"error": str(exc), "indeterminate": True},
+        )
+        return txn
+    except pp.PlopPlopError as exc:
+        txn.failure_code = exc.code or "PAYMENT_CREATE_FAILED"
+        txn.failure_message = str(exc)
+        txn.save(update_fields=["failure_code", "failure_message", "updated_at"])
+        txn.transition(State.CANCELLED, note=f"Paiement refuse par plopplop ({method})", data={"error": str(exc)})
+        raise PaymentStartFailed(str(exc)) from exc
 
     txn.payment_provider_id = intent.transaction_id
     txn.payment_redirect_url = intent.redirect_url or ""
-    txn.payment_expires_at = timezone.now() + timedelta(seconds=settings.PAYMENT_EXPIRY_SECONDS)
     txn.save(
         update_fields=[
             "payment_provider_id",

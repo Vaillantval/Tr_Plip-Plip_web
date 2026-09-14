@@ -34,6 +34,41 @@ class Wallet(models.TextChoices):
 PAYOUT_CAPABLE = (Wallet.MONCASH, Wallet.NATCASH)
 
 
+class WalletSetting(models.Model):
+    """Ouverture d'un moyen de paiement, reglee par le superadmin.
+
+    Deux interrupteurs par portefeuille : en entree (encaissement) et en
+    sortie (decaissement). La sortie n'existe que pour PAYOUT_CAPABLE :
+    c'est une capacite de plopplop, pas un reglage.
+
+    Ne concerne que les NOUVELLES transactions. Une transaction deja
+    encaissee est une dette : fermer la sortie ne bloque pas son
+    decaissement.
+
+    Pas de ligne pour un portefeuille = ferme dans les deux sens.
+    """
+
+    wallet = models.CharField(max_length=16, choices=Wallet.choices, unique=True)
+    payment_enabled = models.BooleanField(default=False)
+    payout_enabled = models.BooleanField(default=False)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("wallet",)
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(payout_enabled=False) | models.Q(wallet__in=[w.value for w in PAYOUT_CAPABLE]),
+                name="payout_only_for_payout_capable_wallets",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.get_wallet_display()} (entree={self.payment_enabled}, sortie={self.payout_enabled})"
+
+
 class TransactionQuerySet(models.QuerySet):
     def liabilities(self):
         """Transactions ou nous detenons les fonds du client."""
@@ -104,6 +139,11 @@ class Transaction(models.Model):
 
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="transactions"
+    )
+    # Client de l'API a l'origine de la transaction. PROTECT : un client
+    # qui a transige ne se supprime pas, il se desactive.
+    customer = models.ForeignKey(
+        "accounts.Customer", null=True, blank=True, on_delete=models.PROTECT, related_name="transactions"
     )
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)

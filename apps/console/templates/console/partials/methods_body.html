@@ -1,0 +1,42 @@
+<div id="methods-body" class="space-y-3">
+  {% include "console/partials/messages.html" %}
+
+  <div class="rounded border bg-white">
+    <h1 class="border-b px-3 py-2 font-medium">Methodes de transfert</h1>
+    <p class="px-3 py-2 text-slate-600">
+      Un portefeuille ferme est refuse pour toute <strong>nouvelle</strong> transaction (devis et creation via l'API).
+      Les transactions deja creees continuent : une transaction encaissee est une dette, sa sortie n'est jamais bloquee.
+      {% if not request.user.is_superadmin %}<span class="text-slate-500">Lecture seule : reglage reserve au superadmin.</span>{% endif %}
+    </p>
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+          <tr>
+            <th class="px-3 py-1.5">Portefeuille</th>
+            <th class="px-3 py-1.5">Entree (encaissement)</th>
+            <th class="px-3 py-1.5">Sortie (decaissement)</th>
+            <th class="px-3 py-1.5">Derniere modification</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y">
+          {% for row in rows %}
+          <tr class="align-top">
+            <td class="px-3 py-2 font-medium">{{ row.label }} <span class="font-mono text-xs text-slate-500">{{ row.wallet }}</span></td>
+            <td class="px-3 py-2">
+              {% include "console/partials/method_toggle.html" with direction="payment" enabled=row.payment_enabled available=True %}
+            </td>
+            <td class="px-3 py-2">
+              {% if row.payout_capable %}
+                {% include "console/partials/method_toggle.html" with direction="payout" enabled=row.payout_enabled available=True %}
+              {% else %}
+                <span class="text-slate-400">Non disponible chez plopplop</span>
+              {% endif %}
+            </td>
+            <td class="px-3 py-2 text-slate-500">{% if row.updated_at %}{{ row.updated_at|date:"d/m/Y H:i" }} par {{ row.updated_by|default:"systeme" }}{% else %}—{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

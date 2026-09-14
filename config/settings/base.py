@@ -26,11 +26,13 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "drf_spectacular",
     "apps.accounts",
     "apps.ledger",
     "apps.transactions",
     "apps.treasury",
     "apps.console",
+    "apps.api",
 ]
 
 MIDDLEWARE = [
@@ -137,6 +139,58 @@ TREASURY = {
         "warning": Decimal(env("FLOAT_WARNING", "50000")),
         "critical": Decimal(env("FLOAT_CRITICAL", "20000")),
     }
+}
+
+# ----------------------------------------------------------------------
+# API publique
+# ----------------------------------------------------------------------
+REST_FRAMEWORK = {
+    # Jeton client uniquement : la session de la console n'ouvre pas l'API.
+    "DEFAULT_AUTHENTICATION_CLASSES": ["apps.api.authentication.CustomerTokenAuthentication"],
+    "DEFAULT_PERMISSION_CLASSES": ["apps.api.permissions.IsCustomer"],
+    "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "EXCEPTION_HANDLER": "apps.api.errors.handler",
+    "DEFAULT_THROTTLE_RATES": {
+        "otp_request_phone_burst": "1/min",
+        "otp_request_phone": "5/hour",
+        "otp_verify_phone": "10/hour",
+        "otp_ip": "30/hour",
+        "public_ip": "120/min",
+        "transfer_create": "20/hour",
+        "customer_read": "120/min",
+    },
+    # Nombre de proxies de confiance devant l'application. A 0, l'adresse
+    # IP retenue est REMOTE_ADDR. Laisser DRF lire X-Forwarded-For sans
+    # borne permettrait de contourner toutes les limites par IP.
+    "NUM_PROXIES": int(env("API_NUM_PROXIES", "0")),
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "API Plip-Plip",
+    "DESCRIPTION": "Transferts MonCash ↔ NatCash. Montants en HTG, en chaines decimales.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
+    "ENUM_NAME_OVERRIDES": {"WalletEnum": "apps.transactions.models.Wallet"},
+}
+API_DOCS_ENABLED = env("API_DOCS_ENABLED", "1") == "1"
+
+API_TOKEN_TTL_SECONDS = int(env("API_TOKEN_TTL_SECONDS", str(30 * 24 * 3600)))
+
+OTP = {
+    # "console" en developpement uniquement : le code est ecrit dans les logs.
+    "BACKEND": env("OTP_BACKEND", "console"),
+    "CODE_TTL_SECONDS": int(env("OTP_CODE_TTL_SECONDS", "600")),
+    "MAX_CHECK_ATTEMPTS": 5,
+}
+
+TWILIO = {
+    "ACCOUNT_SID": env("TWILIO_ACCOUNT_SID", ""),
+    "AUTH_TOKEN": env("TWILIO_AUTH_TOKEN", ""),
+    "VERIFY_SERVICE_SID": env("TWILIO_VERIFY_SERVICE_SID", ""),
+    "TIMEOUT": float(env("TWILIO_TIMEOUT", "10")),
 }
 
 # ----------------------------------------------------------------------
