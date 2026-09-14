@@ -1,0 +1,17 @@
+# Service « celery-beat » : planificateur (CELERY_BEAT_SCHEDULE dans les
+# settings : polling 20 s, file de retraits 30 s, indetermines 5 min,
+# float 10 min).
+# Railway > service > Settings > Config-as-code path : /railway-beat.toml
+#
+# UNE SEULE REPLIQUE : deux beat enverraient chaque tache en double.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Fichier d'etat dans /tmp : le planning est dans le code, rien a conserver.
+startCommand = "celery -A config beat --loglevel=info --schedule /tmp/celerybeat-schedule"
+restartPolicyType = "ALWAYS"
+restartPolicyMaxRetries = 10
+# Pas de healthcheck : beat n'expose pas de port HTTP.

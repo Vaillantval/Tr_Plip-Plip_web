@@ -1,0 +1,21 @@
+# Service « web » : site client (/), API (/api/v1/), console (/console/).
+# Chemin de config par defaut de Railway : aucun reglage a faire.
+#
+# ATTENTION : Railway a deprecie Config as Code. Ces fichiers fonctionnent
+# jusqu'au 2026-12-01 ; migrer ensuite vers Infrastructure as Code
+# (`railway config migrate`, voir README).
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Conteneur separe, avant la mise en service : check --deploy (refuse une
+# config de prod incomplete), migrations, comptes du grand livre.
+# Un echec annule le deploiement.
+preDeployCommand = ["python manage.py predeploy"]
+startCommand = "sh -c 'gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --threads 4 --worker-class gthread --timeout 60 --access-logfile -'"
+healthcheckPath = "/health/"
+healthcheckTimeout = 120
+restartPolicyType = "ALWAYS"
+restartPolicyMaxRetries = 10

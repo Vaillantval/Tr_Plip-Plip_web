@@ -1,0 +1,16 @@
+# Service « celery-worker » : taches generales (polling des paiements,
+# verification des retraits indetermines, niveau de float).
+# Railway > service > Settings > Config-as-code path : /railway-celery.toml
+#
+# Ne consomme PAS la file « payouts » : les retraits restent sur le
+# worker dedie. Ce service peut etre replique si le volume l'exige.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "celery -A config worker -Q celery --concurrency=4 -n general@%h --loglevel=info"
+restartPolicyType = "ALWAYS"
+restartPolicyMaxRetries = 10
+# Pas de healthcheck : un worker n'expose pas de port HTTP.

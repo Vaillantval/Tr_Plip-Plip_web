@@ -1,0 +1,17 @@
+# Service « celery-payouts » : SEUL service qui execute les retraits plopplop.
+# Railway > service > Settings > Config-as-code path : /railway-celery-payouts.toml
+#
+# UNE SEULE REPLIQUE, concurrence 1. plopplop impose 120 s entre deux
+# retraits PAR IP : deux workers en parallele produisent des 429 et des
+# retraits d'issue inconnue. Le verrou Redis (PayoutLock) double la
+# protection, mais ne jamais augmenter les repliques de ce service.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "celery -A config worker -Q payouts --concurrency=1 --prefetch-multiplier=1 -n payouts@%h --loglevel=info"
+restartPolicyType = "ALWAYS"
+restartPolicyMaxRetries = 10
+# Pas de healthcheck : un worker n'expose pas de port HTTP.
