@@ -118,11 +118,23 @@ PLOPPLOP = {
     "TIMEOUT": float(env("PLOPPLOP_TIMEOUT", "30")),
 }
 
+# Duree de vie du verrou des decaissements, RAFRAICHI a chaque etape du lot.
+# Doit couvrir l'etape la plus longue sans rafraichissement : un retrait
+# complet, soit 3 appels HTTP (connexion + lecture, TIMEOUT chacune).
+# C'est aussi le delai maximal pendant lequel un worker tue bloque la file.
+PAYOUT_LOCK_TTL_SECONDS = int(
+    env("PAYOUT_LOCK_TTL_SECONDS", str(int(6 * PLOPPLOP["TIMEOUT"] + 60)))
+)
+
 # Cooldown impose par plopplop entre deux retraits, par IP.
 # A revoir des que le plafond aura ete negocie : c'est ce chiffre qui
 # determine le debit maximal de la plateforme.
 PAYOUT_COOLDOWN_SECONDS = int(env("PAYOUT_COOLDOWN_SECONDS", "125"))
 PAYOUT_MAX_ATTEMPTS = int(env("PAYOUT_MAX_ATTEMPTS", "3"))
+
+# Intervalle de beat de la tache de decaissement ; une tache restee en
+# file plus longtemps est abandonnee (expires).
+PAYOUT_DRAIN_INTERVAL_SECONDS = int(env("PAYOUT_DRAIN_INTERVAL_SECONDS", "30"))
 
 # api/paiement-verify ne renvoie jamais "echoue" : l'expiration est une
 # decision locale. 30 minutes par defaut.
@@ -218,7 +230,13 @@ CELERY_TASK_ROUTES = {
 }
 CELERY_BEAT_SCHEDULE = {
     "poll-payments": {"task": "transactions.poll_pending_payments", "schedule": 20.0},
-    "drain-payouts": {"task": "transactions.drain_payout_queue", "schedule": 30.0},
+    "drain-payouts": {
+        "task": "transactions.drain_payout_queue",
+        "schedule": float(PAYOUT_DRAIN_INTERVAL_SECONDS),
+        # Un lot peut durer ~10 min : sans expiration, les declenchements
+        # s'empilent dans la file 'payouts'.
+        "options": {"expires": PAYOUT_DRAIN_INTERVAL_SECONDS},
+    },
     "resolve-unknown": {"task": "transactions.resolve_unknown_payouts", "schedule": 300.0},
     "check-float": {"task": "transactions.check_float_level", "schedule": 600.0},
 }

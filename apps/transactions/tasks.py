@@ -8,9 +8,15 @@ pire, des tentatives dont l'issue devient indeterminee.
 Dispositif :
   - une queue Celery dediee 'payouts' ;
   - un worker unique, --concurrency=1, sur cette queue ;
-  - un verrou Redis global en plus, pour survivre a un double demarrage
-    de worker (erreur de deploiement classique) ;
+  - un verrou Redis global en plus, pour survivre a deux processus
+    simultanes -- double demarrage par erreur, ou recouvrement de
+    l'ancienne et de la nouvelle instance pendant un deploiement ;
   - un horodatage du dernier retrait, pour espacer les appels.
+
+Le verrou a une duree de vie courte et est rafraichi a chaque etape du
+lot (voir locks.py). Si le rafraichissement echoue, le lot s'arrete
+AVANT le retrait suivant : le verrou appartient peut-etre deja a un
+autre processus.
 
 Debit maximal en resultant : environ 30 decaissements par heure. C'est
 la contrainte structurelle du MVP, et la raison pour laquelle le module
@@ -25,41 +31,84 @@ import time
 from celery import shared_task
 from django.conf import settings
 from django.core.cache import cache
-from django.utils import timezone
 
+from .locks import default_backend
 from .models import Transaction
 from .states import State
 
 logger = logging.getLogger(__name__)
 
-PAYOUT_LOCK_KEY = "plipplip:payout:lock"
 LAST_PAYOUT_KEY = "plipplip:payout:last_at"
+
+#: Pas maximal d'une attente de cooldown : le verrou est rafraichi entre
+#: deux pas. Doit rester tres inferieur a PAYOUT_LOCK_TTL_SECONDS.
+LOCK_REFRESH_STEP_SECONDS = 10
+
+# Indirections remplacables par les tests (horloge simulee).
+_now = time.time
+_sleep = time.sleep
 
 
 class PayoutLock:
-    """Verrou global exclusif, avec espacement force entre deux retraits."""
+    """Verrou global exclusif, a rafraichir pendant toute la duree du lot."""
 
-    def __init__(self, timeout: int = 300):
-        self.timeout = timeout
+    def __init__(self, ttl: float | None = None, backend=None):
+        self.ttl = ttl if ttl is not None else settings.PAYOUT_LOCK_TTL_SECONDS
+        self._backend = backend if backend is not None else default_backend()
         self.acquired = False
 
     def __enter__(self) -> "PayoutLock":
-        self.acquired = cache.add(PAYOUT_LOCK_KEY, timezone.now().isoformat(), self.timeout)
+        try:
+            self.acquired = self._backend.acquire(self.ttl)
+        except Exception:
+            logger.exception("Verrou des decaissements inaccessible")
+            self.acquired = False
         return self
+
+    def refresh(self) -> bool:
+        """Prolonge le verrou. False s'il n'est plus a nous : arreter le lot."""
+        if not self.acquired:
+            return False
+        try:
+            still_ours = self._backend.refresh(self.ttl)
+        except Exception:
+            logger.exception("Rafraichissement du verrou des decaissements impossible")
+            still_ours = False
+        if not still_ours:
+            self.acquired = False
+        return still_ours
 
     def __exit__(self, *exc) -> None:
         if self.acquired:
-            cache.set(LAST_PAYOUT_KEY, time.time(), None)
-            cache.delete(PAYOUT_LOCK_KEY)
+            try:
+                self._backend.release()
+            except Exception:
+                logger.exception("Liberation du verrou des decaissements impossible")
+            self.acquired = False
 
-    def wait_for_cooldown(self) -> float:
-        """Retourne le nombre de secondes restantes avant le prochain retrait."""
+    @staticmethod
+    def wait_for_cooldown() -> float:
+        """Secondes restantes avant le prochain retrait autorise."""
         last = cache.get(LAST_PAYOUT_KEY)
         if last is None:
             return 0.0
-        elapsed = time.time() - float(last)
-        remaining = settings.PAYOUT_COOLDOWN_SECONDS - elapsed
+        remaining = settings.PAYOUT_COOLDOWN_SECONDS - (_now() - float(last))
         return max(0.0, remaining)
+
+
+def _new_lock() -> PayoutLock:
+    return PayoutLock()
+
+
+def _wait_cooldown_holding(lock: PayoutLock) -> bool:
+    """Attend la fin du cooldown en rafraichissant le verrou. False si perdu."""
+    while True:
+        if not lock.refresh():
+            return False
+        remaining = lock.wait_for_cooldown()
+        if remaining <= 0:
+            return True
+        _sleep(min(remaining, LOCK_REFRESH_STEP_SECONDS))
 
 
 @shared_task(name="transactions.poll_pending_payments")
@@ -86,37 +135,46 @@ def poll_pending_payments(limit: int = 200) -> dict:
     return {"polled": len(pending), "confirmed": confirmed, "expired": expired, "errors": errors}
 
 
-@shared_task(name="transactions.drain_payout_queue")
+@shared_task(name="transactions.drain_payout_queue", expires=settings.PAYOUT_DRAIN_INTERVAL_SECONDS)
 def drain_payout_queue(max_batch: int = 5) -> dict:
     """Vide la file de decaissement, un retrait a la fois.
 
     Si le verrou n'est pas obtenu, on sort immediatement : un autre
-    worker travaille deja, et insister ferait exactement le degat que
+    processus travaille deja, et insister ferait exactement le degat que
     ce verrou existe pour eviter.
+
+    `expires` : beat relance la tache a chaque intervalle alors qu'un lot
+    peut durer une dizaine de minutes. Une tache de drain restee en file
+    au-dela d'un intervalle est perimee ; la suivante prendra le relais.
     """
     from . import services
 
-    with PayoutLock() as lock:
+    with _new_lock() as lock:
         if not lock.acquired:
-            logger.info("File de decaissement deja traitee par un autre worker")
+            logger.info("File de decaissement deja traitee par un autre processus")
             return {"skipped": True}
 
         processed = 0
         for _ in range(max_batch):
-            remaining = lock.wait_for_cooldown()
-            if remaining > 0:
-                time.sleep(min(remaining, settings.PAYOUT_COOLDOWN_SECONDS))
+            if not _wait_cooldown_holding(lock):
+                logger.error("Verrou des decaissements perdu pendant le cooldown : lot interrompu")
+                return {"processed": processed, "lock_lost": True}
 
             txn = Transaction.objects.payable().first()
             if txn is None:
                 break
+
+            # Dernier controle juste avant l'appel a plopplop.
+            if not lock.refresh():
+                logger.error("Verrou des decaissements perdu avant %s : lot interrompu", txn.reference)
+                return {"processed": processed, "lock_lost": True}
 
             try:
                 services.execute_payout(txn)
             except Exception:
                 logger.exception("Echec du decaissement sur %s", txn.reference)
             finally:
-                cache.set(LAST_PAYOUT_KEY, time.time(), None)
+                cache.set(LAST_PAYOUT_KEY, _now(), None)
                 processed += 1
 
         return {"processed": processed}

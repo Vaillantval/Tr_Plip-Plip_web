@@ -199,8 +199,16 @@ celery -A config worker -Q celery --concurrency=4 -n general@%h
 celery -A config beat
 ```
 
-Un verrou Redis double la protection, au cas où deux workers `payouts`
-seraient démarrés par erreur.
+Un verrou Redis double la protection, au cas où deux processus de
+décaissement tourneraient en même temps — double démarrage par erreur, ou
+recouvrement de l'ancienne et de la nouvelle instance pendant un
+déploiement. Sa durée de vie est courte (`PAYOUT_LOCK_TTL_SECONDS`, 240 s
+par défaut) et il est rafraîchi à chaque étape du lot : un lot de dix
+minutes le garde d'un bout à l'autre, et un worker tué ne bloque la file
+que jusqu'à son expiration. Si le rafraîchissement échoue, le lot s'arrête
+avant le retrait suivant. Les déclenchements de beat expirent après un
+intervalle (`PAYOUT_DRAIN_INTERVAL_SECONDS`) pour ne pas s'empiler pendant
+un lot.
 
 Débit maximal qui en résulte : **environ 30 décaissements par heure.**
 
