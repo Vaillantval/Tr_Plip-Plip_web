@@ -145,13 +145,23 @@ Mise en place :
    doivent être présentes sur les 4 services : les workers chargent les
    mêmes réglages de production et refusent de démarrer sans elles.
 4. Générer un domaine public sur `web` uniquement.
-5. Créer le premier compte de la console :
-   `railway ssh --service web -- python manage.py createsuperuser`, puis
-   lui donner le rôle `superadmin` et valider la tarification.
+5. Renseigner `SUPERADMIN_PASSWORD` sur `web` : le compte superadmin de la
+   console (`info@plip.ht` par défaut) est créé au déploiement. Se connecter
+   sur `/console/login/` et valider la tarification.
 
 `manage.py predeploy` (avant chaque mise en service de `web`) exécute
-`check --deploy`, les migrations et `init_ledger` ; s'il échoue, l'ancienne
-version reste en ligne.
+`check --deploy`, les migrations, `init_ledger` et `init_superadmin` ; s'il
+échoue, l'ancienne version reste en ligne.
+
+**Superadmin** (`init_superadmin`) : `SUPERADMIN_USERNAME` (défaut : l'email),
+`SUPERADMIN_EMAIL` (défaut `info@plip.ht`), `SUPERADMIN_PASSWORD`. Les
+variables font foi : le compte est créé s'il n'existe pas, remis en
+superadmin actif, et son mot de passe aligné sur la variable. Changer le
+mot de passe dans Railway redéploie `web` et l'applique. Un mot de passe vide
+ou refusé (moins de 12 caractères, trop courant, entièrement numérique,
+proche de l'identifiant) ne crée ni ne modifie rien et n'empêche pas le
+déploiement : le motif est dans les logs. Chaque changement est inscrit au
+journal d'audit, sans le mot de passe.
 
 ### Variables d'environnement
 
@@ -164,6 +174,7 @@ version reste en ligne.
 | `TWILIO_ACCOUNT_SID` · `TWILIO_AUTH_TOKEN` · `TWILIO_VERIFY_SERVICE_SID` | tous | Compte et service Twilio Verify |
 | `DJANGO_ALLOWED_HOSTS` | web | Domaines personnalisés, séparés par des virgules (le domaine `*.up.railway.app` est ajouté automatiquement) |
 | `CSRF_TRUSTED_ORIGINS` | web | Facultatif : origines `https://…` supplémentaires |
+| `SUPERADMIN_USERNAME` · `SUPERADMIN_EMAIL` · `SUPERADMIN_PASSWORD` | web | Compte superadmin créé ou mis à jour au déploiement (voir ci-dessus) |
 | `API_NUM_PROXIES` | web | `1` (proxy Railway devant l'application ; sans cela, les limites par IP se basent sur l'adresse du proxy) |
 | `DATABASE_SSL_REQUIRE` | tous | Facultatif, `1` pour exiger TLS vers Postgres |
 
