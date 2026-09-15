@@ -8,10 +8,11 @@ SECRET_KEY = env("DJANGO_SECRET_KEY", required=True)  # noqa: F405
 PLOPPLOP["CLIENT_ID"] = env("PLOPPLOP_CLIENT_ID", required=True)  # noqa: F405
 PLOPPLOP["CLIENT_SECRET"] = env("PLOPPLOP_CLIENT_SECRET", required=True)  # noqa: F405
 
+# Codes SMS : Twilio imperatif en production (jamais le backend console).
+# Ses identifiants ne bloquent PAS le demarrage : sans eux, seule
+# l'identification des clients est indisponible (check --deploy l'avertit,
+# l'envoi de code repond « momentanement impossible »).
 OTP["BACKEND"] = "twilio"  # noqa: F405
-TWILIO["ACCOUNT_SID"] = env("TWILIO_ACCOUNT_SID", required=True)  # noqa: F405
-TWILIO["AUTH_TOKEN"] = env("TWILIO_AUTH_TOKEN", required=True)  # noqa: F405
-TWILIO["VERIFY_SERVICE_SID"] = env("TWILIO_VERIFY_SERVICE_SID", required=True)  # noqa: F405
 API_DOCS_ENABLED = env("API_DOCS_ENABLED", "0") == "1"  # noqa: F405
 
 # ----------------------------------------------------------------------

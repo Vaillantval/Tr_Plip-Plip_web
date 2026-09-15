@@ -45,6 +45,11 @@ class OTPUnavailable(OTPError):
     pass
 
 
+def twilio_configured() -> bool:
+    conf = settings.TWILIO
+    return all(conf[key] for key in ("ACCOUNT_SID", "AUTH_TOKEN", "VERIFY_SERVICE_SID"))
+
+
 def generate_code() -> str:
     return "".join(secrets.choice("0123456789") for _ in range(CODE_LENGTH))
 
@@ -80,7 +85,16 @@ class ConsoleOTPBackend:
 
 
 class TwilioOTPBackend:
+    @staticmethod
+    def _ensure_configured() -> None:
+        # Sans identifiants, aucun appel a Twilio : le client voit « envoi
+        # momentanement impossible », le reste de la plateforme tourne.
+        if not twilio_configured():
+            logger.error("Twilio non configure : aucun code SMS ne peut etre envoye ni verifie")
+            raise OTPUnavailable("Twilio non configure")
+
     def send(self, phone: str) -> None:
+        self._ensure_configured()
         try:
             get_client().start_verification(to=to_e164(phone))
         except tw.TwilioRateLimited as exc:
@@ -92,6 +106,7 @@ class TwilioOTPBackend:
             raise OTPUnavailable(str(exc)) from exc
 
     def check(self, phone: str, code: str) -> bool:
+        self._ensure_configured()
         try:
             return get_client().check_verification(to=to_e164(phone), code=code)
         except tw.VerificationNotFound:

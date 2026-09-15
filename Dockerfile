@@ -22,7 +22,6 @@ COPY . .
 # seulement, elles ne sont pas conservees dans l'image.
 RUN DJANGO_SECRET_KEY=collectstatic-only \
     PLOPPLOP_CLIENT_ID=build PLOPPLOP_CLIENT_SECRET=build \
-    TWILIO_ACCOUNT_SID=build TWILIO_AUTH_TOKEN=build TWILIO_VERIFY_SERVICE_SID=build \
     python manage.py collectstatic --noinput
 
 # Ne pas tourner en root.

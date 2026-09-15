@@ -246,7 +246,8 @@ def test_console_otp_backend_is_refused_by_deploy_checks(settings):
     assert [e.id for e in otp_backend_is_production_ready(None)] == ["plipplip.E001"]
     settings.OTP = {**settings.OTP, "BACKEND": "twilio"}
     settings.TWILIO = {**settings.TWILIO, "AUTH_TOKEN": ""}
-    assert [e.id for e in otp_backend_is_production_ready(None)] == ["plipplip.E002"]
+    # Twilio incomplet avertit sans bloquer le deploiement.
+    assert [e.id for e in otp_backend_is_production_ready(None)] == ["plipplip.W002"]
 
 
 # ----------------------------------------------------------------------
