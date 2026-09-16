@@ -3,6 +3,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from django import forms
+from django.contrib.auth.forms import AuthenticationForm, UsernameField
 
 from apps.transactions.services import REFUND_REASON_MAX_LENGTH, TRANSFER_REFERENCE_MAX_LENGTH
 
@@ -79,3 +80,44 @@ class TopupForm(forms.Form):
         label="Montant (HTG)", max_digits=14, decimal_places=2, min_value=Decimal("0.01")
     )
     reference = forms.CharField(label="Reference du rechargement plopplop", max_length=64)
+
+
+class ConsoleLoginForm(AuthenticationForm):
+    """Connexion a la console.
+
+    L'identifiant est une adresse e-mail (info@plip.ht par defaut), d'ou
+    le libelle et le clavier adaptes. Le message d'echec ne distingue
+    jamais « compte inconnu » de « mot de passe faux » : il ne doit pas
+    servir a decouvrir les comptes d'exploitation.
+    """
+
+    error_messages = {
+        **AuthenticationForm.error_messages,
+        "invalid_login": "Identifiant ou mot de passe incorrect.",
+        "inactive": "Ce compte est desactive.",
+    }
+
+    #: Habillage porte par le widget : un champ non style ne doit jamais
+    #: apparaitre, meme le temps d'un chargement ou sans JavaScript.
+    INPUT_CLASS = (
+        "w-full rounded border border-slate-300 px-3 py-2 "
+        "focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+    )
+
+    username = UsernameField(
+        label="Identifiant",
+        widget=forms.TextInput(
+            attrs={
+                "class": INPUT_CLASS,
+                "autofocus": True,
+                "autocomplete": "username",
+                "inputmode": "email",
+                "spellcheck": "false",
+            }
+        ),
+    )
+    password = forms.CharField(
+        label="Mot de passe",
+        strip=False,
+        widget=forms.PasswordInput(attrs={"class": INPUT_CLASS, "autocomplete": "current-password"}),
+    )

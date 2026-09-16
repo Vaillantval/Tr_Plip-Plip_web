@@ -1,7 +1,50 @@
-{% extends "console/base.html" %}
-{% block content %}
-<form method="post" class="max-w-sm space-y-3">
-  {% csrf_token %}{{ form.as_p }}
-  <button class="rounded bg-slate-900 px-4 py-2 text-white">Connexion</button>
-</form>
-{% endblock %}
+{# Page autonome : pas de barre de navigation, rien a atteindre avant #}
+{# d'etre identifie. Centree, sobre, utilisable au telephone. #}
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Connexion — Console Plip-Plip</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-100 text-sm text-slate-900 antialiased">
+  <main class="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-4 px-4 py-10">
+    <header class="text-center">
+      <div class="text-xl font-semibold tracking-tight">Plip-Plip</div>
+      <div class="text-slate-500">Console d'exploitation</div>
+    </header>
+
+    <form method="post" class="space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm" novalidate>
+      {% csrf_token %}
+      {% if form.errors %}
+      <div role="alert" class="rounded border border-red-300 bg-red-50 px-3 py-2 text-red-800">
+        {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        {% for field in form %}{% for error in field.errors %}<p>{{ field.label }} : {{ error }}</p>{% endfor %}{% endfor %}
+      </div>
+      {% endif %}
+
+      {% for field in form %}
+      <div class="space-y-1">
+        <label for="{{ field.id_for_label }}" class="block font-medium text-slate-700">{{ field.label }}</label>
+        {{ field }}
+      </div>
+      {% endfor %}
+
+      {# Retour a l'ecran demande avant la redirection vers la connexion. #}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+      <button type="submit"
+              class="w-full rounded bg-slate-900 px-4 py-2.5 font-medium text-white hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2">
+        Se connecter
+      </button>
+    </form>
+
+    <p class="text-center text-xs text-slate-500">
+      Acces reserve a l'exploitation. Chaque action et chaque refus sont journalises.
+    </p>
+  </main>
+
+</body>
+</html>

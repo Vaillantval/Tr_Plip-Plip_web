@@ -2,11 +2,22 @@ from django.contrib.auth import views as auth_views
 from django.urls import path
 
 from . import views
+from .forms import ConsoleLoginForm
 
 app_name = "console"
 
 urlpatterns = [
-    path("login/", auth_views.LoginView.as_view(template_name="console/login.html"), name="login"),
+    path(
+        "login/",
+        auth_views.LoginView.as_view(
+            template_name="console/login.html",
+            authentication_form=ConsoleLoginForm,
+            # Deja connecte : aller au tableau de bord plutot que reafficher
+            # un formulaire de connexion.
+            redirect_authenticated_user=True,
+        ),
+        name="login",
+    ),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("", views.dashboard, name="dashboard"),
     path("transactions/", views.transaction_list, name="transactions"),
