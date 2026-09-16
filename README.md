@@ -39,6 +39,12 @@ services que l'API : aucune règle métier n'y est dupliquée.
 - **Parcours** : envoi avec devis en direct → connexion par code SMS →
   confirmation (« Payer X HTG ») → paiement plopplop dans un nouvel onglet
   ou demande USSD → page de suivi rafraîchie toutes les 5 s → historique.
+- **URL de retour plopplop** (espace marchand) : `https://plip.ht/paiement/retour/`.
+  Le format du retour n'est pas documenté : la page accepte notre référence
+  (`refference_id`, `reference`…) ou l'identifiant plopplop
+  (`transaction_id`…), et à défaut ouvre le dernier transfert en cours du
+  client. Elle ne confirme **rien** et ne change aucun état : seul le
+  polling de `paiement-verify` fait foi.
 - **Session client** en cookie `HttpOnly`, distincte de la console : une
   session client n'ouvre pas la console et inversement. Identifiant de
   session renouvelé à la connexion, déconnexion après 30 min d'inactivité

@@ -7,7 +7,9 @@ dupliquee ici, et aucun modele n'est modifie directement.
 
 from __future__ import annotations
 
+import logging
 import secrets
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 from urllib.parse import urlencode
 
@@ -17,6 +19,7 @@ from django.core.paginator import Paginator
 from django.http import Http404
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods, require_POST
@@ -24,7 +27,8 @@ from django.views.decorators.http import require_http_methods, require_POST
 from apps.accounts import otp
 from apps.accounts import services as accounts
 from apps.api import services as api_services
-from apps.api.status import payment_instructions, public_status, public_wait
+from apps.api.status import MAPPING as STATUS_MAPPING
+from apps.api.status import PublicStatus, payment_instructions, public_status, public_wait
 from apps.transactions import services as transactions
 from apps.transactions.models import Transaction
 from apps.transactions.pricing import MIN_NET, AmountTooLarge, AmountTooSmall
@@ -33,6 +37,8 @@ from . import ratelimit
 from .forms import CodeForm, PhoneForm, TransferForm
 from .polling import poll_interval
 from .session import customer_required, get_customer, login_customer, logout_customer
+
+logger = logging.getLogger(__name__)
 
 DRAFT_KEY = "web:draft"
 PENDING_KEY = "web:pending"
@@ -227,6 +233,57 @@ def transfer_detail(request, reference: str):
 def transfer_status(request, reference: str):
     """Fragment HTMX rafraichi tant que le transfert n'est pas termine."""
     return render(request, "web/partials/transfer_status.html", _transfer_context(_own_transfer(request, reference)))
+
+
+# ----------------------------------------------------------------------
+# Retour depuis plopplop
+# ----------------------------------------------------------------------
+#: Le retour n'est pas documente par plopplop : noms de parametres plausibles
+#: pour notre reference, puis pour leur identifiant de transaction.
+RETURN_REFERENCE_PARAMS = ("refference_id", "reference_id", "reference", "ref")
+RETURN_PROVIDER_ID_PARAMS = ("transaction_id", "id_transaction")
+#: Sans parametre exploitable : dernier transfert encore suivi, de moins de 2 h.
+RETURN_FALLBACK_WINDOW = timedelta(hours=2)
+RETURN_FALLBACK_STATES = [
+    state for state, public in STATUS_MAPPING.items() if public in (PublicStatus.AWAITING_PAYMENT, PublicStatus.IN_PROGRESS)
+]
+
+
+def payment_return(request):
+    """URL de retour saisie dans l'espace marchand plopplop : /paiement/retour/.
+
+    Ce retour ne prouve RIEN : aucun etat ne change ici et plopplop n'est
+    pas appele -- n'importe qui peut ouvrir cette adresse. Seul le polling
+    de paiement-verify confirme un paiement. On emmene simplement le client
+    sur la page de suivi de SON transfert, qui se met a jour seule.
+    """
+    # Noms seulement : sert a decouvrir le format reel du retour plopplop.
+    logger.info("Retour plopplop, parametres recus : %s", sorted(request.GET.keys()))
+    customer = get_customer(request)
+    if customer is None:
+        return redirect(f"{reverse('web:login')}?{urlencode({'next': request.get_full_path()})}")
+    txn = _returned_transfer(customer, request.GET)
+    if txn is None:
+        return redirect("web:transfers")
+    return redirect("web:transfer_detail", reference=txn.reference)
+
+
+def _returned_transfer(customer, params) -> Transaction | None:
+    own = Transaction.objects.filter(customer=customer)
+    lookups = [("reference", name) for name in RETURN_REFERENCE_PARAMS] + [
+        ("payment_provider_id", name) for name in RETURN_PROVIDER_ID_PARAMS
+    ]
+    for field, name in lookups:
+        value = params.get(name, "").strip()
+        if value:
+            txn = own.filter(**{field: value}).first()
+            if txn is not None:
+                return txn
+    return (
+        own.filter(state__in=RETURN_FALLBACK_STATES, created_at__gte=timezone.now() - RETURN_FALLBACK_WINDOW)
+        .order_by("-created_at", "-id")
+        .first()
+    )
 
 
 # ----------------------------------------------------------------------
