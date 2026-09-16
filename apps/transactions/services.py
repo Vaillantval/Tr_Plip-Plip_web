@@ -690,6 +690,56 @@ def _unknown_payout_not_found(txn: Transaction, *, actor=None) -> Transaction:
     return txn
 
 
+def sweep_stale_in_flight_payouts(*, limit: int = 50, now=None) -> dict:
+    """Decaissements « en cours » que plus aucun processus ne suit.
+
+    Un worker tue pendant l'appel a plopplop laisse la transaction en
+    PAYOUT_IN_FLIGHT pour toujours : aucune tache ne la reprend, elle
+    n'apparait nulle part, et nous detenons l'argent du client sans chemin
+    de sortie. La fenetre s'ouvre a CHAQUE deploiement.
+
+    L'issue est INCONNUE, jamais « echouee » : le retrait est peut-etre
+    parti. On ne remet donc JAMAIS en file directement — le passage par
+    PAYOUT_UNKNOWN impose la verification aupres de l'operateur, avec sa
+    regle des deux 404 espaces. L'evenement ecrit ici est exactement
+    l'ancre qu'attend _unknown_payout_not_found().
+
+    L'age est lu dans le journal d'evenements : `updated_at` bouge a
+    chaque sauvegarde de la ligne et rajeunirait l'orphelin.
+    """
+    now = now or timezone.now()
+    cutoff = now - timedelta(seconds=settings.PAYOUT_INFLIGHT_STALE_SECONDS)
+    stale = (
+        Transaction.objects.filter(state=State.PAYOUT_IN_FLIGHT)
+        .with_state_since()
+        .filter(state_since__lte=cutoff)
+        .order_by("state_since", "id")[:limit]
+    )
+
+    swept = 0
+    for txn in stale:
+        age = int((now - txn.state_since).total_seconds())
+        try:
+            txn.transition(
+                State.PAYOUT_UNKNOWN,
+                note=f"Aucun processus derriere ce decaissement depuis {age} s — verification requise",
+                data={"swept_after_seconds": age, "payout_reference": txn.payout_reference},
+            )
+        except IllegalTransition:
+            # Sortie de l'etat entre la lecture et l'ecriture : le worker
+            # a finalement repondu. Rien a faire.
+            continue
+        logger.error(
+            "Decaissement orphelin %s (retrait %s) repris apres %s s : issue inconnue",
+            txn.reference,
+            txn.payout_reference,
+            age,
+        )
+        swept += 1
+
+    return {"checked": len(stale), "swept": swept}
+
+
 def retry_failed_payout(txn: Transaction, *, actor=None) -> Transaction:
     """Relance manuelle d'un decaissement echoue, depuis la console.
 

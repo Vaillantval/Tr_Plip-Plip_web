@@ -15,6 +15,21 @@
   </section>
   {% endif %}
 
+  {% if orphans %}
+  <section class="rounded border-2 border-red-500 bg-white" data-group="orphans">
+    <h2 class="border-b border-red-200 bg-red-50 px-3 py-2 font-semibold text-red-800">
+      Decaissements sans processus : « en cours » depuis plus de {{ orphan_after|duration }}
+      <span class="font-normal">({{ orphans|length }})</span>
+    </h2>
+    <p class="px-3 py-2 text-red-800">
+      Le worker a ete tue pendant l'appel a plopplop. Le balayage automatique aurait deja du les passer
+      en « indetermine » : verifier que celery-beat et celery-worker tournent. Ne relancer aucun retrait
+      a la main, l'argent est peut-etre parti.
+    </p>
+    {% include "console/partials/exception_table.html" with rows=orphans %}
+  </section>
+  {% endif %}
+
   <section class="rounded border {% if held %}border-2 border-red-500{% endif %} bg-white" data-group="held">
     <h2 class="flex items-center gap-2 border-b px-3 py-2 font-medium">
       <span class="rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">Montant non conforme</span>

@@ -18,6 +18,11 @@ lot (voir locks.py). Si le rafraichissement echoue, le lot s'arrete
 AVANT le retrait suivant : le verrou appartient peut-etre deja a un
 autre processus.
 
+Aucune tache ne dort : quand le cooldown n'est pas ecoule, drain rend la
+main et beat la relance. Un processus qui dort longtemps finit par etre
+tue au milieu d'un retrait, et laisse un decaissement orphelin que
+sweep_stale_payouts doit ensuite reprendre.
+
 Debit maximal en resultant : environ 30 decaissements par heure. C'est
 la contrainte structurelle du MVP, et la raison pour laquelle le module
 Payroll ne peut pas etre construit sur ce dispositif en l'etat.
@@ -40,13 +45,8 @@ logger = logging.getLogger(__name__)
 
 LAST_PAYOUT_KEY = "plipplip:payout:last_at"
 
-#: Pas maximal d'une attente de cooldown : le verrou est rafraichi entre
-#: deux pas. Doit rester tres inferieur a PAYOUT_LOCK_TTL_SECONDS.
-LOCK_REFRESH_STEP_SECONDS = 10
-
-# Indirections remplacables par les tests (horloge simulee).
+# Indirection remplacable par les tests (horloge simulee).
 _now = time.time
-_sleep = time.sleep
 
 
 class PayoutLock:
@@ -100,17 +100,6 @@ def _new_lock() -> PayoutLock:
     return PayoutLock()
 
 
-def _wait_cooldown_holding(lock: PayoutLock) -> bool:
-    """Attend la fin du cooldown en rafraichissant le verrou. False si perdu."""
-    while True:
-        if not lock.refresh():
-            return False
-        remaining = lock.wait_for_cooldown()
-        if remaining <= 0:
-            return True
-        _sleep(min(remaining, LOCK_REFRESH_STEP_SECONDS))
-
-
 @shared_task(name="transactions.poll_pending_payments")
 def poll_pending_payments(limit: int = 200) -> dict:
     """Interroge les paiements en attente. Aucun webhook cote plopplop,
@@ -136,16 +125,22 @@ def poll_pending_payments(limit: int = 200) -> dict:
 
 
 @shared_task(name="transactions.drain_payout_queue", expires=settings.PAYOUT_DRAIN_INTERVAL_SECONDS)
-def drain_payout_queue(max_batch: int = 5) -> dict:
-    """Vide la file de decaissement, un retrait a la fois.
+def drain_payout_queue(max_batch: int = 2) -> dict:
+    """Decaisse, un retrait a la fois, sans jamais dormir.
 
     Si le verrou n'est pas obtenu, on sort immediatement : un autre
     processus travaille deja, et insister ferait exactement le degat que
     ce verrou existe pour eviter.
 
-    `expires` : beat relance la tache a chaque intervalle alors qu'un lot
-    peut durer une dizaine de minutes. Une tache de drain restee en file
-    au-dela d'un intervalle est perimee ; la suivante prendra le relais.
+    Si le cooldown n'est pas ecoule, la tache REND LA MAIN au lieu
+    d'attendre. Un lot qui dort dix minutes dans un conteneur que la
+    plateforme peut couper a tout moment est la cause premiere des
+    decaissements orphelins (voir sweep_stale_payouts). Cout : au pire un
+    intervalle de beat de latence. Debit inchange, c'est le cooldown qui
+    le fixe.
+
+    `expires` : une tache restee en file au-dela d'un intervalle est
+    perimee ; la suivante prendra le relais.
     """
     from . import services
 
@@ -156,18 +151,18 @@ def drain_payout_queue(max_batch: int = 5) -> dict:
 
         processed = 0
         for _ in range(max_batch):
-            if not _wait_cooldown_holding(lock):
-                logger.error("Verrou des decaissements perdu pendant le cooldown : lot interrompu")
+            # Le verrou d'abord : il garantit qu'aucun autre processus ne
+            # decaisse pendant que nous lisons la file.
+            if not lock.refresh():
+                logger.error("Verrou des decaissements perdu : lot interrompu")
                 return {"processed": processed, "lock_lost": True}
+
+            if lock.wait_for_cooldown() > 0:
+                return {"processed": processed, "cooldown": True}
 
             txn = Transaction.objects.payable().first()
             if txn is None:
                 break
-
-            # Dernier controle juste avant l'appel a plopplop.
-            if not lock.refresh():
-                logger.error("Verrou des decaissements perdu avant %s : lot interrompu", txn.reference)
-                return {"processed": processed, "lock_lost": True}
 
             try:
                 services.execute_payout(txn)
@@ -178,6 +173,19 @@ def drain_payout_queue(max_batch: int = 5) -> dict:
                 processed += 1
 
         return {"processed": processed}
+
+
+@shared_task(name="transactions.sweep_stale_payouts")
+def sweep_stale_payouts(limit: int = 50) -> dict:
+    """Reprend les decaissements que plus aucun processus ne suit.
+
+    Aucun appel a plopplop : la tache ne fait que constater l'abandon et
+    passer la main a la verification. Elle n'est donc pas soumise au
+    cooldown et tourne sur la file par defaut.
+    """
+    from . import services
+
+    return services.sweep_stale_in_flight_payouts(limit=limit)
 
 
 @shared_task(name="transactions.resolve_unknown_payouts")

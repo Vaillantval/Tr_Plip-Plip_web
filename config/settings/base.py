@@ -140,6 +140,12 @@ PAYOUT_DRAIN_INTERVAL_SECONDS = int(env("PAYOUT_DRAIN_INTERVAL_SECONDS", "30"))
 # depuis ce delai. Alerte console, et plus de delai affiche aux clients.
 PAYOUT_STALL_SECONDS = int(env("PAYOUT_STALL_SECONDS", str(3 * PAYOUT_COOLDOWN_SECONDS)))
 
+# Un decaissement « en cours » au-dela de ce delai n'a plus de processus
+# derriere lui : le worker a ete tue pendant l'appel a plopplop, et la
+# fenetre s'ouvre a chaque deploiement. Seuil large : un retrait legitime
+# dure quelques secondes, et un faux positif coute une verification.
+PAYOUT_INFLIGHT_STALE_SECONDS = int(env("PAYOUT_INFLIGHT_STALE_SECONDS", "600"))
+
 # Au-dela, aucun delai n'est annonce au client (message sans duree).
 ETA_MAX_DISPLAY_SECONDS = int(env("ETA_MAX_DISPLAY_SECONDS", "3600"))
 
@@ -244,6 +250,7 @@ CELERY_BEAT_SCHEDULE = {
         # s'empilent dans la file 'payouts'.
         "options": {"expires": PAYOUT_DRAIN_INTERVAL_SECONDS},
     },
+    "sweep-stale-payouts": {"task": "transactions.sweep_stale_payouts", "schedule": 120.0},
     "resolve-unknown": {"task": "transactions.resolve_unknown_payouts", "schedule": 300.0},
     "check-float": {"task": "transactions.check_float_level", "schedule": 600.0},
 }

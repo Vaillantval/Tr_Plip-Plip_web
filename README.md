@@ -235,12 +235,24 @@ Un verrou Redis double la protection, au cas où deux processus de
 décaissement tourneraient en même temps — double démarrage par erreur, ou
 recouvrement de l'ancienne et de la nouvelle instance pendant un
 déploiement. Sa durée de vie est courte (`PAYOUT_LOCK_TTL_SECONDS`, 240 s
-par défaut) et il est rafraîchi à chaque étape du lot : un lot de dix
-minutes le garde d'un bout à l'autre, et un worker tué ne bloque la file
-que jusqu'à son expiration. Si le rafraîchissement échoue, le lot s'arrête
-avant le retrait suivant. Les déclenchements de beat expirent après un
-intervalle (`PAYOUT_DRAIN_INTERVAL_SECONDS`) pour ne pas s'empiler pendant
-un lot.
+par défaut) et il est rafraîchi avant chaque retrait ; un worker tué ne
+bloque la file que jusqu'à son expiration. Si le rafraîchissement échoue,
+le lot s'arrête avant le retrait suivant. Les déclenchements de beat
+expirent après un intervalle (`PAYOUT_DRAIN_INTERVAL_SECONDS`) pour ne pas
+s'empiler.
+
+**Aucune tâche ne dort.** Quand le cooldown n'est pas écoulé, la tâche rend
+la main et beat la relance : au pire 30 s de latence. Un processus qui dort
+dix minutes finit tué au milieu d'un retrait — c'est ce qui fabriquait les
+décaissements orphelins à chaque déploiement.
+
+**Décaissement orphelin.** Une transaction restée « en cours » au-delà de
+`PAYOUT_INFLIGHT_STALE_SECONDS` (600 s) n'a plus de processus derrière elle.
+`sweep_stale_payouts` la reprend en `PAYOUT_UNKNOWN` — **jamais vers la
+file** : l'argent est peut-être parti, la vérification auprès de l'opérateur
+tranche. L'âge est lu dans le journal d'événements, pas dans `updated_at`.
+Si des orphelins s'accumulent, la console les signale en rouge sur l'écran
+Exceptions : c'est que le balayage ne tourne plus.
 
 Débit maximal qui en résulte : **environ 30 décaissements par heure.**
 

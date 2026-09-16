@@ -31,7 +31,21 @@ from apps.treasury.models import FloatAlert, FloatSnapshot
 from .forms import RATE_INPUTS, PricingForm, RefundForm, ReleaseForm, TopupForm, pricing_field_name
 from .permissions import audit_failure, require_acting_role, require_superadmin
 
-EXCEPTION_STATES = (State.PAYOUT_FAILED, State.PAYOUT_UNKNOWN, State.PAYOUT_PENDING)
+EXCEPTION_STATES = (
+    State.PAYOUT_FAILED,
+    State.PAYOUT_UNKNOWN,
+    State.PAYOUT_PENDING,
+    # Visible pour qu'un orphelin ne s'accumule pas en silence si le
+    # balayage automatique ne tourne plus.
+    State.PAYOUT_IN_FLIGHT,
+)
+
+#: Etats ou la duree passee dans l'etat vaut incident, et le reglage qui
+#: en fixe le seuil. Toute entree doit etre dans EXCEPTION_STATES.
+STALE_AFTER = {
+    State.PAYOUT_PENDING: "PAYOUT_PENDING_STALE_SECONDS",
+    State.PAYOUT_IN_FLIGHT: "PAYOUT_INFLIGHT_STALE_SECONDS",
+}
 LIST_LIMIT = 200
 
 
@@ -153,10 +167,11 @@ def payout_queue(request):
 
 def _exceptions_context() -> dict:
     now = timezone.now()
-    stale_after = settings.PAYOUT_PENDING_STALE_SECONDS
+    thresholds = {state: getattr(settings, name) for state, name in STALE_AFTER.items()}
     grouped = {state: [] for state in EXCEPTION_STATES}
     held = []
     stale = []
+    orphans = []
     stuck = (
         Transaction.objects.filter(
             Q(state__in=EXCEPTION_STATES)
@@ -168,16 +183,19 @@ def _exceptions_context() -> dict:
     for txn in stuck:
         since = _seconds_since(txn.state_since or txn.updated_at, now)
         row = {"txn": txn, "since_seconds": since, "actions": available_actions(txn), "stale": False}
+        threshold = thresholds.get(txn.state)
         if txn.state == State.PAYMENT_CONFIRMED:
             held.append(row)
-        elif txn.state == State.PAYOUT_PENDING and since >= stale_after:
+        elif threshold is not None and since >= threshold:
             row["stale"] = True
-            stale.append(row)
+            (stale if txn.state == State.PAYOUT_PENDING else orphans).append(row)
         else:
             grouped[txn.state].append(row)
     return {
         "stale": stale,
-        "stale_after": stale_after,
+        "stale_after": thresholds[State.PAYOUT_PENDING],
+        "orphans": orphans,
+        "orphan_after": thresholds[State.PAYOUT_IN_FLIGHT],
         "held": held,
         "groups": [{"state": s, "label": s.label, "rows": grouped[s]} for s in EXCEPTION_STATES],
         "refund_form": RefundForm(),
