@@ -20,6 +20,7 @@ from apps.providers.plopplop import exceptions as pp
 from apps.providers.plopplop.client import get_client
 from apps.treasury import services as treasury
 
+from . import queue
 from .models import PAYOUT_CAPABLE, PricingPolicy, Transaction, Wallet, WalletSetting
 from .pricing import Quote, quote, round_htg
 from .states import IllegalTransition, State
@@ -428,6 +429,7 @@ def confirm_payment(txn: Transaction, *, provider_amount: Decimal | None = None)
         txn.save(update_fields=["payment_amount_received", "updated_at"])
     ledger.record_payment_received(txn)
     txn.transition(State.PAYOUT_QUEUED, note="Mise en file de decaissement")
+    queue.announce_on_queue_entry(txn)
     return txn
 
 
@@ -495,6 +497,7 @@ def release_held_payment(txn: Transaction, *, verified_amount: Decimal, reason: 
         note=f"Encaissement debloque apres verification ({verified_amount} HTG) — {reason}",
         data={"released_from": previous_code, "verified_amount": str(verified_amount), "reason": reason},
     )
+    queue.announce_on_queue_entry(txn)
     return txn
 
 

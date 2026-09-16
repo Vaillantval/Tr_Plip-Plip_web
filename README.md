@@ -49,13 +49,28 @@ services que l'API : aucune règle métier n'y est dupliquée.
   choix en pied de page. Après modification d'un texte :
 
   ```bash
-  python manage.py makemessages -l en -l ht --no-location --ignore ".venv/*"
+  python manage.py makemessages -l en -l ht --add-location file --no-obsolete --ignore ".venv/*" --ignore "tests/*"
   # traduire dans apps/web/locale/<langue>/LC_MESSAGES/django.po, puis :
   python manage.py compilemessages --ignore ".venv/*"
   ```
 
-  Les `.mo` compilés sont versionnés. La traduction créole est à faire
-  relire par un locuteur natif.
+  Les `.mo` compilés sont versionnés. Les emplacements (`--add-location
+  file`) sont indispensables : les tests s'en servent pour reconnaître le
+  chemin de l'argent. Une chaîne créole non traduite fait échouer les tests,
+  sauf si elle est listée dans `apps/web/locale/ht/A_TRADUIRE.md` — ce qui
+  est interdit pour les montants, frais, confirmation, erreurs et statut.
+  Le catalogue créole existant a été rédigé sans locuteur natif : à relire.
+- **Délai affiché** pendant le décaissement : fourchette arrondie vers le
+  haut (« moins de 5 minutes », « environ 10 à 15 minutes »), promise une
+  fois à l'entrée en file et jamais élargie. Si elle ne tient plus, si le
+  float ne couvre pas le transfert, au-delà d'une heure
+  (`ETA_MAX_DISPLAY_SECONDS`) ou si le worker de décaissement est à
+  l'arrêt, plus aucune durée : « traité dès que possible ». Ni rang ni
+  profondeur de file ne sortent vers le client. Rafraîchissement de la page
+  de suivi : 5 s, puis 15 s après 1 min, 30 s après 5 min.
+- **Worker de décaissement à l'arrêt** (file non vide, aucun retrait tenté
+  depuis `PAYOUT_STALL_SECONDS`) : bandeau d'incident sur toutes les pages
+  de la console.
 - **Production** : fichiers statiques servis par WhiteNoise
   (`python manage.py collectstatic`).
 

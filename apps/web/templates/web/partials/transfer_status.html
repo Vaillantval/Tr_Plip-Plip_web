@@ -1,6 +1,6 @@
 {% load i18n web_tags %}
 <section id="transfer-status" class="card" aria-live="polite"
-  {% if live %}hx-get="{% url 'web:transfer_status' txn.reference %}" hx-trigger="every 5s" hx-swap="outerHTML"{% endif %}>
+  {% if poll_seconds %}hx-get="{% url 'web:transfer_status' txn.reference %}" hx-trigger="every {{ poll_seconds }}s" hx-swap="outerHTML"{% endif %}>
   <span class="pill {{ status }}">{{ status|status_label }}</span>
 
   {% if status == "awaiting_payment" or status == "in_progress" or status == "delivered" %}
@@ -24,7 +24,17 @@
       <p class="muted">{% blocktranslate trimmed with time=payment.expires_at|time:"H:i" %}À payer avant {{ time }}.{% endblocktranslate %}</p>
     {% endif %}
   {% elif status == "in_progress" %}
-    <p>{% translate "Paiement reçu. Le transfert vers le bénéficiaire est en cours ; les envois partent l'un après l'autre, comptez quelques minutes." %}</p>
+    <p>{% translate "Paiement reçu. Le transfert vers le bénéficiaire est en cours." %}</p>
+    {% if wait.available %}
+      {% if wait.min_minutes == 0 %}
+        <p data-wait="estimate">{% blocktranslate trimmed with max=wait.max_minutes %}Le bénéficiaire devrait recevoir l'argent dans moins de {{ max }} minutes.{% endblocktranslate %}</p>
+      {% else %}
+        <p data-wait="estimate">{% blocktranslate trimmed with min=wait.min_minutes max=wait.max_minutes %}Le bénéficiaire devrait recevoir l'argent dans environ {{ min }} à {{ max }} minutes.{% endblocktranslate %}</p>
+      {% endif %}
+    {% else %}
+      <p data-wait="none">{% translate "Il sera traité dès que possible." %}</p>
+    {% endif %}
+    <p class="muted">{% translate "Inutile de refaire l'envoi : cette page se met à jour toute seule." %}</p>
   {% elif status == "delivered" %}
     <p>{% blocktranslate trimmed with amount=txn.net_amount|htg %}Le bénéficiaire a reçu {{ amount }} HTG.{% endblocktranslate %}</p>
   {% elif status == "expired" %}

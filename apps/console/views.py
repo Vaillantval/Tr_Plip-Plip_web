@@ -21,6 +21,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.ledger import services as ledger
+from apps.transactions import queue
 from apps.transactions import services as txn_services
 from apps.transactions.models import Transaction, Wallet
 from apps.transactions.states import IllegalTransition, State, can
@@ -116,20 +117,20 @@ def transaction_detail(request, reference: str):
 
 
 def _queue_context() -> dict:
-    now = timezone.now()
+    snapshot = queue.queue_snapshot()
+    now = snapshot.taken_at
     cooldown = settings.PAYOUT_COOLDOWN_SECONDS
-    coverage = treasury.queue_coverage()
-    stall_rank = coverage["stall_rank"]
+    coverage = snapshot.coverage
     rows = [
         {
-            "rank": rank,
-            "txn": txn,
-            "wait_seconds": _seconds_since(txn.payment_confirmed_at, now),
-            "eta_seconds": rank * cooldown,
-            "covered": stall_rank is None or rank < stall_rank,
-            "stalls_here": rank == stall_rank,
+            "rank": entry.rank,
+            "txn": entry.txn,
+            "wait_seconds": _seconds_since(entry.txn.payment_confirmed_at, now),
+            "eta_seconds": entry.eta_seconds,
+            "covered": entry.covered,
+            "stalls_here": entry.rank == coverage["stall_rank"],
         }
-        for rank, txn in enumerate(Transaction.objects.payable()[:LIST_LIMIT], start=1)
+        for entry in snapshot.entries[:LIST_LIMIT]
     ]
     return {
         "rows": rows,
@@ -138,6 +139,7 @@ def _queue_context() -> dict:
         "cooldown": cooldown,
         "drain_seconds": coverage["depth"] * cooldown,
         "truncated": coverage["depth"] > len(rows),
+        "worker": snapshot.worker,
         "now": now,
     }
 

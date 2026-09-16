@@ -177,36 +177,24 @@ def queue_coverage() -> dict:
 
     `stall_rank` est le rang (1 = prochain decaisse) de la premiere
     transaction que le float ne couvre pas ; None si toute la file passe.
+
+    Le rang et le cumul sont calcules par apps.transactions.queue, seul
+    module qui enumere la file ; cette fonction en renvoie le resultat.
     """
+    from apps.transactions.queue import queue_snapshot
+
+    return queue_snapshot().coverage
+
+
+def float_available_for_queue() -> dict:
+    """Float utilisable par la file : solde moins les decaissements engages hors file."""
     balance = ledger_float_balance()
     engaged = ZERO
     for net, cost in Transaction.objects.filter(state__in=list(ENGAGED_OUTSIDE_QUEUE)).values_list(
         "net_amount", "provider_fee_out_estimate"
     ):
         engaged += net + cost
-    available = balance - engaged
-
-    depth = 0
-    total_net = total_debit = ZERO
-    stall_rank = None
-    for net, cost in Transaction.objects.payable().values_list("net_amount", "provider_fee_out_estimate"):
-        depth += 1
-        total_net += net
-        total_debit += net + cost
-        if stall_rank is None and total_debit > available:
-            stall_rank = depth
-
-    return {
-        "ledger_balance": balance,
-        "engaged_outside_queue": engaged,
-        "available": available,
-        "depth": depth,
-        "total_net": total_net,
-        "total_debit": total_debit,
-        "stall_rank": stall_rank,
-        "covered_count": depth if stall_rank is None else stall_rank - 1,
-        "shortfall": max(total_debit - available, ZERO),
-    }
+    return {"ledger_balance": balance, "engaged_outside_queue": engaged, "available": balance - engaged}
 
 
 def acknowledge_alert(alert: FloatAlert, *, user) -> FloatAlert:

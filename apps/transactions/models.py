@@ -107,7 +107,9 @@ class TransactionQuerySet(models.QuerySet):
         return self.filter(state=State.AWAITING_PAYMENT)
 
     def payable(self):
-        return self.filter(state=State.PAYOUT_QUEUED).order_by("payment_confirmed_at")
+        # `id` departage deux confirmations simultanees : l'ordre du worker
+        # et celui des estimations (apps.transactions.queue) sont identiques.
+        return self.filter(state=State.PAYOUT_QUEUED).order_by("payment_confirmed_at", "id")
 
     def with_state_since(self):
         """Annote `state_since` : entree dans l'etat courant, lue dans le
@@ -168,6 +170,10 @@ class Transaction(models.Model):
     payout_fee_actual = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     payout_attempts = models.PositiveIntegerField(default=0)
     payout_completed_at = models.DateTimeField(null=True, blank=True)
+    # Promesse de delai faite au client (apps.transactions.queue) : borne
+    # haute annoncee, fixee une fois ; retiree si la realite la depasse.
+    payout_eta_deadline = models.DateTimeField(null=True, blank=True)
+    payout_eta_withdrawn = models.BooleanField(default=False)
 
     failure_code = models.CharField(max_length=64, blank=True)
     failure_message = models.TextField(blank=True)

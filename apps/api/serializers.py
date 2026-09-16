@@ -7,7 +7,7 @@ from rest_framework import serializers
 from apps.accounts.phone import InvalidPhone, normalize
 from apps.transactions.models import Wallet
 
-from .status import LABELS, payment_instructions, public_status
+from .status import LABELS, payment_instructions, public_status, public_wait
 
 MONEY = {"max_digits": 12, "decimal_places": 2}
 
@@ -121,6 +121,14 @@ class PaymentInstructionsSerializer(serializers.Serializer):
     expires_at = serializers.DateTimeField(allow_null=True)
 
 
+class EstimatedWaitSerializer(serializers.Serializer):
+    available = serializers.BooleanField(
+        help_text="false : transfert en cours, delai non garanti. Ne pas afficher de duree."
+    )
+    min_minutes = serializers.IntegerField(allow_null=True, help_text="0 : « moins de max_minutes minutes »")
+    max_minutes = serializers.IntegerField(allow_null=True)
+
+
 class TransferSerializer(serializers.Serializer):
     reference = serializers.CharField()
     status = serializers.ChoiceField(choices=list(LABELS))
@@ -130,6 +138,9 @@ class TransferSerializer(serializers.Serializer):
     recipient_phone = serializers.CharField()
     amounts = QuoteSerializer()
     payment = PaymentInstructionsSerializer()
+    estimated_wait = EstimatedWaitSerializer(
+        allow_null=True, help_text="Delai estime avant reception, seulement pendant le statut in_progress."
+    )
     created_at = serializers.DateTimeField()
     delivered_at = serializers.DateTimeField(allow_null=True)
 
@@ -155,6 +166,7 @@ class TransferSerializer(serializers.Serializer):
                     "total_charged": txn.total_charged,
                 },
                 "payment": payment_instructions(txn, status),
+                "estimated_wait": public_wait(txn, self.context),
                 "created_at": txn.created_at,
                 "delivered_at": txn.payout_completed_at,
             }

@@ -136,6 +136,13 @@ PAYOUT_MAX_ATTEMPTS = int(env("PAYOUT_MAX_ATTEMPTS", "3"))
 # file plus longtemps est abandonnee (expires).
 PAYOUT_DRAIN_INTERVAL_SECONDS = int(env("PAYOUT_DRAIN_INTERVAL_SECONDS", "30"))
 
+# Worker de decaissement a l'arret : file non vide et aucun retrait tente
+# depuis ce delai. Alerte console, et plus de delai affiche aux clients.
+PAYOUT_STALL_SECONDS = int(env("PAYOUT_STALL_SECONDS", str(3 * PAYOUT_COOLDOWN_SECONDS)))
+
+# Au-dela, aucun delai n'est annonce au client (message sans duree).
+ETA_MAX_DISPLAY_SECONDS = int(env("ETA_MAX_DISPLAY_SECONDS", "3600"))
+
 # api/paiement-verify ne renvoie jamais "echoue" : l'expiration est une
 # decision locale. 30 minutes par defaut.
 PAYMENT_EXPIRY_SECONDS = int(env("PAYMENT_EXPIRY_SECONDS", "1800"))

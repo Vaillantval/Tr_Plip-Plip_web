@@ -50,6 +50,29 @@ def public_status(state: str) -> str:
     return MAPPING[State(state)]
 
 
+def public_wait(txn, cache: dict | None = None) -> dict | None:
+    """Delai estime cote client, pour l'API comme pour le site web.
+
+    Jamais de rang, de profondeur ni de delai brut : une fourchette
+    arrondie vers le haut, ou `available: False` sans explication.
+    None hors statut « en cours ».
+
+    `cache` : dictionnaire partage par une requete (contexte du
+    serializer) pour ne lire la file qu'une fois, meme sur une liste.
+    """
+    from apps.transactions import queue
+
+    if public_status(txn.state) != PublicStatus.IN_PROGRESS:
+        return None
+    snapshot = None
+    if txn.state in queue.ESTIMABLE_STATES and cache is not None:
+        snapshot = cache.get("queue_snapshot") or cache.setdefault("queue_snapshot", queue.queue_snapshot())
+    display = queue.estimated_wait(txn, snapshot)["display"]
+    if display is None:
+        return {"available": False, "min_minutes": None, "max_minutes": None}
+    return {"available": True, **display}
+
+
 def payment_instructions(txn, status: str | None = None) -> dict:
     """Comment payer, pour l'API comme pour le site web.
 

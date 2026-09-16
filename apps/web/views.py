@@ -24,14 +24,14 @@ from django.views.decorators.http import require_http_methods, require_POST
 from apps.accounts import otp
 from apps.accounts import services as accounts
 from apps.api import services as api_services
-from apps.api.status import payment_instructions, public_status
+from apps.api.status import payment_instructions, public_status, public_wait
 from apps.transactions import services as transactions
 from apps.transactions.models import Transaction
 from apps.transactions.pricing import MIN_NET, AmountTooLarge, AmountTooSmall
 
 from . import ratelimit
 from .forms import CodeForm, PhoneForm, TransferForm
-from .labels import LIVE_STATUSES
+from .polling import poll_interval
 from .session import customer_required, get_customer, login_customer, logout_customer
 
 DRAFT_KEY = "web:draft"
@@ -212,8 +212,9 @@ def _transfer_context(txn: Transaction) -> dict:
     return {
         "txn": txn,
         "status": status,
-        "live": status in LIVE_STATUSES,
+        "poll_seconds": poll_interval(txn, status),
         "payment": payment_instructions(txn, status),
+        "wait": public_wait(txn),
     }
 
 

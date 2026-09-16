@@ -20,6 +20,7 @@
     <span class="ml-auto text-slate-500">{{ request.user }} — {{ request.user.get_role_display }}</span>
   </nav>
   {% endwith %}
+  {% load console_tags %}{% payout_worker_alert %}
   <div id="console-flash" class="mx-6 mt-3 hidden rounded border border-red-300 bg-red-50 px-3 py-2 text-red-800" role="alert"></div>
   <main class="px-6 py-4">{% block content %}{% endblock %}</main>
   <script>

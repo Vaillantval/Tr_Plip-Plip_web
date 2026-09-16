@@ -337,16 +337,79 @@ def test_french_is_the_default_language(client):
     assert '<html lang="fr">' in html
 
 
+#: Seuls fichiers dont les chaines creoles peuvent attendre (A_TRADUIRE.md).
+#: Tout le reste est le chemin de l'argent : montants, frais, confirmation,
+#: erreurs, statut. Un nouveau fichier bloque par defaut.
+DEFERRABLE_FILES = {
+    "apps/web/templates/web/base.html",
+    "apps/web/templates/web/login.html",
+    "apps/web/templates/web/login_code.html",
+}
+TO_TRANSLATE = LOCALE_DIR / "ht" / "A_TRADUIRE.md"
+
+
+def _catalog(language):
+    """Entrees actives d'un catalogue .po : msgid, msgstr, fichiers, drapeaux."""
+    import ast
+
+    text = (LOCALE_DIR / language / "LC_MESSAGES" / "django.po").read_text(encoding="utf-8")
+    entries = []
+    for block in re.split(r"\n\s*\n", text):
+        locations, flags, parts, current, obsolete = set(), [], {"msgid": [], "msgstr": []}, None, False
+        for line in block.splitlines():
+            if line.startswith("#~"):
+                obsolete = True
+            elif line.startswith("#:"):
+                # Windows ecrit « .\apps\web\... », Linux « apps/web/... ».
+                locations |= {loc.replace("\\", "/").removeprefix("./").split(":")[0] for loc in line[2:].split()}
+            elif line.startswith("#,"):
+                flags += [flag.strip() for flag in line[2:].split(",")]
+            elif line.startswith(("msgid ", "msgstr ")):
+                current, _, rest = line.partition(" ")
+                parts[current].append(ast.literal_eval(rest))
+            elif line.startswith('"') and current:
+                parts[current].append(ast.literal_eval(line))
+        msgid = "".join(parts["msgid"])
+        if obsolete or not msgid:
+            continue
+        entries.append({"msgid": msgid, "msgstr": "".join(parts["msgstr"]), "locations": locations, "flags": flags})
+    return entries
+
+
+def _deferred():
+    block = re.search(r"```text\n(.*?)```", TO_TRANSLATE.read_text(encoding="utf-8"), re.S)
+    return [line for line in block.group(1).splitlines() if line.strip()]
+
+
 @pytest.mark.parametrize("language", ["en", "ht"])
 def test_translation_catalogs_are_complete_and_compiled(language):
-    po = (LOCALE_DIR / language / "LC_MESSAGES" / "django.po").read_text(encoding="utf-8")
-    mo = LOCALE_DIR / language / "LC_MESSAGES" / "django.mo"
-    assert "#, fuzzy" not in po
-    entries = re.findall(r'msgid ((?:".*"\n)+)msgstr ((?:".*"\n?)+)', po)
+    po = LOCALE_DIR / language / "LC_MESSAGES" / "django.po"
+    mo = po.with_suffix(".mo")
+    entries = _catalog(language)
     assert len(entries) > 80
-    untranslated = [msgid for msgid, msgstr in entries[1:] if msgstr.strip() == '""']
-    assert untranslated == []
-    assert mo.exists() and mo.stat().st_mtime >= (LOCALE_DIR / language / "LC_MESSAGES" / "django.po").stat().st_mtime - 1
+    assert [e["msgid"] for e in entries if "fuzzy" in e["flags"]] == []
+
+    # Anglais : complet. Creole : seules les chaines listees dans
+    # A_TRADUIRE.md peuvent attendre (voir les deux tests suivants).
+    untranslated = {e["msgid"] for e in entries if not e["msgstr"]}
+    allowed = set(_deferred()) if language == "ht" else set()
+    assert sorted(untranslated - allowed) == []
+    assert mo.exists() and mo.stat().st_mtime >= po.stat().st_mtime - 1
 
     with translation.override(language):
         assert translation.gettext("Mes transferts") != "Mes transferts"
+
+
+def test_money_path_strings_can_never_wait_for_creole():
+    entries = {e["msgid"]: e for e in _catalog("ht")}
+    assert all(e["locations"] for e in entries.values()), "makemessages doit garder les emplacements (--add-location file)"
+    blocking = sorted(m for m in _deferred() if m in entries and not entries[m]["locations"] <= DEFERRABLE_FILES)
+    assert blocking == []
+
+
+def test_creole_to_do_list_has_no_stale_entries():
+    entries = {e["msgid"]: e for e in _catalog("ht")}
+    listed = _deferred()
+    assert len(listed) == len(set(listed))
+    stale = sorted(m for m in listed if m not in entries or entries[m]["msgstr"])
+    assert stale == []

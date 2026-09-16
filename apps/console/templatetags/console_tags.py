@@ -79,3 +79,18 @@ def state_label(value):
         return State(value).label
     except ValueError:
         return value or EMPTY
+
+
+@register.inclusion_tag("console/partials/worker_alert.html", takes_context=True)
+def payout_worker_alert(context):
+    """Bandeau d'incident : worker de decaissement a l'arret, file non vide.
+
+    Opérateurs connectes uniquement : jamais sur la page de connexion.
+    """
+    request = context.get("request")
+    user = getattr(request, "user", None)
+    if user is None or not user.is_authenticated:
+        return {"worker": None}
+    from apps.transactions.queue import payout_worker_status
+
+    return {"worker": payout_worker_status()}

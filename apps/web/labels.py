@@ -22,9 +22,5 @@ STATUS_LABELS = {
     PublicStatus.CANCELLED: _("Annulé"),
 }
 
-#: Statuts sur lesquels la page de suivi continue de se rafraichir.
-LIVE_STATUSES = (PublicStatus.AWAITING_PAYMENT, PublicStatus.IN_PROGRESS)
-
-
 def wallet_label(code: str) -> str:
     return WALLET_LABELS.get(code, code)

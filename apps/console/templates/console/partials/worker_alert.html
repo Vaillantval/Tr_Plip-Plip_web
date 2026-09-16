@@ -1,0 +1,10 @@
+{% load console_tags %}
+{% if worker.stalled %}
+<div data-console-alert="payout-worker" role="alert" class="mx-6 mt-3 rounded border-2 border-red-600 bg-red-50 px-3 py-2 text-red-900">
+  <strong>Decaissements a l'arret.</strong>
+  {{ worker.depth }} transfert(s) encaisse(s) attendent en file et aucun retrait n'a ete tente depuis {{ worker.idle_seconds|duration }}.
+  Verifier le service <span class="font-mono">celery-payouts</span> et Redis sur Railway.
+  Les clients ne voient plus de delai estime.
+  <a class="font-medium underline" href="{% url 'console:queue' %}">Voir la file</a>
+</div>
+{% endif %}
