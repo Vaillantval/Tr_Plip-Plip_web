@@ -55,6 +55,17 @@ services que l'API : aucune règle métier n'y est dupliquée.
   une expiration libère : la consommation est **calculée, jamais stockée**.
   Chaque refus écrit une ligne d'audit (`limit.refused`) après l'annulation
   de la transaction, sinon elle disparaîtrait avec elle.
+- **Notifications SMS** (`apps/notifications`) : un SMS à l'expéditeur
+  quand le transfert est livré (avec la référence) et quand il est
+  remboursé. Rien au bénéficiaire. Envoi asynchrone : un échec ne bloque ni
+  ne fait échouer une transaction, et sans identifiants Twilio aucun appel
+  n'est tenté — le déploiement passe, avec l'avertissement `plipplip.W003`.
+  Un seul SMS par transaction et par événement : contrainte d'unicité en
+  base, plus une clé d'idempotence transmise à Twilio, qui ferme le trou
+  entre son acceptation et l'écriture du statut chez nous. Textes sans
+  accents, dans la langue de la dernière connexion du client
+  (`Customer.language`) — un accent ferait passer le SMS en UCS-2, donc à
+  70 caractères par segment et au double du prix.
 - **Session client** en cookie `HttpOnly`, distincte de la console : une
   session client n'ouvre pas la console et inversement. Identifiant de
   session renouvelé à la connexion, déconnexion après 30 min d'inactivité

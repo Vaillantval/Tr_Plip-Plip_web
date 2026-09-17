@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from django.conf import settings
 from rest_framework import serializers
 
 from apps.accounts.phone import InvalidPhone, normalize
@@ -42,6 +43,14 @@ class OTPRequestResponseSerializer(serializers.Serializer):
 class OTPVerifySerializer(serializers.Serializer):
     phone = PhoneField()
     code = serializers.RegexField(r"^\d{4,10}$", error_messages={"invalid": "Code numerique attendu"})
+    language = serializers.ChoiceField(
+        choices=[code for code, _ in settings.LANGUAGES],
+        required=False,
+        help_text=(
+            "Langue du client, retenue pour les notifications SMS. "
+            "A defaut, l'en-tete Accept-Language est utilise."
+        ),
+    )
 
 
 class CustomerSerializer(serializers.Serializer):

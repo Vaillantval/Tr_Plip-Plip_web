@@ -361,7 +361,9 @@ msgstr "Nou pa ofri konbinezon pòtfèy sa a."
 msgid ""
 "Ce montant depasse a lui seul votre plafond de %(cap)s HTG. Envoyez un "
 "montant plus petit."
-msgstr "Kantite sa a pi gwo pase limit ou ki se %(cap)s HTG. Voye yon kantite pi piti."
+msgstr ""
+"Kantite sa a pi gwo pase limit ou ki se %(cap)s HTG. Voye yon kantite pi "
+"piti."
 
 #: .\apps\web\views.py
 #, python-format

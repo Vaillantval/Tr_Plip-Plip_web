@@ -361,7 +361,8 @@ msgstr "This combination of wallets isn't available."
 msgid ""
 "Ce montant depasse a lui seul votre plafond de %(cap)s HTG. Envoyez un "
 "montant plus petit."
-msgstr "This amount alone is above your %(cap)s HTG limit. Send a smaller amount."
+msgstr ""
+"This amount alone is above your %(cap)s HTG limit. Send a smaller amount."
 
 #: .\apps\web\views.py
 #, python-format

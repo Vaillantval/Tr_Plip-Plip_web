@@ -57,6 +57,10 @@ class Customer(models.Model):
 
     phone = models.CharField(max_length=16, unique=True)
     is_active = models.BooleanField(default=True)
+    #: Langue de la derniere connexion reussie. Vide = jamais observee.
+    #: Une tache Celery n'a ni requete ni cookie : sans ce champ, un SMS
+    #: partirait toujours en francais.
+    language = models.CharField(max_length=5, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     last_login_at = models.DateTimeField(null=True, blank=True)
 

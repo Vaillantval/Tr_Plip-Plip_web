@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "apps.console",
     "apps.api",
     "apps.web",
+    "apps.notifications",
 ]
 
 MIDDLEWARE = [
@@ -180,6 +181,13 @@ TRANSFER_LIMITS = {
     "month": int(env("LIMIT_MONTH_SECONDS", str(30 * 24 * 3600))),
 }
 
+# Notifications SMS. Une notification trop vieille n'est plus envoyee :
+# « votre transfert est livre » trois heures apres est du bruit.
+NOTIFICATIONS = {
+    "MAX_ATTEMPTS": int(env("NOTIFICATIONS_MAX_ATTEMPTS", "5")),
+    "MAX_AGE_SECONDS": int(env("NOTIFICATIONS_MAX_AGE_SECONDS", "3600")),
+}
+
 TREASURY = {
     "THRESHOLDS": {
         "warning": Decimal(env("FLOAT_WARNING", "50000")),
@@ -236,6 +244,12 @@ TWILIO = {
     "ACCOUNT_SID": env("TWILIO_ACCOUNT_SID", ""),
     "AUTH_TOKEN": env("TWILIO_AUTH_TOKEN", ""),
     "VERIFY_SERVICE_SID": env("TWILIO_VERIFY_SERVICE_SID", ""),
+    # Expediteur des SMS transactionnels. Le Messaging Service est prefere :
+    # il gere l'expediteur et le routage sans acheter de numero. FROM_NUMBER
+    # est le repli. Independant de VERIFY_SERVICE_SID : sans lui, les
+    # clients se connectent mais ne recoivent aucune notification.
+    "MESSAGING_SERVICE_SID": env("TWILIO_MESSAGING_SERVICE_SID", ""),
+    "FROM_NUMBER": env("TWILIO_FROM_NUMBER", ""),
     "TIMEOUT": float(env("TWILIO_TIMEOUT", "10")),
 }
 
@@ -261,6 +275,7 @@ CELERY_BEAT_SCHEDULE = {
     "sweep-stale-payouts": {"task": "transactions.sweep_stale_payouts", "schedule": 120.0},
     "resolve-unknown": {"task": "transactions.resolve_unknown_payouts", "schedule": 300.0},
     "check-float": {"task": "transactions.check_float_level", "schedule": 600.0},
+    "sweep-notifications": {"task": "notifications.sweep_pending", "schedule": 600.0},
 }
 
 CACHES = {

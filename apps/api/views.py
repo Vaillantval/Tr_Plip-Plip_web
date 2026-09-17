@@ -127,7 +127,14 @@ class OTPVerifyView(APIView):
         serializer = OTPVerifySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
-            customer, raw, token = accounts.verify_code(**serializer.validated_data)
+            data = serializer.validated_data
+            customer, raw, token = accounts.verify_code(
+                data["phone"],
+                data["code"],
+                # La langue retenue sert aux SMS : une tache Celery n'a ni
+                # requete ni en-tete.
+                language=data.get("language") or request.headers.get("Accept-Language", ""),
+            )
         except accounts.InvalidCode as exc:
             raise APIError("OTP_INVALID", "Code invalide ou expire") from exc
         except accounts.CustomerDisabled as exc:

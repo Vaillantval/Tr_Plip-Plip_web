@@ -9,6 +9,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.db import transaction as db_transaction
 from django.utils import timezone
+from django.utils.translation import get_supported_language_variant
 
 from . import otp
 from .models import Customer, CustomerToken
@@ -46,10 +47,24 @@ def request_code(phone: str) -> str:
 
 
 @db_transaction.atomic
-def authenticate_code(phone: str, code: str) -> Customer:
+def normalize_language(value: str) -> str:
+    """Langue supportee, ou chaine vide. Ne leve jamais."""
+    try:
+        code = get_supported_language_variant(str(value or ""))
+    except LookupError:
+        return ""
+    return code if code in dict(settings.LANGUAGES) else ""
+
+
+def authenticate_code(phone: str, code: str, *, language: str = "") -> Customer:
     """Valide le code et cree le client au premier passage. N'emet aucun jeton.
 
     Utilise tel quel par le site web (session), et par verify_code pour l'API.
+
+    `language` est retenu sur le client : c'est la seule trace durable de
+    la langue qu'il lit, et donc la seule dont disposera une tache Celery
+    pour rediger un SMS. Consequence assumee : les notifications parlent
+    la langue de la DERNIERE CONNEXION.
     """
     phone = normalize(phone)
     code = (code or "").strip()
@@ -59,17 +74,22 @@ def authenticate_code(phone: str, code: str) -> Customer:
     customer, _ = Customer.objects.get_or_create(phone=phone)
     if not customer.is_active:
         raise CustomerDisabled("Compte desactive")
-    Customer.objects.filter(pk=customer.pk).update(last_login_at=timezone.now())
+    fields = {"last_login_at": timezone.now()}
+    chosen = normalize_language(language)
+    if chosen and chosen != customer.language:
+        fields["language"] = chosen
+        customer.language = chosen
+    Customer.objects.filter(pk=customer.pk).update(**fields)
     return customer
 
 
 @db_transaction.atomic
-def verify_code(phone: str, code: str) -> tuple[Customer, str, CustomerToken]:
+def verify_code(phone: str, code: str, *, language: str = "") -> tuple[Customer, str, CustomerToken]:
     """Valide le code, cree le client au premier passage, emet un jeton d'API.
 
     Le jeton en clair n'est retourne qu'ici : il n'est stocke que hache.
     """
-    customer = authenticate_code(phone, code)
+    customer = authenticate_code(phone, code, language=language)
     raw = TOKEN_PREFIX + secrets.token_urlsafe(32)
     token = CustomerToken.objects.create(
         customer=customer,

@@ -1,0 +1,35 @@
+# Plip-Plip — SMS transactionnels, tradiksyon an kreyol ayisyen.
+# Langue source : francais.
+#
+# SANS ACCENTS, dans toutes les langues : un seul caractere accentue fait
+# basculer le SMS en codage UCS-2, qui passe de 160 a 70 caracteres par
+# segment. Le message coute alors le double a chaque transfert.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Plip-Plip notifications\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-17 11:02-0400\n"
+"PO-Revision-Date: 2026-09-17 11:02-0400\n"
+"Last-Translator: \n"
+"Language-Team: Kreyòl ayisyen\n"
+"Language: ht\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: .\apps\notifications\messages.py
+#, python-format
+msgid ""
+"Plip-Plip : %(amount)s HTG ont ete envoyes au %(phone)s. Reference "
+"%(reference)s."
+msgstr "Plip-Plip : %(amount)s HTG voye bay %(phone)s. Referans %(reference)s."
+
+#: .\apps\notifications\messages.py
+#, python-format
+msgid ""
+"Plip-Plip : votre transfert %(reference)s a ete rembourse. %(amount)s HTG "
+"vous ont ete rendus."
+msgstr ""
+"Plip-Plip : transfe %(reference)s ou a remet. Yo remet ou %(amount)s HTG."

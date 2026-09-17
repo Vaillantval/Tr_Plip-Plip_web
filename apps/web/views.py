@@ -21,6 +21,7 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
+from django.utils.translation import get_language
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods, require_POST
 
@@ -388,7 +389,12 @@ def login_code(request):
             form.add_error(None, _("Trop de tentatives. Demandez un nouveau code plus tard."))
         else:
             try:
-                customer = accounts.authenticate_code(phone, form.cleaned_data["code"])
+                # La langue active pour cette requete est celle que le
+                # client est en train de lire : la seule dont disposera
+                # ensuite une tache Celery pour lui ecrire.
+                customer = accounts.authenticate_code(
+                    phone, form.cleaned_data["code"], language=get_language()
+                )
             except accounts.InvalidCode:
                 form.add_error("code", _("Code invalide ou expiré."))
             except accounts.CustomerDisabled:

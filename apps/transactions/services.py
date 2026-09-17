@@ -17,6 +17,7 @@ from django.utils import timezone
 
 from apps.accounts.models import Customer
 from apps.ledger import services as ledger
+from apps.notifications import services as notifications
 from apps.providers.plopplop import exceptions as pp
 from apps.providers.plopplop.client import get_client
 from apps.treasury import services as treasury
@@ -842,6 +843,7 @@ def _settle_payout(
     )
     txn.transition(State.COMPLETED, actor=actor, note="Decaissement confirme", data={"fee": str(actual_fee)})
     ledger.record_payout_executed(txn, actual_fee=actual_fee)
+    notifications.notify_transfer_completed(txn)
 
     # balance_after n'est connu qu'au retour du retrait lui-meme, pas
     # d'une verification : pas de snapshot dans ce cas.
@@ -907,6 +909,7 @@ def refund(
             data={"reason": reason, "transfer_reference": transfer_reference},
         )
         ledger.record_refund(txn, reason=reason, transfer_reference=transfer_reference, posted_by=actor)
+        notifications.notify_transfer_refunded(txn)
         return txn
 
     received = txn.payment_amount_received
@@ -930,4 +933,5 @@ def refund(
     ledger.record_held_refund(
         txn, amount=amount, reason=reason, transfer_reference=transfer_reference, posted_by=actor
     )
+    notifications.notify_transfer_refunded(txn)
     return txn
