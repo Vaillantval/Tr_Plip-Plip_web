@@ -18,5 +18,38 @@
   {% include "web/partials/fees.html" with quote=txn %}
 </section>
 
+{# Contenu saisi par le client et par l'operateur : echappement par defaut,
+   jamais marque sur. Un test gele cet etat pour tout le projet. #}
+{% if claim %}
+<section class="card">
+  <h2>{% translate "Votre réclamation" %}</h2>
+  <p class="muted">
+    {{ claim.get_reason_display }} · {{ claim.get_status_display }} · {{ claim.created_at|date:"d/m/Y H:i" }}
+  </p>
+  <ul class="list">
+    {% for message in claim_messages %}
+    <li>
+      <span class="muted" style="width:100%">
+        {% if message.author_kind == "operator" %}Plip-Plip{% else %}{% translate "Vous" %}{% endif %}
+        · {{ message.created_at|date:"d/m/Y H:i" }}
+      </span>
+      <span style="width:100%">{{ message.body|linebreaksbr }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <form method="post" action="{% url 'web:claim_message' txn.reference %}">
+    {% csrf_token %}
+    <label for="{{ message_form.body.id_for_label }}">{{ message_form.body.label }}</label>
+    {{ message_form.body }}
+    <button type="submit" class="block">{% translate "Envoyer" %}</button>
+  </form>
+</section>
+{% else %}
+<p class="muted">
+  <a href="{% url 'web:claim_open' txn.reference %}">{% translate "Un problème avec ce transfert ?" %}</a>
+</p>
+{% endif %}
+
 <p><a href="{% url 'web:transfers' %}">{% translate "Tous mes transferts" %}</a></p>
 {% endblock %}

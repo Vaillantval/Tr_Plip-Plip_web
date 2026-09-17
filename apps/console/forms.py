@@ -5,7 +5,32 @@ from decimal import Decimal
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UsernameField
 
+from apps.claims import services as claims
 from apps.transactions.services import REFUND_REASON_MAX_LENGTH, TRANSFER_REFERENCE_MAX_LENGTH
+
+
+class ClaimAnswerForm(forms.Form):
+    """Reponse d'un operateur a une reclamation.
+
+    Le texte part au client tel quel : il est echappe a l'affichage, jamais
+    marque sur. Les bornes viennent du service.
+    """
+
+    body = forms.CharField(
+        label="Reponse au client",
+        widget=forms.Textarea(attrs={"rows": 4}),
+        min_length=claims.BODY_MIN_LENGTH,
+        max_length=claims.BODY_MAX_LENGTH,
+    )
+
+
+class ClaimCloseForm(forms.Form):
+    note = forms.CharField(
+        label="Dernier mot (facultatif)",
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 2}),
+        max_length=claims.BODY_MAX_LENGTH,
+    )
 
 
 class RefundForm(forms.Form):

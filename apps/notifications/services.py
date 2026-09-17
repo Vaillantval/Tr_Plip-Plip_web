@@ -32,6 +32,16 @@ def notify_transfer_refunded(txn) -> None:
     _enqueue(txn, template=Template.TRANSFER_REFUNDED)
 
 
+def notify_claim_answered(txn) -> None:
+    """Avis de reponse a une reclamation, une seule fois par transfert.
+
+    La contrainte (transaction, modele, canal) porte cette unicite : les
+    reponses suivantes ne declenchent rien, et c'est voulu -- le cout
+    serait non borne, et le site reste le canal principal.
+    """
+    _enqueue(txn, template=Template.CLAIM_ANSWERED)
+
+
 def language_for(customer) -> str:
     """Langue de la derniere connexion, a defaut celle du site."""
     if customer is not None and customer.language:

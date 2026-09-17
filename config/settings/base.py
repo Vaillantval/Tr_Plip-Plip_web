@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "apps.api",
     "apps.web",
     "apps.notifications",
+    "apps.claims",
     "apps.backup",
 ]
 

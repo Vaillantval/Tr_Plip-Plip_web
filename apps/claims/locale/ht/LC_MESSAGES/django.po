@@ -1,0 +1,88 @@
+# Plip-Plip — reclamations, tradiksyon an kreyol ayisyen.
+# Langue source : francais.
+#
+# Les libelles de motif sont des CHOIX, pas de la prose : c'est la donnee
+# que lira l'operateur. Deux motifs indistinguables lui feraient traiter
+# la mauvaise reclamation.
+#
+# Les accents sont voulus : ce sont des textes d'ecran. Seuls les SMS
+# (apps/notifications) doivent rester sans accent.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Plip-Plip claims\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-17 16:33-0400\n"
+"PO-Revision-Date: 2026-09-17 16:33-0400\n"
+"Last-Translator: \n"
+"Language-Team: Kreyòl ayisyen\n"
+"Language: ht\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: .\apps\claims\models.py
+msgid "Le bénéficiaire n'a rien reçu"
+msgstr "Moun nan pa resevwa anyen"
+
+#: .\apps\claims\models.py
+msgid "Le bénéficiaire a reçu un autre montant"
+msgstr "Moun nan resevwa yon lot kantite"
+
+#: .\apps\claims\models.py
+msgid "L'argent est parti sur un autre numéro"
+msgstr "Lajan an ale sou yon lot nimewo"
+
+#: .\apps\claims\models.py
+msgid "J'ai payé deux fois le même envoi"
+msgstr "Mwen peye de fwa pou menm voye a"
+
+#: .\apps\claims\models.py
+msgid "Autre chose"
+msgstr "Yon lot bagay"
+
+#: .\apps\claims\models.py
+msgid "Ouverte"
+msgstr "Ouve"
+
+#: .\apps\claims\models.py
+msgid "Répondue"
+msgstr "Gen repons"
+
+#: .\apps\claims\models.py
+msgid "Close"
+msgstr "Femen"
+
+#: .\apps\claims\services.py
+msgid "Votre demande n'a pas pu être enregistrée."
+msgstr "Nou pa t kapab anrejistre demann ou an."
+
+#: .\apps\claims\services.py
+msgid "Ce transfert ne peut pas faire l'objet d'une réclamation."
+msgstr "Transfe sa a pa ka gen yon reklamasyon."
+
+#: .\apps\claims\services.py
+msgid ""
+"Une réclamation est déjà ouverte pour ce transfert. Vous pouvez la compléter."
+msgstr ""
+"Gen deja yon reklamasyon ouve pou transfe sa a. Ou ka ajoute yon mesaj ladan "
+"l."
+
+#: .\apps\claims\services.py
+msgid ""
+"Cette réclamation est close. Ouvrez-en une nouvelle si le problème persiste."
+msgstr "Reklamasyon sa a femen. Ouve yon lot si pwoblem nan poko regle."
+
+#: .\apps\claims\services.py
+msgid "Expliquez en quelques mots ce qui s'est passé."
+msgstr "Esplike an de mo sa ki pase."
+
+#: .\apps\claims\services.py
+msgid "Choisissez un motif dans la liste."
+msgstr "Chwazi yon rezon nan lis la."
+
+#: .\apps\claims\services.py
+#, python-format
+msgid "Votre message est trop long : %(max)s caractères au maximum."
+msgstr "Mesaj ou an two long : %(max)s karakte maksimòm."

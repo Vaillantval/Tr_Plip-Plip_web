@@ -11,6 +11,10 @@ class Channel(models.TextChoices):
 class Template(models.TextChoices):
     TRANSFER_COMPLETED = "transfer_completed", "Transfert livre"
     TRANSFER_REFUNDED = "transfer_refunded", "Transfert rembourse"
+    #: Avis seulement : le contenu de la reponse n'est JAMAIS dans le SMS.
+    #: Un SMS s'affiche sur un ecran verrouille, et le telephone partage
+    #: est la norme. Le site reste le canal de l'information.
+    CLAIM_ANSWERED = "claim_answered", "Reponse a une reclamation"
 
 
 class Status(models.TextChoices):

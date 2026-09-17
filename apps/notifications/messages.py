@@ -42,7 +42,16 @@ def transfer_refunded(txn) -> str:
     }
 
 
+def claim_answered(txn) -> str:
+    """Avis, pas contenu : le SMS dit qu'une reponse existe et renvoie au
+    site. Rien de ce que l'operateur a ecrit ne passe par ici."""
+    return _("Plip-Plip : nous avons repondu a votre reclamation sur le transfert %(reference)s. Ouvrez plip.ht pour la lire.") % {
+        "reference": txn.reference,
+    }
+
+
 RENDERERS = {
     Template.TRANSFER_COMPLETED: transfer_completed,
     Template.TRANSFER_REFUNDED: transfer_refunded,
+    Template.CLAIM_ANSWERED: claim_answered,
 }

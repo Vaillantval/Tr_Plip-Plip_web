@@ -1,0 +1,39 @@
+{% load console_tags %}
+<div id="claims-body" class="space-y-4">
+  {% include "console/partials/messages.html" %}
+
+  <h1 class="text-lg font-semibold">
+    Reclamations <span class="font-normal text-slate-500">({{ open_count }} a traiter)</span>
+  </h1>
+
+  {% if claims %}
+  <div class="overflow-x-auto rounded border bg-white">
+    <table class="w-full text-left">
+      <thead class="border-b bg-slate-50 text-slate-600">
+        <tr>
+          <th class="px-3 py-2">Ouverte le</th>
+          <th class="px-3 py-2">Transfert</th>
+          <th class="px-3 py-2">Client</th>
+          <th class="px-3 py-2">Motif</th>
+          <th class="px-3 py-2">Etat</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in claims %}
+        <tr class="border-b last:border-0 {% if row.status == 'open' %}bg-amber-50{% endif %}">
+          <td class="px-3 py-2 whitespace-nowrap">{{ row.created_at|date:"d/m/Y H:i" }}</td>
+          <td class="px-3 py-2 font-mono">
+            <a class="underline underline-offset-2" href="{% url 'console:claim_detail' row.pk %}">{{ row.transaction.reference }}</a>
+          </td>
+          <td class="px-3 py-2 font-mono">{{ row.customer.phone }}</td>
+          <td class="px-3 py-2">{{ row.get_reason_display }}</td>
+          <td class="px-3 py-2">{{ row.get_status_display }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="rounded border bg-white px-3 py-4 text-slate-600">Aucune reclamation.</p>
+  {% endif %}
+</div>

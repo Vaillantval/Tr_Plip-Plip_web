@@ -6,6 +6,8 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from apps.accounts.phone import InvalidPhone, normalize
+from apps.claims import services as claims
+from apps.claims.models import Reason
 
 from .labels import wallet_label
 
@@ -38,6 +40,36 @@ class CodeForm(forms.Form):
         regex=r"^\d{4,10}$",
         label=_("Code reçu par SMS"),
         error_messages={"invalid": _("Saisissez les chiffres du code reçu par SMS.")},
+    )
+
+
+class ClaimForm(forms.Form):
+    """Ouverture d'une reclamation.
+
+    Les bornes de longueur viennent du service : le formulaire ne decide
+    de rien, il presente. Une vue DRF appliquera les memes regles sans
+    passer par ici.
+    """
+
+    reason = forms.ChoiceField(label=_("Que s'est-il passé ?"), choices=[], widget=forms.RadioSelect)
+    body = forms.CharField(
+        label=_("Expliquez en quelques mots"),
+        widget=forms.Textarea(attrs={"rows": 5}),
+        min_length=claims.BODY_MIN_LENGTH,
+        max_length=claims.BODY_MAX_LENGTH,
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["reason"].choices = Reason.choices
+
+
+class ClaimMessageForm(forms.Form):
+    body = forms.CharField(
+        label=_("Ajouter un message"),
+        widget=forms.Textarea(attrs={"rows": 3}),
+        min_length=claims.BODY_MIN_LENGTH,
+        max_length=claims.BODY_MAX_LENGTH,
     )
 
 

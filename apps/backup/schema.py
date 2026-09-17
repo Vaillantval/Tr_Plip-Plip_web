@@ -24,6 +24,8 @@ TABLES = (
     "transactions.transferlimitpolicy",
     "transactions.transaction",
     "transactions.transactionevent",
+    "claims.claim",
+    "claims.claimmessage",
     "ledger.journalentry",
     "ledger.ledgerline",
     "api.idempotencykey",
@@ -61,6 +63,11 @@ EXCLUDED = {
 FOREIGN_KEYS = {
     "transactions.transaction": {"customer": "accounts.customer"},
     "transactions.transactionevent": {"transaction": "transactions.transaction"},
+    "claims.claim": {
+        "transaction": "transactions.transaction",
+        "customer": "accounts.customer",
+    },
+    "claims.claimmessage": {"claim": "claims.claim"},
     "ledger.journalentry": {
         "transaction": "transactions.transaction",
         "reverses": "ledger.journalentry",
@@ -86,6 +93,8 @@ OPERATOR_KEYS = {
     "transactions.walletsetting": ("updated_by",),
     "transactions.pricingpolicy": ("reviewed_by",),
     "transactions.transferlimitpolicy": ("updated_by",),
+    "claims.claim": ("closed_by",),
+    "claims.claimmessage": ("author",),
     "ledger.journalentry": ("posted_by",),
     "treasury.floatalert": ("acknowledged_by",),
     "accounts.auditlog": ("user",),

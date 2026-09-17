@@ -17,6 +17,10 @@ LIMITS = {
     "otp_verify_phone": (10, 3600),
     "quote_ip": (120, 60),
     "transfer_create_customer": (20, 3600),
+    # Une reclamation par transfert suffit : au-dela de trois par heure,
+    # c'est du remplissage, et chacune coute du temps d'operateur.
+    "claim_create_customer": (3, 3600),
+    "claim_message_customer": (10, 3600),
 }
 
 

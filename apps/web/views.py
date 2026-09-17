@@ -28,6 +28,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from apps.accounts import otp
 from apps.accounts import services as accounts
 from apps.api import services as api_services
+from apps.claims import services as claims
 from apps.api.status import MAPPING as STATUS_MAPPING
 from apps.api.status import PublicStatus, payment_instructions, public_status, public_wait
 from apps.transactions import services as transactions
@@ -35,7 +36,7 @@ from apps.transactions.models import Transaction
 from apps.transactions.pricing import MIN_NET, AmountTooLarge, AmountTooSmall
 
 from . import ratelimit
-from .forms import CodeForm, PhoneForm, TransferForm
+from .forms import ClaimForm, ClaimMessageForm, CodeForm, PhoneForm, TransferForm
 from .labels import format_htg
 from .polling import poll_interval
 from .session import customer_required, get_customer, login_customer, logout_customer
@@ -288,7 +289,14 @@ def _confirm_post(request):
 @customer_required
 def transfers(request):
     page = Paginator(Transaction.objects.filter(customer=request.customer).order_by("-created_at", "-id"), 20)
-    return render(request, "web/transfers.html", {"page": page.get_page(request.GET.get("page"))})
+    return render(
+        request,
+        "web/transfers.html",
+        {
+            "page": page.get_page(request.GET.get("page")),
+            "unread_claims": claims.unread_transaction_ids(request.customer),
+        },
+    )
 
 
 def _own_transfer(request, reference: str) -> Transaction:
@@ -312,13 +320,83 @@ def _transfer_context(txn: Transaction) -> dict:
 
 @customer_required
 def transfer_detail(request, reference: str):
-    return render(request, "web/transfer_detail.html", _transfer_context(_own_transfer(request, reference)))
+    txn = _own_transfer(request, reference)
+    context = _transfer_context(txn)
+    claim = claims.active_claim(txn)
+    if claim is not None:
+        # Ouvrir la page vaut lecture : la pastille s'eteint ici.
+        claims.mark_seen(claim)
+        context |= {"claim": claim, "claim_messages": claim.messages.all(), "message_form": ClaimMessageForm()}
+    return render(request, "web/transfer_detail.html", context)
 
 
 @customer_required
 def transfer_status(request, reference: str):
     """Fragment HTMX rafraichi tant que le transfert n'est pas termine."""
     return render(request, "web/partials/transfer_status.html", _transfer_context(_own_transfer(request, reference)))
+
+
+# ----------------------------------------------------------------------
+# Reclamations
+# ----------------------------------------------------------------------
+@customer_required
+@require_http_methods(["GET", "POST"])
+def claim_open(request, reference: str):
+    """Ouvrir une reclamation sur UN DE SES transferts.
+
+    _own_transfer renvoie 404 pour la transaction d'un autre : ne pas
+    confirmer qu'elle existe.
+    """
+    txn = _own_transfer(request, reference)
+    existing = claims.active_claim(txn)
+    if existing is not None:
+        return redirect("web:transfer_detail", reference=txn.reference)
+
+    form = ClaimForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        if not ratelimit.allow("claim_create_customer", request.customer.pk):
+            form.add_error(None, _("Trop de réclamations en peu de temps. Réessayez plus tard."))
+        else:
+            try:
+                claims.open_claim(
+                    customer=request.customer,
+                    transaction=txn,
+                    reason=form.cleaned_data["reason"],
+                    body=form.cleaned_data["body"],
+                )
+            except claims.ClaimError as exc:
+                form.add_error(None, str(exc.message))
+            else:
+                messages.success(
+                    request,
+                    _("Votre réclamation est enregistrée. Nous vous répondons sur cette page, et par SMS."),
+                )
+                return redirect("web:transfer_detail", reference=txn.reference)
+    return render(request, "web/claim_open.html", {"txn": txn, "form": form}, status=400 if form.errors else 200)
+
+
+@customer_required
+@require_POST
+def claim_message(request, reference: str):
+    txn = _own_transfer(request, reference)
+    claim = claims.active_claim(txn)
+    if claim is None:
+        raise Http404
+    form = ClaimMessageForm(request.POST)
+    if not form.is_valid():
+        # Le texte vient de l'exception metier, jamais d'une copie locale :
+        # le site et l'API doivent dire la meme chose au client.
+        messages.error(request, str(claims.InvalidBody().message))
+    elif not ratelimit.allow("claim_message_customer", request.customer.pk):
+        messages.error(request, _("Trop de messages en peu de temps. Réessayez plus tard."))
+    else:
+        try:
+            claims.add_customer_message(customer=request.customer, claim=claim, body=form.cleaned_data["body"])
+        except claims.ClaimError as exc:
+            messages.error(request, str(exc.message))
+        else:
+            messages.success(request, _("Message ajouté à votre réclamation."))
+    return redirect("web:transfer_detail", reference=txn.reference)
 
 
 # ----------------------------------------------------------------------

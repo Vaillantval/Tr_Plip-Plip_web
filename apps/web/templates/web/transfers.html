@@ -13,6 +13,7 @@
       <a href="{% url 'web:transfer_detail' txn.reference %}">
         <span class="mono">{{ txn.reference }}</span>
         <span class="pill {{ status }}">{{ status|status_label }}</span>
+        {% if txn.id in unread_claims %}<span class="pill answered">{% translate "Réponse à lire" %}</span>{% endif %}
         <span class="amount">{{ txn.net_amount|htg }} HTG</span>
         <span class="muted" style="width:100%">
           {{ txn.source_wallet|wallet }} → {{ txn.destination_wallet|wallet }} · <span class="mono">{{ txn.recipient_phone }}</span> · {{ txn.created_at|date:"d/m/Y H:i" }}

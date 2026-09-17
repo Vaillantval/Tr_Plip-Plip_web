@@ -1,0 +1,33 @@
+{% extends "web/base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Signaler un problème" %} — Plip-Plip{% endblock %}
+{% block content %}
+<h1>{% translate "Signaler un problème" %}</h1>
+<p class="muted">{% translate "Transfert" %} <span class="mono">{{ txn.reference }}</span></p>
+
+<form method="post" class="card">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+  <p class="error" role="alert">{{ form.non_field_errors.0 }}</p>
+  {% endif %}
+
+  <fieldset>
+    <legend>{{ form.reason.label }}</legend>
+    {% for choice in form.reason %}<p>{{ choice }}</p>{% endfor %}
+    {% if form.reason.errors %}<p class="error">{{ form.reason.errors.0 }}</p>{% endif %}
+  </fieldset>
+
+  <p>
+    <label for="{{ form.body.id_for_label }}">{{ form.body.label }}</label>
+    {{ form.body }}
+    {% if form.body.errors %}<span class="error">{{ form.body.errors.0 }}</span>{% endif %}
+  </p>
+
+  <button type="submit" class="block">{% translate "Envoyer ma réclamation" %}</button>
+</form>
+
+<p class="muted">
+  {% translate "Nous vous répondons sur la page de ce transfert. Vous recevrez un SMS quand la réponse sera prête." %}
+</p>
+<p><a href="{% url 'web:transfer_detail' txn.reference %}">{% translate "Retour au transfert" %}</a></p>
+{% endblock %}

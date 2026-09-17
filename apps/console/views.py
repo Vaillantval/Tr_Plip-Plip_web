@@ -15,11 +15,14 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Q, Sum
+from django.db.models import Case, Count, IntegerField, Q, Sum, When
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from apps.claims import services as claims
+from apps.claims.models import Claim
+from apps.claims.models import Status as ClaimStatus
 from apps.ledger import services as ledger
 from apps.transactions import queue
 from apps.transactions import services as txn_services
@@ -29,7 +32,17 @@ from apps.transactions.states import IllegalTransition, State, can
 from apps.treasury import services as treasury
 from apps.treasury.models import FloatAlert, FloatSnapshot
 
-from .forms import RATE_INPUTS, LimitsForm, PricingForm, RefundForm, ReleaseForm, TopupForm, pricing_field_name
+from .forms import (
+    RATE_INPUTS,
+    ClaimAnswerForm,
+    ClaimCloseForm,
+    LimitsForm,
+    PricingForm,
+    RefundForm,
+    ReleaseForm,
+    TopupForm,
+    pricing_field_name,
+)
 from .permissions import audit_failure, require_acting_role, require_superadmin
 
 EXCEPTION_STATES = (
@@ -151,6 +164,8 @@ def _transaction_context(txn: Transaction, *, refund_form=None, release_form=Non
         "release_form": release_form or ReleaseForm(),
         "max_attempts": settings.PAYOUT_MAX_ATTEMPTS,
         "consumption": _consumption_rows(txn.customer) if txn.customer_id else None,
+        # Ce que le client dit de ce transfert, a lire avant d'agir dessus.
+        "claims": txn.claims.all(),
     }
 
 
@@ -392,6 +407,96 @@ def _after_transaction_action(request, reference: str, *, refund_form=None, rele
         "console/partials/transaction_body.html",
         _transaction_context(txn, refund_form=refund_form, release_form=release_form),
     )
+
+
+# ----------------------------------------------------------------------
+# Reclamations
+# ----------------------------------------------------------------------
+#: Les ouvertes d'abord, les plus anciennes en tete : une reclamation qui
+#: vieillit est l'information utile, pas la derniere arrivee.
+CLAIM_ORDER = ("status_rank", "created_at", "id")
+
+
+def _claims_context(*, answer_form=None, close_form=None, claim=None) -> dict:
+    ranked = Claim.objects.annotate(
+        status_rank=Case(
+            When(status=ClaimStatus.OPEN, then=0),
+            When(status=ClaimStatus.ANSWERED, then=1),
+            default=2,
+            output_field=IntegerField(),
+        )
+    ).select_related("transaction", "customer")
+    return {
+        "claims": ranked.order_by(*CLAIM_ORDER)[:LIST_LIMIT],
+        "open_count": Claim.objects.filter(status=ClaimStatus.OPEN).count(),
+        "claim": claim,
+        "claim_messages": claim.messages.select_related("author") if claim else None,
+        "answer_form": answer_form or ClaimAnswerForm(),
+        "close_form": close_form or ClaimCloseForm(),
+    }
+
+
+@login_required
+def claim_list(request):
+    template = "console/partials/claims_body.html" if _is_htmx(request) else "console/claims.html"
+    return render(request, template, _claims_context())
+
+
+@login_required
+def claim_detail(request, claim_id: int):
+    claim = get_object_or_404(Claim.objects.select_related("transaction", "customer"), pk=claim_id)
+    return render(request, "console/claim_detail.html", _claims_context(claim=claim))
+
+
+def _after_claim_action(request, claim_id: int, *, answer_form=None, close_form=None):
+    if not _is_htmx(request):
+        return redirect("console:claim_detail", claim_id=claim_id)
+    claim = get_object_or_404(Claim, pk=claim_id)
+    return render(
+        request,
+        "console/partials/claim_body.html",
+        _claims_context(claim=claim, answer_form=answer_form, close_form=close_form),
+    )
+
+
+@login_required
+@require_POST
+@require_acting_role("claim.answer", target_kwarg="claim_id", audit_fields=("body",))
+def claim_answer(request, claim_id: int):
+    """Repondre. Ne touche NI a l'etat de la transaction, NI au grand livre :
+    pour rembourser, l'operateur passe par le detail du transfert."""
+    claim = get_object_or_404(Claim, pk=claim_id)
+    form = ClaimAnswerForm(request.POST)
+    if form.is_valid():
+        try:
+            claims.answer_claim(claim=claim, actor=request.user, body=form.cleaned_data["body"])
+        except claims.ClaimError as exc:
+            form.add_error(None, str(exc.message))
+    if form.errors:
+        audit_failure(request, "claim.answer", target=str(claim_id), error=_form_errors(form))
+        messages.error(request, f"Reponse NON enregistree : {_form_errors(form)}")
+        return _after_claim_action(request, claim_id, answer_form=form)
+    messages.success(request, f"Reponse envoyee au client pour {claim.transaction.reference}.")
+    return _after_claim_action(request, claim_id)
+
+
+@login_required
+@require_POST
+@require_acting_role("claim.close", target_kwarg="claim_id", audit_fields=("note",))
+def claim_close(request, claim_id: int):
+    claim = get_object_or_404(Claim, pk=claim_id)
+    form = ClaimCloseForm(request.POST)
+    if form.is_valid():
+        try:
+            claims.close_claim(claim=claim, actor=request.user, note=form.cleaned_data["note"])
+        except claims.ClaimError as exc:
+            form.add_error(None, str(exc.message))
+    if form.errors:
+        audit_failure(request, "claim.close", target=str(claim_id), error=_form_errors(form))
+        messages.error(request, f"Cloture refusee : {_form_errors(form)}")
+        return _after_claim_action(request, claim_id, close_form=form)
+    messages.success(request, f"Reclamation close pour {claim.transaction.reference}.")
+    return _after_claim_action(request, claim_id)
 
 
 def _after_treasury_action(request, *, topup_form=None):

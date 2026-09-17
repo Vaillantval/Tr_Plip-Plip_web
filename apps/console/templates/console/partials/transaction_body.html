@@ -10,6 +10,22 @@
     <span class="ml-auto text-slate-500">creee le {{ txn.created_at|date:"d/m/Y H:i:s" }}{% if txn.created_by %} par {{ txn.created_by }}{% endif %}</span>
   </header>
 
+  {% if claims %}
+  <section class="rounded border-2 border-amber-400 bg-white">
+    <h2 class="border-b border-amber-200 bg-amber-50 px-3 py-2 font-medium text-amber-900">
+      Le client a signale un probleme sur ce transfert
+    </h2>
+    <ul class="divide-y">
+      {% for row in claims %}
+      <li class="px-3 py-2">
+        <a class="underline underline-offset-2" href="{% url 'console:claim_detail' row.pk %}">{{ row.get_reason_display }}</a>
+        <span class="text-slate-500">· {{ row.get_status_display }} · {{ row.created_at|date:"d/m/Y H:i" }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
   {% if consumption %}
   <section class="rounded border bg-white">
     <h2 class="border-b px-3 py-2 font-medium">Plafonds du client</h2>

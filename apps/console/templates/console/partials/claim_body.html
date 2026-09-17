@@ -1,0 +1,67 @@
+{% load console_tags %}
+{# Contenu saisi par un client : echappe par defaut, jamais marque sur. #}
+<div id="claim-body" class="max-w-3xl space-y-4">
+  {% include "console/partials/messages.html" %}
+
+  <div class="rounded border bg-white">
+    <div class="border-b px-3 py-2">
+      <h1 class="font-semibold">{{ claim.get_reason_display }}</h1>
+      <p class="text-slate-600">
+        Transfert
+        <a class="font-mono underline underline-offset-2" href="{% url 'console:transaction_detail' claim.transaction.reference %}">{{ claim.transaction.reference }}</a>
+        · client
+        <a class="font-mono underline underline-offset-2" href="{% url 'console:transactions' %}?customer={{ claim.customer.phone }}">{{ claim.customer.phone }}</a>
+        · {{ claim.get_status_display }} · ouverte le {{ claim.created_at|date:"d/m/Y H:i" }}
+      </p>
+      <p class="mt-1 text-slate-500">
+        Repondre ne change rien a l'etat du transfert. Pour rembourser ou relancer, passer par le detail du transfert.
+      </p>
+    </div>
+
+    <ul class="divide-y">
+      {% for message in claim_messages %}
+      <li class="px-3 py-2 {% if message.author_kind == 'operator' %}bg-slate-50{% endif %}">
+        <p class="text-slate-500">
+          {% if message.author_kind == 'operator' %}{{ message.author|default:"Operateur supprime" }}{% else %}Client{% endif %}
+          · {{ message.created_at|date:"d/m/Y H:i" }}
+        </p>
+        <p class="whitespace-pre-line">{{ message.body }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  {% if claim.status != 'closed' %}
+  {% if request.user.can_act %}
+  <form class="rounded border bg-white p-3" hx-post="{% url 'console:claim_answer' claim.pk %}" hx-target="#claim-body" hx-swap="outerHTML">
+    {% csrf_token %}
+    {% if answer_form.non_field_errors %}<p class="mb-2 text-red-700">{{ answer_form.non_field_errors.0 }}</p>{% endif %}
+    <label class="block font-medium" for="{{ answer_form.body.id_for_label }}">{{ answer_form.body.label }}</label>
+    {{ answer_form.body }}
+    {% if answer_form.body.errors %}<p class="text-red-700">{{ answer_form.body.errors.0 }}</p>{% endif %}
+    <p class="mt-1 text-slate-500">
+      Le client recoit un SMS l'invitant a ouvrir la page — jamais le contenu de la reponse. Une seule fois par transfert.
+    </p>
+    <button type="submit" class="mt-2 rounded bg-slate-900 px-3 py-1.5 font-medium text-white">Repondre</button>
+  </form>
+
+  <form class="rounded border bg-white p-3" hx-post="{% url 'console:claim_close' claim.pk %}" hx-target="#claim-body" hx-swap="outerHTML">
+    {% csrf_token %}
+    <label class="block font-medium" for="{{ close_form.note.id_for_label }}">{{ close_form.note.label }}</label>
+    {{ close_form.note }}
+    <p class="mt-1 text-slate-500">Clore sans reponse n'envoie aucun SMS : il n'y aurait rien a lire.</p>
+    <button type="submit" class="mt-2 rounded border border-slate-300 px-3 py-1.5 font-medium">Clore</button>
+  </form>
+  {% else %}
+  <p class="rounded border bg-white px-3 py-2 text-slate-600">
+    Lecture seule : votre role ne permet pas de repondre.
+  </p>
+  {% endif %}
+  {% else %}
+  <p class="rounded border bg-white px-3 py-2 text-slate-600">
+    Close le {{ claim.closed_at|date:"d/m/Y H:i" }}{% if claim.closed_by %} par {{ claim.closed_by }}{% endif %}.
+  </p>
+  {% endif %}
+
+  <p><a class="underline underline-offset-2" href="{% url 'console:claims' %}">Toutes les reclamations</a></p>
+</div>

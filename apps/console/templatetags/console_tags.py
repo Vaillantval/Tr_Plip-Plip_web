@@ -81,6 +81,19 @@ def state_label(value):
         return value or EMPTY
 
 
+@register.simple_tag
+def open_claim_count():
+    """Nombre de reclamations a traiter, pour la barre de navigation.
+
+    Chaine vide quand il n'y en a aucune : une pastille « 0 » attire l'oeil
+    pour rien.
+    """
+    from apps.claims.models import Claim, Status
+
+    count = Claim.objects.filter(status=Status.OPEN).count()
+    return f" ({count})" if count else ""
+
+
 @register.inclusion_tag("console/partials/worker_alert.html", takes_context=True)
 def payout_worker_alert(context):
     """Bandeau d'incident : worker de decaissement a l'arret, file non vide.

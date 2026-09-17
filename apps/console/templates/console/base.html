@@ -1,4 +1,4 @@
-{% load static %}<!doctype html>
+{% load static console_tags %}<!doctype html>
 <html lang="fr">
 <head>
   <meta charset="utf-8">
@@ -18,12 +18,13 @@
     <a href="{% url 'console:queue' %}" class="{% if current == 'queue' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">File</a>
     <a href="{% url 'console:transactions' %}" class="{% if current == 'transactions' or current == 'transaction_detail' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Transactions</a>
     <a href="{% url 'console:exceptions' %}" class="{% if current == 'exceptions' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Exceptions</a>
+    <a href="{% url 'console:claims' %}" class="{% if current == 'claims' or current == 'claim_detail' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Reclamations{% open_claim_count %}</a>
     <a href="{% url 'console:treasury' %}" class="{% if current == 'treasury' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Tresorerie</a>
     <a href="{% url 'console:methods' %}" class="{% if current == 'methods' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Methodes et tarifs</a>
     <span class="ml-auto text-slate-500">{{ request.user }} — {{ request.user.get_role_display }}</span>
   </nav>
   {% endwith %}
-  {% load console_tags %}{% payout_worker_alert %}
+  {% payout_worker_alert %}
   <div id="console-flash" class="mx-6 mt-3 hidden rounded border border-red-300 bg-red-50 px-3 py-2 text-red-800" role="alert"></div>
   <main class="px-6 py-4">{% block content %}{% endblock %}</main>
   <script>

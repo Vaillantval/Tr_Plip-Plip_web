@@ -1,0 +1,83 @@
+# Plip-Plip — reclamations, traduction anglaise.
+# Langue source : francais.
+#
+# Les libelles de motif sont des CHOIX, pas de la prose : c'est la donnee
+# que lira l'operateur. Deux motifs indistinguables lui feraient traiter
+# la mauvaise reclamation.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Plip-Plip claims\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-17 16:33-0400\n"
+"PO-Revision-Date: 2026-09-17 16:33-0400\n"
+"Last-Translator: \n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: .\apps\claims\models.py
+msgid "Le bénéficiaire n'a rien reçu"
+msgstr "The recipient received nothing"
+
+#: .\apps\claims\models.py
+msgid "Le bénéficiaire a reçu un autre montant"
+msgstr "The recipient received a different amount"
+
+#: .\apps\claims\models.py
+msgid "L'argent est parti sur un autre numéro"
+msgstr "The money went to a different number"
+
+#: .\apps\claims\models.py
+msgid "J'ai payé deux fois le même envoi"
+msgstr "I paid twice for the same transfer"
+
+#: .\apps\claims\models.py
+msgid "Autre chose"
+msgstr "Something else"
+
+#: .\apps\claims\models.py
+msgid "Ouverte"
+msgstr "Open"
+
+#: .\apps\claims\models.py
+msgid "Répondue"
+msgstr "Answered"
+
+#: .\apps\claims\models.py
+msgid "Close"
+msgstr "Closed"
+
+#: .\apps\claims\services.py
+msgid "Votre demande n'a pas pu être enregistrée."
+msgstr "Your request could not be recorded."
+
+#: .\apps\claims\services.py
+msgid "Ce transfert ne peut pas faire l'objet d'une réclamation."
+msgstr "No claim can be filed on this transfer."
+
+#: .\apps\claims\services.py
+msgid ""
+"Une réclamation est déjà ouverte pour ce transfert. Vous pouvez la compléter."
+msgstr "A claim is already open on this transfer. You can add to it."
+
+#: .\apps\claims\services.py
+msgid ""
+"Cette réclamation est close. Ouvrez-en une nouvelle si le problème persiste."
+msgstr "This claim is closed. Open a new one if the problem continues."
+
+#: .\apps\claims\services.py
+msgid "Expliquez en quelques mots ce qui s'est passé."
+msgstr "Tell us in a few words what happened."
+
+#: .\apps\claims\services.py
+msgid "Choisissez un motif dans la liste."
+msgstr "Choose a reason from the list."
+
+#: .\apps\claims\services.py
+#, python-format
+msgid "Votre message est trop long : %(max)s caractères au maximum."
+msgstr "Your message is too long: %(max)s characters at most."
