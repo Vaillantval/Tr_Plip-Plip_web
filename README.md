@@ -94,7 +94,11 @@ services que l'API : aucune règle métier n'y est dupliquée.
   (`ETA_MAX_DISPLAY_SECONDS`) ou si le worker de décaissement est à
   l'arrêt, plus aucune durée : « traité dès que possible ». Ni rang ni
   profondeur de file ne sortent vers le client. Rafraîchissement de la page
-  de suivi : 5 s, puis 15 s après 1 min, 30 s après 5 min.
+  de suivi : 5 s, puis 15 s après 1 min, 30 s après 5 min. La vue de file
+  servie aux clients est **partagée entre toutes les requêtes**
+  (`QUEUE_VIEW_CACHE_SECONDS`) : sans elle, chaque appel de statut relisait
+  la file entière. Elle est reconstruite dès que la file bouge — l'empreinte
+  est une seule agrégation sur un index, pas une relecture.
 - **Worker de décaissement à l'arrêt** (file non vide, aucun retrait tenté
   depuis `PAYOUT_STALL_SECONDS`) : bandeau d'incident sur toutes les pages
   de la console.

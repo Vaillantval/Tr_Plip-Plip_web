@@ -59,15 +59,19 @@ def public_wait(txn, cache: dict | None = None) -> dict | None:
 
     `cache` : dictionnaire partage par une requete (contexte du
     serializer) pour ne lire la file qu'une fois, meme sur une liste.
+    Au-dela, public_queue_view() la partage entre toutes les requetes.
     """
     from apps.transactions import queue
 
     if public_status(txn.state) != PublicStatus.IN_PROGRESS:
         return None
-    snapshot = None
-    if txn.state in queue.ESTIMABLE_STATES and cache is not None:
-        snapshot = cache.get("queue_snapshot") or cache.setdefault("queue_snapshot", queue.queue_snapshot())
-    display = queue.estimated_wait(txn, snapshot)["display"]
+    view = None
+    if txn.state in queue.ESTIMABLE_STATES:
+        if cache is None:
+            view = queue.public_queue_view()
+        else:
+            view = cache.get("queue_view") or cache.setdefault("queue_view", queue.public_queue_view())
+    display = queue.estimated_wait(txn, view)["display"]
     if display is None:
         return {"available": False, "min_minutes": None, "max_minutes": None}
     return {"available": True, **display}

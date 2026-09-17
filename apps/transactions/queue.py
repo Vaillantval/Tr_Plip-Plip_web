@@ -23,6 +23,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 
 from django.conf import settings
+from django.core.cache import cache
 from django.db import transaction as db_transaction
 from django.utils import timezone
 
@@ -64,6 +65,78 @@ class QueueSnapshot:
         if not self._by_id:
             self._by_id = {e.txn.pk: e for e in self.entries}
         return self._by_id.get(txn_id)
+
+
+@dataclass(frozen=True)
+class RankEntry:
+    """Ce dont un client a besoin, sans la transaction elle-meme."""
+
+    eta_seconds: int
+    covered: bool
+
+
+@dataclass(frozen=True)
+class PublicQueueView:
+    """Vue compacte de la file, partageable entre toutes les requetes.
+
+    Meme interface que QueueSnapshot pour estimated_wait : taken_at,
+    worker, entry_for(). Ne porte aucune instance de Transaction, donc
+    elle tient dans le cache sans le remplir.
+    """
+
+    taken_at: datetime
+    worker: WorkerStatus
+    ranks: dict[int, RankEntry]
+
+    def entry_for(self, txn_id: int) -> RankEntry | None:
+        return self.ranks.get(txn_id)
+
+
+#: Empreinte de la file : profondeur et derniere entree. Une seule
+#: agregation sur un index, au lieu de relire toute la file.
+QUEUE_VIEW_KEY = "plipplip:queue:public_view"
+
+
+def queue_fingerprint() -> tuple[int, int]:
+    from django.db.models import Count, Max
+
+    row = Transaction.objects.filter(state=State.PAYOUT_QUEUED).aggregate(
+        depth=Count("id"), last=Max("id")
+    )
+    return row["depth"] or 0, row["last"] or 0
+
+
+def public_queue_view(now: datetime | None = None) -> PublicQueueView:
+    """Vue de la file pour les clients, relue seulement quand elle bouge.
+
+    Sans ce cache, chaque appel de statut d'un client relisait la file
+    entiere : avec mille clients qui suivent leur transfert et mille
+    transferts en file, un million de lignes lues par intervalle de
+    sondage. La file, elle, ne change qu'une fois par cooldown -- un
+    retrait toutes les 125 secondes.
+
+    L'empreinte (profondeur, derniere entree) rend le cache exact : il
+    est reconstruit des que la file bouge, jamais avant. La duree de vie
+    ne couvre que ce que l'empreinte ne voit pas : un mouvement de
+    tresorerie qui change la couverture.
+    """
+    now = now or timezone.now()
+    fingerprint = queue_fingerprint()
+    cached = cache.get(QUEUE_VIEW_KEY)
+    if cached is not None:
+        stamped, view = cached
+        fresh = (now - view.taken_at).total_seconds() < settings.QUEUE_VIEW_CACHE_SECONDS
+        if stamped == fingerprint and fresh:
+            return view
+
+    snapshot = queue_snapshot(now=now)
+    view = PublicQueueView(
+        taken_at=snapshot.taken_at,
+        worker=snapshot.worker,
+        ranks={e.txn.pk: RankEntry(eta_seconds=e.eta_seconds, covered=e.covered) for e in snapshot.entries},
+    )
+    cache.set(QUEUE_VIEW_KEY, (fingerprint, view), settings.QUEUE_VIEW_CACHE_SECONDS)
+    return view
 
 
 # ----------------------------------------------------------------------

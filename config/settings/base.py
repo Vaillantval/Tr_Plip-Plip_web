@@ -147,6 +147,12 @@ PAYOUT_STALL_SECONDS = int(env("PAYOUT_STALL_SECONDS", str(3 * PAYOUT_COOLDOWN_S
 # dure quelques secondes, et un faux positif coute une verification.
 PAYOUT_INFLIGHT_STALE_SECONDS = int(env("PAYOUT_INFLIGHT_STALE_SECONDS", "600"))
 
+# Duree de vie de la vue de file servie aux clients. L'empreinte
+# (profondeur, derniere entree) la reconstruit des que la file bouge :
+# ce delai ne couvre que ce que l'empreinte ne voit pas, un mouvement de
+# tresorerie qui change la couverture.
+QUEUE_VIEW_CACHE_SECONDS = int(env("QUEUE_VIEW_CACHE_SECONDS", "10"))
+
 # Au-dela, aucun delai n'est annonce au client (message sans duree).
 ETA_MAX_DISPLAY_SECONDS = int(env("ETA_MAX_DISPLAY_SECONDS", "3600"))
 

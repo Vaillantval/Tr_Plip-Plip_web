@@ -343,20 +343,69 @@ def test_rank_is_computed_in_a_single_place():
 # Performance et rafraichissement
 # ----------------------------------------------------------------------
 def test_transfer_list_reads_the_queue_once_whatever_its_length():
+    """Le cout d'une liste ne croit pas avec la taille de la file.
+
+    Le cache est vide dans les deux fenetres : on mesure bien deux
+    reconstructions completes, pas une reconstruction contre une lecture
+    de cache.
+    """
     customer, raw = _customer()
     api = _api(raw)
-    _queued(customer)
+    for _ in range(5):
+        _queued(customer)
     api.get(reverse("api:transfers"))  # chauffe : derniere utilisation du jeton
 
-    with CaptureQueriesContext(connection) as one:
-        api.get(reverse("api:transfers"))
-    for _ in range(4):
-        _queued(customer)
+    cache.delete(queue.QUEUE_VIEW_KEY)
     with CaptureQueriesContext(connection) as five:
+        api.get(reverse("api:transfers"))
+    for _ in range(45):
+        _queued(customer)
+    cache.delete(queue.QUEUE_VIEW_KEY)
+    with CaptureQueriesContext(connection) as fifty:
         response = api.get(reverse("api:transfers"))
 
-    assert [item["estimated_wait"]["available"] for item in response.json()["results"]] == [True] * 5
-    assert len(five.captured_queries) == len(one.captured_queries)
+    # Au-dela du plafond d'affichage, les derniers de la file n'ont plus de
+    # duree : c'est voulu, et teste ailleurs. Ici on ne mesure que le cout.
+    assert response.json()["results"]
+    assert len(fifty.captured_queries) == len(five.captured_queries)
+
+
+def test_the_queue_view_is_shared_between_requests(client):
+    """Deux clients qui suivent leur transfert ne relisent pas la file."""
+    customer, _ = _customer()
+    txn = _queued(customer)
+    _web_login(client)
+    status_url = reverse("web:transfer_status", args=[txn.reference])
+    client.get(status_url)  # chauffe
+
+    cache.delete(queue.QUEUE_VIEW_KEY)
+    with CaptureQueriesContext(connection) as cold:
+        client.get(status_url)
+    with CaptureQueriesContext(connection) as warm:
+        client.get(status_url)
+
+    assert len(warm.captured_queries) < len(cold.captured_queries)
+    # Ce qui reste : l'empreinte de la file, une seule agregation.
+    assert sum("payout_queued" in q["sql"] for q in warm.captured_queries) == 1
+
+
+@pytest.mark.parametrize("movement", ["entree", "sortie"])
+def test_the_queue_view_is_rebuilt_as_soon_as_the_queue_moves(movement):
+    """Une file qui bouge ne doit jamais etre servie depuis le cache."""
+    customer, _ = _customer()
+    first = _queued(customer)
+    queue.public_queue_view()  # cache chaud
+
+    if movement == "entree":
+        second = _queued(customer)
+        assert queue.public_queue_view().entry_for(second.pk) is not None
+    else:
+        with mock.patch(GET_CLIENT) as get_client:
+            get_client.return_value.withdraw.return_value = mock.Mock(
+                succeeded=True, fee=Decimal("40"), transaction_id="PP-1", api_reference="", balance_after=None
+            )
+            services.execute_payout(first)
+        assert queue.public_queue_view().entry_for(first.pk) is None
 
 
 @pytest.mark.parametrize(
