@@ -83,9 +83,23 @@ def _enqueue(txn, *, template: str) -> None:
 
 
 def _publish(notification_id: int) -> None:
+    """Met la notification en file. NE LEVE JAMAIS.
+
+    Ce code tourne dans un rappel on_commit, donc APRES que la base a
+    valide le reglement. Une exception ici -- courtier injoignable,
+    resolution DNS en echec -- remonte jusqu'a la vue et affiche une
+    erreur a l'operateur alors que l'argent est deja parti. Il relancerait
+    alors un decaissement deja fait.
+
+    La ligne reste en base au statut « a envoyer » : le balayage
+    periodique la reprendra.
+    """
     from .tasks import send_notification
 
-    send_notification.apply_async((notification_id,), expires=settings.NOTIFICATIONS["MAX_AGE_SECONDS"])
+    try:
+        send_notification.apply_async((notification_id,), expires=settings.NOTIFICATIONS["MAX_AGE_SECONDS"])
+    except Exception:
+        logger.exception("Notification %s non mise en file : elle sera reprise par le balayage", notification_id)
 
 
 def claim(notification_id: int) -> Notification | None:

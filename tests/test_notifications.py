@@ -42,6 +42,9 @@ RECIPIENT = "50932123456"
 GET_CLIENT = "apps.transactions.services.get_client"
 SEND = "apps.providers.twilio.sms.TwilioSMSClient.send"
 SENT = mock.Mock(sid="SM123", status="queued")
+#: Capture AVANT toute fixture : mock.patch remplace l'attribut du module,
+#: pas l'objet fonction. C'est le vrai _publish, celui qui parle au courtier.
+REAL_PUBLISH = notifications._publish
 
 
 @pytest.fixture(autouse=True)
@@ -221,6 +224,32 @@ def test_nothing_is_enqueued_if_the_settlement_rolls_back(customer, django_captu
 # ----------------------------------------------------------------------
 # Un echec SMS ne touche jamais une transaction
 # ----------------------------------------------------------------------
+def test_an_unreachable_broker_never_fails_the_payout(customer, django_capture_on_commit_callbacks, monkeypatch):
+    """Redis injoignable au moment de mettre le SMS en file.
+
+    Ce code tourne dans un rappel on_commit, donc APRES que la base a
+    valide le decaissement. Une exception qui remonte affiche une erreur a
+    l'operateur alors que l'argent est deja parti -- et il relance un
+    decaissement deja fait. C'est la pire categorie de defaut sur ce
+    systeme : l'ecran ment dans le sens qui coute de l'argent.
+    """
+    # La fixture autouse remplace _publish par un envoi sur place : on
+    # remet le vrai, c'est lui que ce test interroge.
+    monkeypatch.setattr(notifications, "_publish", REAL_PUBLISH)
+    txn = _queued(customer)
+
+    with mock.patch(
+        "apps.notifications.tasks.send_notification.apply_async", side_effect=OSError("Redis injoignable")
+    ), django_capture_on_commit_callbacks(execute=True):
+        settled = _settle(txn)
+
+    assert settled.state == State.COMPLETED
+    # La ligne reste a envoyer : c'est le balayage periodique qui la reprend.
+    note = Notification.objects.get(transaction=txn, template=Template.TRANSFER_COMPLETED)
+    assert note.status == Status.PENDING
+    assert note.attempts == 0
+
+
 def test_a_notification_failure_never_fails_the_transfer(customer, django_capture_on_commit_callbacks):
     txn = _queued(customer)
 
