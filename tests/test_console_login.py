@@ -60,9 +60,11 @@ def test_fields_are_styled_without_javascript(client):
     visible = [i for i in inputs if 'type="hidden"' not in i]
     assert len(visible) == 2
     assert all('class="w-full rounded border' in i for i in visible)
-    # Seul script de la page : la CDN Tailwind. Aucun script maison
-    # n'habille les champs apres coup.
-    assert re.findall(r"<script[^>]*>", html) == ['<script src="https://cdn.tailwindcss.com">']
+    # Aucun script sur la page : l'habillage vient d'une feuille servie
+    # localement, jamais d'un script qui repasse sur les champs apres coup.
+    assert re.findall(r"<script[^>]*>", html) == []
+    assert 'rel="stylesheet"' in html
+    assert "cdn.tailwindcss.com" not in html
 
 
 @pytest.mark.django_db

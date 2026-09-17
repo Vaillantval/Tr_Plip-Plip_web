@@ -1,11 +1,14 @@
-<!doctype html>
+{% load static %}<!doctype html>
 <html lang="fr">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Console Plip-Plip{% endblock %}</title>
-  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Servis localement : la console doit rester utilisable sur une
+       connexion lente ou filtrante, comme le site client. HTMX est le
+       fichier deja vendorise par apps/web (meme version). -->
+  <link rel="stylesheet" href="{% static 'console/tailwind.css' %}">
+  <script src="{% static 'web/htmx-2.0.4.min.js' %}"></script>
 </head>
 <body class="bg-slate-50 text-sm text-slate-900" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
   {% with current=request.resolver_match.url_name %}

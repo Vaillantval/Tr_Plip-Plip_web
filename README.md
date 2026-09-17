@@ -16,6 +16,18 @@ python manage.py runserver
 pytest
 ```
 
+Le CSS de la console est compilé par Tailwind et n'est pas versionné. Sans
+cette étape, `/console/` s'affiche sans habillage en local (la production le
+compile dans l'image, cf. `Dockerfile`) :
+
+```bash
+npm ci
+npm run build:css     # ou npm run watch:css pendant le développement
+```
+
+Le site client (`/`) est en CSS écrit à la main et ne dépend ni de npm ni de
+Tailwind.
+
 ## Structure
 
 | Dossier | Rôle |

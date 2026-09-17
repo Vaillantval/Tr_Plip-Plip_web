@@ -2,6 +2,8 @@
 .gitignore
 .venv
 venv
+node_modules
+apps/console/static/console/tailwind.css
 __pycache__
 *.py[cod]
 .pytest_cache

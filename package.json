@@ -1,0 +1,12 @@
+{
+  "name": "plip-plip-console-css",
+  "private": true,
+  "description": "Compilation du CSS de la console. Le site client n'utilise pas Tailwind et ne depend pas de ce paquet.",
+  "scripts": {
+    "build:css": "tailwindcss -i apps/console/assets/tailwind.src.css -o apps/console/static/console/tailwind.css --minify",
+    "watch:css": "tailwindcss -i apps/console/assets/tailwind.src.css -o apps/console/static/console/tailwind.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.19"
+  }
+}

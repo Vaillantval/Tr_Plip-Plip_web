@@ -6,3 +6,8 @@ staticfiles/
 .venv/
 .pytest_cache/
 .claude/settings.local.json
+
+# CSS de la console : genere par Tailwind (npm run build:css), compile
+# dans l'image par le Dockerfile. Ne pas committer.
+node_modules/
+apps/console/static/console/tailwind.css

@@ -1,0 +1,7 @@
+/* Source du CSS de la console. Compile vers
+   apps/console/static/console/tailwind.css (genere, hors depot).
+   Voir package.json : npm run build:css */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
