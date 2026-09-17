@@ -4,7 +4,7 @@
 <div class="space-y-4">
   {% include "console/partials/pricing_banner.html" %}
 
-  <div class="grid grid-cols-3 gap-4">
+  <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
     <div class="rounded border bg-white p-4">
       <div class="text-sm text-slate-500">Float disponible</div>
       <div class="text-2xl">{{ float.balance|htg }} HTG</div>
@@ -49,7 +49,7 @@
           {% endif %}{% endfor %}
         </tbody>
       </table>
-      <p class="mt-1 text-xs text-slate-400">Pour {{ pricing.preview_net_amount|htg }} HTG recus par le beneficiaire.</p>
+      <p class="mt-1 text-xs text-slate-500">Pour {{ pricing.preview_net_amount|htg }} HTG recus par le beneficiaire.</p>
     </div>
   </div>
   {% endif %}

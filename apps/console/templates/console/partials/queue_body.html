@@ -15,7 +15,7 @@
       <div class="text-slate-500">File face au float</div>
       <div class="text-2xl font-semibold tabular-nums">{{ coverage.total_net|htg }} <span class="text-sm font-normal text-slate-500">HTG net</span></div>
       <div class="text-slate-600">{{ coverage.total_debit|htg }} avec frais estimes · float disponible <span class="font-semibold">{{ coverage.available|htg }}</span></div>
-      <div class="text-xs text-slate-400">= grand livre {{ coverage.ledger_balance|htg }} − {{ coverage.engaged_outside_queue|htg }} deja engages hors file</div>
+      <div class="text-xs text-slate-500">= grand livre {{ coverage.ledger_balance|htg }} − {{ coverage.engaged_outside_queue|htg }} deja engages hors file</div>
     </div>
     {% if coverage.stall_rank %}
     <div class="rounded border-2 border-red-500 bg-red-50 p-3 text-red-900">
@@ -69,7 +69,7 @@
       </tbody>
     </table>
   </div>
-  <p class="text-xs text-slate-400">
+  <p class="text-xs text-slate-500">
     Mis a jour a {{ now|date:"H:i:s" }} · rafraichi toutes les 15 s · passage estime = rang × cooldown, hors retard du worker{% if truncated %} · {{ rows|length }} premieres lignes affichees sur {{ depth }}{% endif %}
   </p>
 </div>

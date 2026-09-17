@@ -29,7 +29,7 @@
         <tr class="{% if not window.remaining %}bg-red-50 text-red-900{% endif %}">
           <td class="px-3 py-1.5">{{ window.label }}</td>
           <td class="px-3 py-1.5 text-right font-mono">{{ window.collected|htg }}</td>
-          <td class="px-3 py-1.5 text-right font-mono {% if window.reserved %}text-amber-700{% else %}text-slate-400{% endif %}">{{ window.reserved|htg }}</td>
+          <td class="px-3 py-1.5 text-right font-mono {% if window.reserved %}text-amber-700{% else %}text-slate-500{% endif %}">{{ window.reserved|htg }}</td>
           <td class="px-3 py-1.5 text-right font-mono">{{ window.used|htg }}</td>
           <td class="px-3 py-1.5 text-right font-mono">{{ window.cap|htg }}</td>
           <td class="px-3 py-1.5 text-right font-mono">{{ window.remaining|htg }}</td>
@@ -37,7 +37,7 @@
         {% endfor %}
       </tbody>
     </table>
-    <p class="px-3 py-2 text-xs text-slate-400">
+    <p class="px-3 py-2 text-xs text-slate-500">
       Fenetres glissantes, a l'instant. Verifiees a la creation seulement : ce transfert n'est pas bloque par un plafond.
       « Reserve » : des transferts crees mais pas encore payes, dont le delai de paiement court toujours.
       Le client n'a rien envoye ; sa reservation se libere d'elle-meme a l'expiration du paiement.
@@ -97,11 +97,11 @@
           <tr class="bg-slate-50 font-semibold"><td class="px-3 py-1.5">Total debite au payeur</td><td class="px-3 py-1.5 text-right font-mono">{{ txn.total_charged|htg }}</td></tr>
           <tr><td class="px-3 py-1.5 text-slate-600">Cout encaissement plopplop (estime)</td><td class="px-3 py-1.5 text-right font-mono">{{ txn.provider_fee_in|htg }}</td></tr>
           <tr><td class="px-3 py-1.5 text-slate-600">Cout retrait plopplop (estime)</td><td class="px-3 py-1.5 text-right font-mono">{{ txn.provider_fee_out_estimate|htg }}</td></tr>
-          <tr><td class="px-3 py-1.5 text-slate-600">Frais operateur reels</td><td class="px-3 py-1.5 text-right font-mono">{% if txn.payout_fee_actual is not None %}{{ txn.payout_fee_actual|htg }}{% else %}<span class="font-sans text-slate-400">non verse</span>{% endif %}</td></tr>
+          <tr><td class="px-3 py-1.5 text-slate-600">Frais operateur reels</td><td class="px-3 py-1.5 text-right font-mono">{% if txn.payout_fee_actual is not None %}{{ txn.payout_fee_actual|htg }}{% else %}<span class="font-sans text-slate-500">non verse</span>{% endif %}</td></tr>
           <tr><td class="px-3 py-1.5 text-slate-600">Marge estimee</td><td class="px-3 py-1.5 text-right font-mono {% if txn.margin_estimate < 0 %}font-semibold text-red-700{% endif %}">{{ txn.margin_estimate|htg }}</td></tr>
         </tbody>
       </table>
-      <p class="border-t px-3 py-1.5 text-xs text-slate-400">Montants en HTG. Devis fige a la creation.</p>
+      <p class="border-t px-3 py-1.5 text-xs text-slate-500">Montants en HTG. Devis fige a la creation.</p>
     </section>
 
     <section class="rounded border bg-white">

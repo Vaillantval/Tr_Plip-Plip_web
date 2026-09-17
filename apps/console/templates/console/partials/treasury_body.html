@@ -111,7 +111,7 @@
             <td class="whitespace-nowrap px-3 py-1.5">{{ snapshot.created_at|date:"d/m H:i:s" }}</td>
             <td class="px-3 py-1.5 text-right font-mono">{{ snapshot.provider_balance|htg }}</td>
             <td class="px-3 py-1.5 text-right font-mono">{{ snapshot.ledger_balance|htg }}</td>
-            <td class="px-3 py-1.5 text-right font-mono {% if drift != 0 %}font-semibold text-red-700{% else %}text-slate-400{% endif %}">{% if drift > 0 %}+{% endif %}{{ drift|htg }}</td>
+            <td class="px-3 py-1.5 text-right font-mono {% if drift != 0 %}font-semibold text-red-700{% else %}text-slate-500{% endif %}">{% if drift > 0 %}+{% endif %}{{ drift|htg }}</td>
             <td class="px-3 py-1.5 font-mono">{% if snapshot.transaction %}<a class="underline decoration-slate-300 hover:decoration-slate-700" href="{% url 'console:transaction_detail' snapshot.transaction.reference %}">{{ snapshot.transaction.reference }}</a>{% else %}—{% endif %}</td>
           </tr>
           {% endwith %}

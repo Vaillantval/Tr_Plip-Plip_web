@@ -31,7 +31,7 @@
               {% if row.payout_capable %}
                 {% include "console/partials/method_toggle.html" with direction="payout" enabled=row.payout_enabled %}
               {% else %}
-                <span class="text-slate-400">Non disponible chez plopplop</span>
+                <span class="text-slate-500">Non disponible chez plopplop</span>
               {% endif %}
             </td>
             <td class="px-3 py-2 text-slate-500">{% if row.updated_at %}{{ row.updated_at|date:"d/m/Y H:i" }} par {{ row.updated_by|default:"systeme" }}{% else %}—{% endif %}</td>
@@ -129,7 +129,7 @@
         </thead>
         <tbody class="divide-y">
           {% for route in pricing.routes %}
-          <tr class="{% if not route.open %}text-slate-400{% elif route.margin < 0 %}bg-red-50 text-red-900{% endif %}">
+          <tr class="{% if not route.open %}text-slate-500{% elif route.margin < 0 %}bg-red-50 text-red-900{% endif %}">
             <td class="px-3 py-1.5">{{ route.source.label }} → {{ route.destination.label }}{% if not route.open %} <span class="text-xs">(fermee)</span>{% endif %}</td>
             <td class="px-3 py-1.5 text-right font-mono">{{ route.quote.total_fees|htg }}</td>
             <td class="px-3 py-1.5 text-right font-mono">{{ route.quote.total_charged|htg }}</td>
@@ -193,7 +193,7 @@
           </tr>
         </tbody>
       </table>
-      <p class="px-3 py-2 text-xs text-slate-400">
+      <p class="px-3 py-2 text-xs text-slate-500">
         {% if limits.policy.updated_at %}Modifies le {{ limits.policy.updated_at|date:"d/m/Y H:i" }}{% if limits.policy.updated_by %} par {{ limits.policy.updated_by }}{% endif %}.{% else %}Valeurs de depart, jamais modifiees.{% endif %}
       </p>
     {% if request.user.is_superadmin %}

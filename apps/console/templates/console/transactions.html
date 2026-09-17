@@ -28,7 +28,7 @@
         <tr class="{% if not window.remaining %}bg-red-50 text-red-900{% endif %}">
           <td class="px-3 py-1.5">{{ window.label }}</td>
           <td class="px-3 py-1.5 text-right font-mono">{{ window.collected|htg }}</td>
-          <td class="px-3 py-1.5 text-right font-mono {% if window.reserved %}text-amber-700{% else %}text-slate-400{% endif %}">{{ window.reserved|htg }}</td>
+          <td class="px-3 py-1.5 text-right font-mono {% if window.reserved %}text-amber-700{% else %}text-slate-500{% endif %}">{{ window.reserved|htg }}</td>
           <td class="px-3 py-1.5 text-right font-mono">{{ window.used|htg }}</td>
           <td class="px-3 py-1.5 text-right font-mono">{{ window.cap|htg }}</td>
           <td class="px-3 py-1.5 text-right font-mono">{{ window.remaining|htg }}</td>
@@ -36,7 +36,7 @@
         {% endfor %}
       </tbody>
     </table>
-    <p class="px-3 py-2 text-xs text-slate-400">
+    <p class="px-3 py-2 text-xs text-slate-500">
       « Reserve » : des transferts crees mais pas encore payes, dont le delai de paiement court toujours.
       Le client n'a rien envoye ; sa reservation se libere d'elle-meme a l'expiration du paiement.
     </p>
@@ -94,6 +94,6 @@
       </tbody>
     </table>
   </div>
-  <p class="text-xs text-slate-400">{{ transactions|length }} ligne(s) au plus recent, 200 au maximum.</p>
+  <p class="text-xs text-slate-500">{{ transactions|length }} ligne(s) au plus recent, 200 au maximum.</p>
 </div>
 {% endblock %}
