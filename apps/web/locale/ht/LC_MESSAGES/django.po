@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Plip-Plip web\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-16 19:06-0400\n"
+"POT-Creation-Date: 2026-09-17 13:49-0400\n"
 "PO-Revision-Date: 2026-09-14 17:45-0400\n"
 "Last-Translator: \n"
 "Language-Team: Kreyòl ayisyen\n"
@@ -18,8 +18,7 @@ msgstr ""
 
 #: .\apps\web\forms.py
 msgid "Numéro invalide : 8 chiffres d'un mobile haïtien, avec ou sans +509."
-msgstr ""
-"Nimewo a pa bon : 8 chif yon nimewo selilè ayisyen, avèk oswa san +509."
+msgstr "Nimewo a pa bon : 8 chif yon nimewo selilè ayisyen, avèk oswa san +509."
 
 #: .\apps\web\forms.py
 msgid "Votre numéro de téléphone"
@@ -54,8 +53,7 @@ msgid "Numéro MonCash qui paie (facultatif)"
 msgstr "Nimewo MonCash k ap peye a (si w vle)"
 
 #: .\apps\web\forms.py
-msgid ""
-"Renseigné, vous recevez la demande de paiement directement sur ce téléphone."
+msgid "Renseigné, vous recevez la demande de paiement directement sur ce téléphone."
 msgstr "Si w mete l, demann pèman an ap rive dirèkteman sou telefòn sa a."
 
 #: .\apps\web\forms.py
@@ -143,12 +141,8 @@ msgid "Envoyer de l'argent d'un portefeuille à l'autre"
 msgstr "Voye kòb soti nan yon pòtfèy al nan yon lòt"
 
 #: .\apps\web\templates\web\home.html
-msgid ""
-"Le bénéficiaire reçoit exactement le montant annoncé. Les frais sont "
-"affichés avant de payer."
-msgstr ""
-"Moun k ap resevwa a ap resevwa egzakteman kantite kòb nou montre w la. N ap "
-"montre w frè yo anvan ou peye."
+msgid "Le bénéficiaire reçoit exactement le montant annoncé. Les frais sont affichés avant de payer."
+msgstr "Moun k ap resevwa a ap resevwa egzakteman kantite kòb nou montre w la. N ap montre w frè yo anvan ou peye."
 
 #: .\apps\web\templates\web\home.html
 msgid "Le service est momentanément indisponible. Réessayez plus tard."
@@ -206,12 +200,8 @@ msgid "Total à payer"
 msgstr "Total pou peye"
 
 #: .\apps\web\templates\web\partials\fees.html
-msgid ""
-"Par carte, le paiement est débité en dollars américains, après conversion "
-"par notre prestataire de paiement."
-msgstr ""
-"Ak kat, yo retire pèman an an dola ameriken, apre konvèsyon founisè pèman "
-"nou an fè."
+msgid "Par carte, le paiement est débité en dollars américains, après conversion par notre prestataire de paiement."
+msgstr "Ak kat, yo retire pèman an an dola ameriken, apre konvèsyon founisè pèman nou an fè."
 
 #: .\apps\web\templates\web\partials\quote.html
 msgid "Saisissez un montant pour voir les frais et le total."
@@ -230,33 +220,20 @@ msgid "Reçu"
 msgstr "Resevwa"
 
 #: .\apps\web\templates\web\partials\transfer_status.html
-msgid ""
-"Payez pour lancer le transfert. La page de paiement s'ouvre dans un nouvel "
-"onglet ; revenez ici ensuite, cette page se met à jour toute seule."
-msgstr ""
-"Peye pou transfè a kòmanse. Paj pèman an ap louvri nan yon lòt onglè ; "
-"tounen isit la apre, paj sa a ap mete tèt li ajou poukont li."
+msgid "Payez pour lancer le transfert. La page de paiement s'ouvre dans un nouvel onglet ; revenez ici ensuite, cette page se met à jour toute seule."
+msgstr "Peye pou transfè a kòmanse. Paj pèman an ap louvri nan yon lòt onglè ; tounen isit la apre, paj sa a ap mete tèt li ajou poukont li."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
 msgid "Payer maintenant"
 msgstr "Peye kounye a"
 
 #: .\apps\web\templates\web\partials\transfer_status.html
-msgid ""
-"Une demande de paiement a été envoyée sur votre téléphone MonCash. Validez-"
-"la pour lancer le transfert."
-msgstr ""
-"Nou voye yon demann pèman sou telefòn MonCash ou. Aksepte l pou transfè a "
-"kòmanse."
+msgid "Une demande de paiement a été envoyée sur votre téléphone MonCash. Validez-la pour lancer le transfert."
+msgstr "Nou voye yon demann pèman sou telefòn MonCash ou. Aksepte l pou transfè a kòmanse."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
-msgid ""
-"Le lien de paiement n'a pas pu être obtenu. Ne relancez pas de nouveau "
-"transfert tout de suite : si une demande de paiement vous parvient, vous "
-"pouvez la valider, cette page le détectera."
-msgstr ""
-"Nou pa t ka jwenn lyen pèman an. Pa fè yon lòt transfè touswit : si yon "
-"demann pèman rive sou telefòn ou, ou ka aksepte l, paj sa a ap wè l."
+msgid "Le lien de paiement n'a pas pu être obtenu. Ne relancez pas de nouveau transfert tout de suite : si une demande de paiement vous parvient, vous pouvez la valider, cette page le détectera."
+msgstr "Nou pa t ka jwenn lyen pèman an. Pa fè yon lòt transfè touswit : si yon demann pèman rive sou telefòn ou, ou ka aksepte l, paj sa a ap wè l."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
 #, python-format
@@ -269,15 +246,12 @@ msgstr "Nou resevwa peman an. N ap voye lajan an bay moun ki dwe resevwa l la."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
 #, python-format
-msgid ""
-"Le bénéficiaire devrait recevoir l'argent dans moins de %(max)s minutes."
+msgid "Le bénéficiaire devrait recevoir l'argent dans moins de %(max)s minutes."
 msgstr "Moun nan ta dwe resevwa lajan an nan mwens pase %(max)s minit."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
 #, python-format
-msgid ""
-"Le bénéficiaire devrait recevoir l'argent dans environ %(min)s à %(max)s "
-"minutes."
+msgid "Le bénéficiaire devrait recevoir l'argent dans environ %(min)s à %(max)s minutes."
 msgstr "Moun nan ta dwe resevwa lajan an nan apepre %(min)s a %(max)s minit."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
@@ -338,8 +312,7 @@ msgid "Faire un envoi"
 msgstr "Voye kòb"
 
 #: .\apps\web\views.py
-msgid ""
-"Ce moyen de paiement est momentanément indisponible. Choisissez-en un autre."
+msgid "Ce moyen de paiement est momentanément indisponible. Choisissez-en un autre."
 msgstr "Mwayen pèman sa a pa disponib kounye a. Chwazi yon lòt."
 
 #: .\apps\web\views.py
@@ -357,13 +330,18 @@ msgid "Cette combinaison de portefeuilles n'est pas proposée."
 msgstr "Nou pa ofri konbinezon pòtfèy sa a."
 
 #: .\apps\web\views.py
+#| msgid "Le service est momentanément indisponible. Réessayez plus tard."
+msgid "Les transferts sont momentanément suspendus. Rien n'a été débité. Réessayez plus tard."
+msgstr "Transfè yo fè yon ti kanpe, okenn lajan pa sòti sou Kont ou, eseye pita ankò"
+
+#: .\apps\web\views.py
+msgid "Nous recevons beaucoup de transferts en ce moment. Plutôt que de prendre votre argent sans pouvoir le livrer rapidement, nous préférons attendre. Réessayez dans quelques minutes."
+msgstr "Nou gen anpil Transfè nap trete pou moman an, fè yon ti tann epi re eseye nan kèk minit svp!"
+
+#: .\apps\web\views.py
 #, python-format
-msgid ""
-"Ce montant depasse a lui seul votre plafond de %(cap)s HTG. Envoyez un "
-"montant plus petit."
-msgstr ""
-"Kantite sa a pi gwo pase limit ou ki se %(cap)s HTG. Voye yon kantite pi "
-"piti."
+msgid "Ce montant depasse a lui seul votre plafond de %(cap)s HTG. Envoyez un montant plus petit."
+msgstr "Kantite sa a pi gwo pase limit ou ki se %(cap)s HTG. Voye yon kantite pi piti."
 
 #: .\apps\web\views.py
 #, python-format
@@ -403,20 +381,15 @@ msgid "Trop de transferts en peu de temps. Réessayez plus tard."
 msgstr "Twòp transfè nan yon ti tan. Eseye ankò pita."
 
 #: .\apps\web\views.py
-msgid ""
-"Les frais ont changé depuis votre saisie. Vérifiez le nouveau total avant de "
-"confirmer."
-msgstr ""
-"Frè yo chanje depi w te antre yo. Verifye nouvo total la anvan w konfime."
+msgid "Les frais ont changé depuis votre saisie. Vérifiez le nouveau total avant de confirmer."
+msgstr "Frè yo chanje depi w te antre yo. Verifye nouvo total la anvan w konfime."
 
 #: .\apps\web\views.py
 msgid "Cette demande est déjà en cours de traitement."
 msgstr "N ap trete demann sa a deja."
 
 #: .\apps\web\views.py
-msgid ""
-"Le paiement n'a pas pu être créé. Aucun montant n'a été débité. Vous pouvez "
-"réessayer."
+msgid "Le paiement n'a pas pu être créé. Aucun montant n'a été débité. Vous pouvez réessayer."
 msgstr "Nou pa t ka kreye pèman an. Yo pa retire okenn kòb. Ou ka eseye ankò."
 
 #: .\apps\web\views.py
@@ -428,8 +401,7 @@ msgid "Ce numéro ne peut pas recevoir de SMS."
 msgstr "Nimewo sa a pa ka resevwa SMS."
 
 #: .\apps\web\views.py
-msgid ""
-"L'envoi du SMS est momentanément impossible. Réessayez dans quelques minutes."
+msgid "L'envoi du SMS est momentanément impossible. Réessayez dans quelques minutes."
 msgstr "Nou pa ka voye SMS la kounye a. Eseye ankò nan kèk minit."
 
 #: .\apps\web\views.py
@@ -449,7 +421,5 @@ msgid "Trop de tentatives. Demandez un nouveau code."
 msgstr "Twòp tantativ. Mande yon nouvo kòd."
 
 #: .\apps\web\views.py
-msgid ""
-"La vérification est momentanément impossible. Réessayez dans quelques "
-"minutes."
+msgid "La vérification est momentanément impossible. Réessayez dans quelques minutes."
 msgstr "Nou pa ka fè verifikasyon an kounye a. Eseye ankò nan kèk minit."

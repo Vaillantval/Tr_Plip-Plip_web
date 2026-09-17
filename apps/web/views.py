@@ -76,6 +76,20 @@ def _next_hour(moment):
     return local.replace(minute=0, second=0, microsecond=0)
 
 
+def _saturation_message(saturation) -> str:
+    """Pourquoi nous n'acceptons pas, sans reveler la longueur de la file.
+
+    Une duree precise ferait deviner la profondeur de la file, que le
+    client ne doit jamais connaitre. « Quelques minutes » suffit.
+    """
+    if saturation.reason == transactions.ADMISSION_STALLED:
+        return _("Les transferts sont momentanément suspendus. Rien n'a été débité. Réessayez plus tard.")
+    return _(
+        "Nous recevons beaucoup de transferts en ce moment. Plutôt que de prendre votre argent "
+        "sans pouvoir le livrer rapidement, nous préférons attendre. Réessayez dans quelques minutes."
+    )
+
+
 def _limit_message(exc) -> str:
     """Plafond atteint : ce que le client peut faire, et quand."""
     cap = format_htg(exc.window.cap)
@@ -116,7 +130,18 @@ def _safe_next(request, default: str) -> str:
 def home(request):
     wallets = transactions.wallet_availability()
     form = TransferForm(initial=request.session.get(DRAFT_KEY), wallets=wallets)
-    return render(request, "web/home.html", {"form": form, "min_net": MIN_NET})
+    # Prevenir des l'accueil plutot qu'apres la saisie complete du
+    # formulaire : la lecture passe par la vue de file partagee.
+    saturation = transactions.admission_state()
+    return render(
+        request,
+        "web/home.html",
+        {
+            "form": form,
+            "min_net": MIN_NET,
+            "saturated": None if saturation.accepting else _saturation_message(saturation),
+        },
+    )
 
 
 @require_POST
@@ -226,6 +251,10 @@ def _confirm_post(request):
     except api_services.QuoteChanged as exc:
         messages.warning(request, _("Les frais ont changé depuis votre saisie. Vérifiez le nouveau total avant de confirmer."))
         return _render_confirm(request, draft, exc.quote, status=409)
+    except transactions.ServiceSaturated as exc:
+        # La saisie du client est bonne : on la garde et on explique.
+        messages.error(request, _saturation_message(exc.saturation))
+        return redirect("web:home")
     except transactions.LimitExceeded as exc:
         # Contrairement aux autres refus, on garde le client sur sa page de
         # confirmation : sa saisie est bonne, c'est le moment qui ne l'est pas.

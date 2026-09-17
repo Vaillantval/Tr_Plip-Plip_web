@@ -147,6 +147,15 @@ PAYOUT_STALL_SECONDS = int(env("PAYOUT_STALL_SECONDS", str(3 * PAYOUT_COOLDOWN_S
 # dure quelques secondes, et un faux positif coute une verification.
 PAYOUT_INFLIGHT_STALE_SECONDS = int(env("PAYOUT_INFLIGHT_STALE_SECONDS", "600"))
 
+# Controle d'admission : au-dela de cette attente projetee pour un
+# nouvel entrant, on refuse la creation plutot que d'encaisser un argent
+# qu'on ne pourra pas livrer dans un delai tenable. 4 h = environ 115
+# transferts en file, au debit impose par le cooldown plopplop.
+ADMISSION_MAX_WAIT_SECONDS = int(env("ADMISSION_MAX_WAIT_SECONDS", str(4 * 3600)))
+#: Interrupteur, pour le cas ou le seuil se revelerait mal regle en
+#: production : le remettre a 0 rouvre les creations immediatement.
+ADMISSION_CONTROL_ENABLED = env("ADMISSION_CONTROL_ENABLED", "1") == "1"
+
 # Duree de vie de la vue de file servie aux clients. L'empreinte
 # (profondeur, derniere entree) la reconstruit des que la file bouge :
 # ce delai ne couvre que ce que l'empreinte ne voit pas, un mouvement de

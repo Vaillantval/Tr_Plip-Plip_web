@@ -23,6 +23,15 @@ from apps.providers.plopplop.client import get_client
 from apps.treasury import services as treasury
 
 from . import queue
+from .admission import SATURATED as ADMISSION_SATURATED  # noqa: F401
+from .admission import STALLED as ADMISSION_STALLED  # noqa: F401
+from .admission import (  # noqa: F401
+    ServiceSaturated,
+    admission_state,
+    audit_refusal as audit_admission_refusal,
+    check_admission,
+    reopens_at,
+)
 from .limits import DAY as LIMIT_DAY  # noqa: F401
 from .limits import MONTH as LIMIT_MONTH  # noqa: F401
 from .limits import (  # noqa: F401
@@ -339,6 +348,10 @@ def create_transaction(
         net_amount=net_amount,
     )
     if customer is not None:
+        # Avant tout : la file peut-elle encore absorber un transfert ?
+        # Une transaction de console n'est jamais refusee, un operateur
+        # doit pouvoir rattraper la situation qu'il traite.
+        check_admission()
         # Verrou sur la ligne du client AVANT de sommer : deux creations
         # simultanees du meme client se suivent, et la seconde voit la
         # consommation de la premiere. Sans lui, chacune passe sous le

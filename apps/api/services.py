@@ -91,6 +91,10 @@ def create_transfer(
             IdempotencyKey.objects.create(
                 customer=customer, key=idempotency_key, request_fingerprint=digest, transaction=txn
             )
+    except transactions.ServiceSaturated as exc:
+        # Comme pour les plafonds : ecrite ici, apres l'annulation.
+        transactions.audit_admission_refusal(exc.saturation, customer=customer)
+        raise
     except transactions.LimitExceeded as exc:
         # Ici, l'annulation a deja eu lieu : la trace survit.
         transactions.audit_limit_refusal(exc, customer=customer)

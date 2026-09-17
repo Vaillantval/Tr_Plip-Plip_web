@@ -4,6 +4,10 @@
 <h1>{% translate "Envoyer de l'argent d'un portefeuille à l'autre" %}</h1>
 <p class="lead">{% translate "Le bénéficiaire reçoit exactement le montant annoncé. Les frais sont affichés avant de payer." %}</p>
 
+{% if saturated %}
+  <p class="alert warning" data-banner="saturated">{{ saturated }}</p>
+{% endif %}
+
 {% if not form.fields.source_wallet.choices or not form.fields.destination_wallet.choices %}
   <p class="alert warning">{% translate "Le service est momentanément indisponible. Réessayez plus tard." %}</p>
 {% else %}

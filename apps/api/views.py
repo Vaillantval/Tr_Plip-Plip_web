@@ -57,6 +57,21 @@ def _route_error(exc: Exception) -> APIError:
 ROUTE_ERRORS = (transactions.UnsupportedRoute, AmountTooSmall, AmountTooLarge)
 
 
+def _saturated_error(exc: transactions.ServiceSaturated) -> APIError:
+    """File saturee ou decaissements arretes.
+
+    Ne dit QUE combien de temps attendre, jamais la profondeur de la file
+    ni le rang : ce sont des donnees d'exploitation, elles reveleraient le
+    volume d'affaires.
+    """
+    return APIError(
+        "SERVICE_SATURATED",
+        "Trop de transferts en attente : creation momentanement suspendue.",
+        http_status=503,
+        extra={"retry_after": exc.retry_after_seconds},
+    )
+
+
 def _limit_error(exc: transactions.LimitExceeded) -> APIError:
     """Plafond cumule atteint. Ne dit que des faits du client lui-meme :
     son plafond, ce qu'il lui reste, quand il se libere. Aucun etat
@@ -279,6 +294,8 @@ class TransferListCreateView(ListAPIView):
                 http_status=409,
                 extra={"quote": QuoteSerializer(exc.quote).data},
             ) from exc
+        except transactions.ServiceSaturated as exc:
+            raise _saturated_error(exc) from exc
         except transactions.LimitExceeded as exc:
             raise _limit_error(exc) from exc
         except ROUTE_ERRORS as exc:

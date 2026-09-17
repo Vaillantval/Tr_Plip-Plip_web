@@ -57,6 +57,15 @@ services que l'API : aucune règle métier n'y est dupliquée.
   (`transaction_id`…), et à défaut ouvre le dernier transfert en cours du
   client. Elle ne confirme **rien** et ne change aucun état : seul le
   polling de `paiement-verify` fait foi.
+- **Contrôle d'admission** : au-delà d'une attente projetée de 4 h pour un
+  nouvel entrant (`ADMISSION_MAX_WAIT_SECONDS`), ou si le worker de
+  décaissement est à l'arrêt, les **créations sont refusées**. Vérifié à la
+  création seulement : un transfert déjà encaissé est une dette et se
+  décaisse toujours. Le client est prévenu dès l'accueil, sans jamais
+  apprendre la longueur de la file ; l'API répond 503 `SERVICE_SATURATED`
+  avec un simple délai de réattente. Chaque refus est audité
+  (`admission.refused`). `ADMISSION_CONTROL_ENABLED=0` rouvre tout.
+  Un opérateur (transaction sans client) n'est jamais bloqué.
 - **Plafonds cumulés par client** : 50 000 HTG sur 24 h glissantes,
   200 000 HTG sur 30 jours glissants, réglables par le superadmin (console →
   Méthodes et tarifs). Vérifiés **à la création uniquement** : une
