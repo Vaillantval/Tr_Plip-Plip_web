@@ -91,6 +91,10 @@ def create_transfer(
             IdempotencyKey.objects.create(
                 customer=customer, key=idempotency_key, request_fingerprint=digest, transaction=txn
             )
+    except transactions.LimitExceeded as exc:
+        # Ici, l'annulation a deja eu lieu : la trace survit.
+        transactions.audit_limit_refusal(exc, customer=customer)
+        raise
     except IntegrityError:
         # Requete concurrente avec la meme cle, validee entre-temps.
         existing = _existing(customer, idempotency_key, digest)

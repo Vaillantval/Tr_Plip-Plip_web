@@ -33,5 +33,6 @@ urlpatterns = [
     path("treasury/alerts/<int:alert_id>/ack/", views.alert_acknowledge, name="alert_acknowledge"),
     path("methods/", views.payment_methods, name="methods"),
     path("methods/pricing/", views.pricing_update, name="pricing_update"),
+    path("methods/limits/", views.limits_update, name="limits_update"),
     path("methods/<str:wallet>/", views.wallet_availability_update, name="wallet_availability"),
 ]

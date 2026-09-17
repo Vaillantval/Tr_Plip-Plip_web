@@ -45,6 +45,16 @@ services que l'API : aucune règle métier n'y est dupliquée.
   (`transaction_id`…), et à défaut ouvre le dernier transfert en cours du
   client. Elle ne confirme **rien** et ne change aucun état : seul le
   polling de `paiement-verify` fait foi.
+- **Plafonds cumulés par client** : 50 000 HTG sur 24 h glissantes,
+  200 000 HTG sur 30 jours glissants, réglables par le superadmin (console →
+  Méthodes et tarifs). Vérifiés **à la création uniquement** : une
+  transaction encaissée est une dette, aucun plafond ne bloque son
+  décaissement. Comptent les transferts encaissés et non remboursés, plus
+  ceux en attente de paiement tant que le délai court — sinon dix transferts
+  créés puis payés d'un coup passeraient sous le radar. Un remboursement ou
+  une expiration libère : la consommation est **calculée, jamais stockée**.
+  Chaque refus écrit une ligne d'audit (`limit.refused`) après l'annulation
+  de la transaction, sinon elle disparaîtrait avec elle.
 - **Session client** en cookie `HttpOnly`, distincte de la console : une
   session client n'ouvre pas la console et inversement. Identifiant de
   session renouvelé à la connexion, déconnexion après 30 min d'inactivité

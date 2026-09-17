@@ -23,12 +23,13 @@ from django.views.decorators.http import require_POST
 from apps.ledger import services as ledger
 from apps.transactions import queue
 from apps.transactions import services as txn_services
+from apps.accounts.models import Customer
 from apps.transactions.models import Transaction, Wallet
 from apps.transactions.states import IllegalTransition, State, can
 from apps.treasury import services as treasury
 from apps.treasury.models import FloatAlert, FloatSnapshot
 
-from .forms import RATE_INPUTS, PricingForm, RefundForm, ReleaseForm, TopupForm, pricing_field_name
+from .forms import RATE_INPUTS, LimitsForm, PricingForm, RefundForm, ReleaseForm, TopupForm, pricing_field_name
 from .permissions import audit_failure, require_acting_role, require_superadmin
 
 EXCEPTION_STATES = (
@@ -93,15 +94,43 @@ def dashboard(request):
 
 @login_required
 def transaction_list(request):
-    qs = Transaction.objects.all()
+    qs = Transaction.objects.select_related("customer").order_by("-created_at", "-id")
     state = request.GET.get("state")
+    customer_phone = (request.GET.get("customer") or "").strip()
     if state:
         qs = qs.filter(state=state)
+    if customer_phone:
+        qs = qs.filter(customer__phone=customer_phone)
+    customer = Customer.objects.filter(phone=customer_phone).first() if customer_phone else None
     return render(
         request,
         "console/transactions.html",
-        {"transactions": qs[:100], "states": State.choices, "current_state": state},
+        {
+            "transactions": qs[:LIST_LIMIT],
+            "states": State.choices,
+            "current_state": state,
+            "customer": customer,
+            "customer_phone": customer_phone,
+            "consumption": _consumption_rows(customer) if customer else None,
+        },
     )
+
+
+WINDOW_LABELS = {txn_services.LIMIT_DAY: "24 dernieres heures", txn_services.LIMIT_MONTH: "30 derniers jours"}
+
+
+def _consumption_rows(customer) -> list[dict]:
+    return [
+        {
+            "label": WINDOW_LABELS.get(w.name, w.name),
+            "collected": w.collected,
+            "reserved": w.reserved,
+            "used": w.used,
+            "cap": w.cap,
+            "remaining": w.remaining,
+        }
+        for w in txn_services.customer_consumption(customer)
+    ]
 
 
 def _transaction_context(txn: Transaction, *, refund_form=None, release_form=None) -> dict:
@@ -121,6 +150,7 @@ def _transaction_context(txn: Transaction, *, refund_form=None, release_form=Non
         "refund_form": refund_form or RefundForm(),
         "release_form": release_form or ReleaseForm(),
         "max_attempts": settings.PAYOUT_MAX_ATTEMPTS,
+        "consumption": _consumption_rows(txn.customer) if txn.customer_id else None,
     }
 
 
@@ -229,7 +259,18 @@ def _percent(rate) -> Decimal:
     return (rate * 100).quantize(Decimal("0.01"))
 
 
-def _methods_context(*, pricing_form=None) -> dict:
+def _limits_context(*, limits_form=None) -> dict:
+    overview = txn_services.limits_overview()
+    return {
+        "limits": overview,
+        "limits_form": limits_form
+        or LimitsForm(
+            initial={"daily_cap": overview["policy"].daily_cap, "monthly_cap": overview["policy"].monthly_cap}
+        ),
+    }
+
+
+def _methods_context(*, pricing_form=None, limits_form=None) -> dict:
     overview = txn_services.pricing_overview()
     if pricing_form is None:
         initial = {"platform_fee_rate": _percent(overview["policy"].platform_fee_rate)}
@@ -261,6 +302,7 @@ def _methods_context(*, pricing_form=None) -> dict:
         "pricing_form": pricing_form,
         "rate_rows": rate_rows,
         "rate_labels": [label for _, label, _ in RATE_INPUTS],
+        **_limits_context(limits_form=limits_form),
     }
 
 
@@ -269,15 +311,44 @@ def payment_methods(request):
     return render(request, "console/methods.html", _methods_context())
 
 
-def _after_methods_action(request, *, pricing_form=None):
+def _after_methods_action(request, *, pricing_form=None, limits_form=None):
     if not _is_htmx(request):
         return redirect("console:methods")
-    return render(request, "console/partials/methods_body.html", _methods_context(pricing_form=pricing_form))
+    return render(
+        request,
+        "console/partials/methods_body.html",
+        _methods_context(pricing_form=pricing_form, limits_form=limits_form),
+    )
 
 
 PRICING_AUDIT_FIELDS = ("platform_fee_rate",) + tuple(
     pricing_field_name(wallet, field) for wallet in Wallet.values for field, _, _ in RATE_INPUTS
 )
+
+
+@login_required
+@require_POST
+@require_superadmin("limits.update", audit_fields=("daily_cap", "monthly_cap"))
+def limits_update(request):
+    """Plafonds cumules par client. Superadmin uniquement."""
+    form = LimitsForm(request.POST)
+    if form.is_valid():
+        try:
+            txn_services.update_transfer_limits(**form.cleaned_data, actor=request.user)
+        except txn_services.InvalidLimits as exc:
+            form.add_error(None, str(exc))
+
+    if form.errors:
+        audit_failure(request, "limits.update", error=_form_errors(form))
+        messages.error(request, f"Plafonds NON enregistres : {_form_errors(form)}")
+        return _after_methods_action(request, limits_form=form)
+
+    messages.success(
+        request,
+        "Plafonds enregistres. Ils s'appliquent aux NOUVELLES creations ; "
+        "aucune transaction en cours n'est touchee.",
+    )
+    return _after_methods_action(request)
 
 
 @login_required

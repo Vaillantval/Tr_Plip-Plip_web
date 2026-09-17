@@ -57,6 +57,27 @@ def _route_error(exc: Exception) -> APIError:
 ROUTE_ERRORS = (transactions.UnsupportedRoute, AmountTooSmall, AmountTooLarge)
 
 
+def _limit_error(exc: transactions.LimitExceeded) -> APIError:
+    """Plafond cumule atteint. Ne dit que des faits du client lui-meme :
+    son plafond, ce qu'il lui reste, quand il se libere. Aucun etat
+    interne, aucune information sur les autres clients.
+    """
+    return APIError(
+        "LIMIT_EXCEEDED",
+        str(exc),
+        http_status=422,
+        extra={
+            "limit": {
+                "window": exc.window.name,
+                "cap": str(exc.window.cap),
+                "used": str(exc.window.used),
+                "remaining": str(exc.window.remaining),
+                "frees_at": exc.frees_at.isoformat() if exc.frees_at else None,
+            }
+        },
+    )
+
+
 # ----------------------------------------------------------------------
 # Identification
 # ----------------------------------------------------------------------
@@ -251,6 +272,8 @@ class TransferListCreateView(ListAPIView):
                 http_status=409,
                 extra={"quote": QuoteSerializer(exc.quote).data},
             ) from exc
+        except transactions.LimitExceeded as exc:
+            raise _limit_error(exc) from exc
         except ROUTE_ERRORS as exc:
             raise _route_error(exc) from exc
 

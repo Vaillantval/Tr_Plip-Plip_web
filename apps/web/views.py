@@ -35,6 +35,7 @@ from apps.transactions.pricing import MIN_NET, AmountTooLarge, AmountTooSmall
 
 from . import ratelimit
 from .forms import CodeForm, PhoneForm, TransferForm
+from .labels import format_htg
 from .polling import poll_interval
 from .session import customer_required, get_customer, login_customer, logout_customer
 
@@ -58,6 +59,47 @@ def _route_error_message(exc: Exception) -> str:
 
 
 ROUTE_ERRORS = (transactions.UnsupportedRoute, AmountTooSmall, AmountTooLarge)
+
+
+def _next_hour(moment):
+    """Heure ronde SUPERIEURE, a l'heure de Port-au-Prince.
+
+    Jamais la minute exacte : « a partir de 14 h 32 » dirait au client
+    quand sa plus ancienne transaction sort de la fenetre, donc l'heure
+    precise a laquelle il a envoye ce jour-la. L'arrondi vers le haut
+    evite aussi de promettre plus tot que la realite.
+    """
+    local = timezone.localtime(moment)
+    if local.minute or local.second or local.microsecond:
+        local += timedelta(hours=1)
+    return local.replace(minute=0, second=0, microsecond=0)
+
+
+def _limit_message(exc) -> str:
+    """Plafond atteint : ce que le client peut faire, et quand."""
+    cap = format_htg(exc.window.cap)
+    if exc.frees_at is None:
+        return _("Ce montant depasse a lui seul votre plafond de %(cap)s HTG. Envoyez un montant plus petit.") % {
+            "cap": cap
+        }
+
+    when = _next_hour(exc.frees_at)
+    today = timezone.localdate()
+    if when.date() == today:
+        tail = _("Vous pourrez envoyer a nouveau a partir de %(hour)s:00.") % {"hour": when.hour}
+    elif when.date() == today + timedelta(days=1):
+        tail = _("Vous pourrez envoyer a nouveau demain a partir de %(hour)s:00.") % {"hour": when.hour}
+    else:
+        tail = _("Vous pourrez envoyer a nouveau a partir du %(date)s a %(hour)s:00.") % {
+            "date": f"{when.day:02d}/{when.month:02d}",
+            "hour": when.hour,
+        }
+
+    if exc.window.name == transactions.LIMIT_DAY:
+        head = _("Vous avez atteint votre plafond de %(cap)s HTG par jour.") % {"cap": cap}
+    else:
+        head = _("Vous avez atteint votre plafond de %(cap)s HTG sur 30 jours.") % {"cap": cap}
+    return f"{head} {tail}"
 
 
 def _safe_next(request, default: str) -> str:
@@ -183,6 +225,20 @@ def _confirm_post(request):
     except api_services.QuoteChanged as exc:
         messages.warning(request, _("Les frais ont changé depuis votre saisie. Vérifiez le nouveau total avant de confirmer."))
         return _render_confirm(request, draft, exc.quote, status=409)
+    except transactions.LimitExceeded as exc:
+        # Contrairement aux autres refus, on garde le client sur sa page de
+        # confirmation : sa saisie est bonne, c'est le moment qui ne l'est pas.
+        messages.error(request, _limit_message(exc))
+        return _render_confirm(
+            request,
+            draft,
+            transactions.quote_transfer(
+                source_wallet=draft["source_wallet"],
+                destination_wallet=draft["destination_wallet"],
+                net_amount=Decimal(draft["net_amount"]),
+            ),
+            status=409,
+        )
     except ROUTE_ERRORS as exc:
         messages.error(request, _route_error_message(exc))
         return redirect("web:home")

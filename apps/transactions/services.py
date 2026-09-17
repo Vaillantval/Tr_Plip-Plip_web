@@ -15,13 +15,24 @@ from django.conf import settings
 from django.db import transaction as db_transaction
 from django.utils import timezone
 
+from apps.accounts.models import Customer
 from apps.ledger import services as ledger
 from apps.providers.plopplop import exceptions as pp
 from apps.providers.plopplop.client import get_client
 from apps.treasury import services as treasury
 
 from . import queue
-from .models import PAYOUT_CAPABLE, PricingPolicy, Transaction, Wallet, WalletSetting
+from .limits import DAY as LIMIT_DAY  # noqa: F401
+from .limits import MONTH as LIMIT_MONTH  # noqa: F401
+from .limits import (  # noqa: F401
+    LimitExceeded,
+    audit_limit_refusal,
+    check_transfer_allowed,
+    customer_consumption,
+    limit_policy,
+    window_seconds,
+)
+from .models import PAYOUT_CAPABLE, PricingPolicy, Transaction, TransferLimitPolicy, Wallet, WalletSetting
 from .pricing import Quote, quote, round_htg
 from .states import IllegalTransition, State
 
@@ -54,6 +65,10 @@ class InvalidRelease(ValueError):
 
 
 class InvalidPricing(ValueError):
+    pass
+
+
+class InvalidLimits(ValueError):
     pass
 
 
@@ -187,6 +202,44 @@ def update_pricing(*, platform_fee_rate: Decimal, wallet_rates: dict[str, dict[s
     return policy
 
 
+def limits_overview() -> dict:
+    """Plafonds en vigueur et fenetres. Lecture seule."""
+    policy = TransferLimitPolicy.objects.select_related("updated_by").filter(pk=1).first() or TransferLimitPolicy(pk=1)
+    seconds = window_seconds()
+    return {
+        "policy": policy,
+        "day_hours": seconds[LIMIT_DAY] // 3600,
+        "month_days": seconds[LIMIT_MONTH] // 86400,
+        "max_net_amount": settings.PRICING["MAX_NET_AMOUNT"],
+    }
+
+
+@db_transaction.atomic
+def update_transfer_limits(*, daily_cap: Decimal, monthly_cap: Decimal, actor) -> TransferLimitPolicy:
+    """Change les plafonds cumules par client.
+
+    Ne touche aucune transaction existante : les plafonds sont verifies a
+    la creation. Baisser un plafond ne bloque donc jamais un decaissement
+    en cours.
+    """
+    if daily_cap <= ZERO or monthly_cap <= ZERO:
+        raise InvalidLimits("Un plafond doit etre strictement positif")
+    if monthly_cap < daily_cap:
+        raise InvalidLimits("Le plafond mensuel ne peut pas etre inferieur au plafond journalier")
+    if daily_cap < settings.PRICING["MAX_NET_AMOUNT"]:
+        raise InvalidLimits(
+            f"Le plafond journalier doit couvrir le maximum par transfert "
+            f"({settings.PRICING['MAX_NET_AMOUNT']} HTG), sinon aucune date de liberation n'a de sens"
+        )
+
+    policy, _ = TransferLimitPolicy.objects.select_for_update().get_or_create(pk=1)
+    policy.daily_cap = daily_cap
+    policy.monthly_cap = monthly_cap
+    policy.updated_by = actor
+    policy.save()
+    return policy
+
+
 def _check_rate(label: str, rate) -> None:
     if rate is None or rate < ZERO or rate >= MAX_RATE:
         raise InvalidPricing(f"{label} : taux attendu entre 0 et {MAX_RATE * 100:.0f} %")
@@ -284,6 +337,15 @@ def create_transaction(
         destination_wallet=destination_wallet,
         net_amount=net_amount,
     )
+    if customer is not None:
+        # Verrou sur la ligne du client AVANT de sommer : deux creations
+        # simultanees du meme client se suivent, et la seconde voit la
+        # consommation de la premiere. Sans lui, chacune passe sous le
+        # plafond et les deux le depassent ensemble.
+        # Une transaction creee depuis la console n'a pas de client : un
+        # operateur n'est pas plafonne.
+        Customer.objects.select_for_update().filter(pk=customer.pk).first()
+        check_transfer_allowed(customer, net_amount=q.net_amount)
     cost_in, cost_out = _provider_costs(
         q,
         {"payment_cost_rate": source.payment_cost_rate},

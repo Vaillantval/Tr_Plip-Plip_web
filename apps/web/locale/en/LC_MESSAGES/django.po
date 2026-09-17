@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Plip-Plip web\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-15 12:16-0400\n"
+"POT-Creation-Date: 2026-09-16 19:06-0400\n"
 "PO-Revision-Date: 2026-09-14 17:45-0400\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
@@ -17,7 +17,8 @@ msgstr ""
 
 #: .\apps\web\forms.py
 msgid "Numéro invalide : 8 chiffres d'un mobile haïtien, avec ou sans +509."
-msgstr "Invalid number: 8 digits of a Haitian mobile number, with or without +509."
+msgstr ""
+"Invalid number: 8 digits of a Haitian mobile number, with or without +509."
 
 #: .\apps\web\forms.py
 msgid "Votre numéro de téléphone"
@@ -52,7 +53,8 @@ msgid "Numéro MonCash qui paie (facultatif)"
 msgstr "MonCash number paying (optional)"
 
 #: .\apps\web\forms.py
-msgid "Renseigné, vous recevez la demande de paiement directement sur ce téléphone."
+msgid ""
+"Renseigné, vous recevez la demande de paiement directement sur ce téléphone."
 msgstr "If filled in, the payment request is sent straight to this phone."
 
 #: .\apps\web\forms.py
@@ -140,8 +142,12 @@ msgid "Envoyer de l'argent d'un portefeuille à l'autre"
 msgstr "Send money from one wallet to another"
 
 #: .\apps\web\templates\web\home.html
-msgid "Le bénéficiaire reçoit exactement le montant annoncé. Les frais sont affichés avant de payer."
-msgstr "The recipient receives exactly the amount shown. Fees are displayed before you pay."
+msgid ""
+"Le bénéficiaire reçoit exactement le montant annoncé. Les frais sont "
+"affichés avant de payer."
+msgstr ""
+"The recipient receives exactly the amount shown. Fees are displayed before "
+"you pay."
 
 #: .\apps\web\templates\web\home.html
 msgid "Le service est momentanément indisponible. Réessayez plus tard."
@@ -199,8 +205,11 @@ msgid "Total à payer"
 msgstr "Total to pay"
 
 #: .\apps\web\templates\web\partials\fees.html
-msgid "Par carte, le paiement est débité en dollars américains, après conversion par notre prestataire de paiement."
-msgstr "Card payments are charged in US dollars, converted by our payment provider."
+msgid ""
+"Par carte, le paiement est débité en dollars américains, après conversion "
+"par notre prestataire de paiement."
+msgstr ""
+"Card payments are charged in US dollars, converted by our payment provider."
 
 #: .\apps\web\templates\web\partials\quote.html
 msgid "Saisissez un montant pour voir les frais et le total."
@@ -219,20 +228,34 @@ msgid "Reçu"
 msgstr "Received"
 
 #: .\apps\web\templates\web\partials\transfer_status.html
-msgid "Payez pour lancer le transfert. La page de paiement s'ouvre dans un nouvel onglet ; revenez ici ensuite, cette page se met à jour toute seule."
-msgstr "Pay to start the transfer. The payment page opens in a new tab; come back here afterwards, this page updates by itself."
+msgid ""
+"Payez pour lancer le transfert. La page de paiement s'ouvre dans un nouvel "
+"onglet ; revenez ici ensuite, cette page se met à jour toute seule."
+msgstr ""
+"Pay to start the transfer. The payment page opens in a new tab; come back "
+"here afterwards, this page updates by itself."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
 msgid "Payer maintenant"
 msgstr "Pay now"
 
 #: .\apps\web\templates\web\partials\transfer_status.html
-msgid "Une demande de paiement a été envoyée sur votre téléphone MonCash. Validez-la pour lancer le transfert."
-msgstr "A payment request was sent to your MonCash phone. Approve it to start the transfer."
+msgid ""
+"Une demande de paiement a été envoyée sur votre téléphone MonCash. Validez-"
+"la pour lancer le transfert."
+msgstr ""
+"A payment request was sent to your MonCash phone. Approve it to start the "
+"transfer."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
-msgid "Le lien de paiement n'a pas pu être obtenu. Ne relancez pas de nouveau transfert tout de suite : si une demande de paiement vous parvient, vous pouvez la valider, cette page le détectera."
-msgstr "We couldn't get the payment link. Don't start a new transfer right away: if a payment request reaches you, you can approve it and this page will detect it."
+msgid ""
+"Le lien de paiement n'a pas pu être obtenu. Ne relancez pas de nouveau "
+"transfert tout de suite : si une demande de paiement vous parvient, vous "
+"pouvez la valider, cette page le détectera."
+msgstr ""
+"We couldn't get the payment link. Don't start a new transfer right away: if "
+"a payment request reaches you, you can approve it and this page will detect "
+"it."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
 #, python-format
@@ -245,13 +268,17 @@ msgstr "Payment received. The transfer to the recipient is under way."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
 #, python-format
-msgid "Le bénéficiaire devrait recevoir l'argent dans moins de %(max)s minutes."
+msgid ""
+"Le bénéficiaire devrait recevoir l'argent dans moins de %(max)s minutes."
 msgstr "The recipient should receive the money in less than %(max)s minutes."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
 #, python-format
-msgid "Le bénéficiaire devrait recevoir l'argent dans environ %(min)s à %(max)s minutes."
-msgstr "The recipient should receive the money in about %(min)s to %(max)s minutes."
+msgid ""
+"Le bénéficiaire devrait recevoir l'argent dans environ %(min)s à %(max)s "
+"minutes."
+msgstr ""
+"The recipient should receive the money in about %(min)s to %(max)s minutes."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
 msgid "Il sera traité dès que possible."
@@ -311,7 +338,8 @@ msgid "Faire un envoi"
 msgstr "Send money"
 
 #: .\apps\web\views.py
-msgid "Ce moyen de paiement est momentanément indisponible. Choisissez-en un autre."
+msgid ""
+"Ce moyen de paiement est momentanément indisponible. Choisissez-en un autre."
 msgstr "This payment method is temporarily unavailable. Please choose another."
 
 #: .\apps\web\views.py
@@ -329,6 +357,38 @@ msgid "Cette combinaison de portefeuilles n'est pas proposée."
 msgstr "This combination of wallets isn't available."
 
 #: .\apps\web\views.py
+#, python-format
+msgid ""
+"Ce montant depasse a lui seul votre plafond de %(cap)s HTG. Envoyez un "
+"montant plus petit."
+msgstr "This amount alone is above your %(cap)s HTG limit. Send a smaller amount."
+
+#: .\apps\web\views.py
+#, python-format
+msgid "Vous pourrez envoyer a nouveau a partir de %(hour)s:00."
+msgstr "You can send again from %(hour)s:00."
+
+#: .\apps\web\views.py
+#, python-format
+msgid "Vous pourrez envoyer a nouveau demain a partir de %(hour)s:00."
+msgstr "You can send again tomorrow from %(hour)s:00."
+
+#: .\apps\web\views.py
+#, python-format
+msgid "Vous pourrez envoyer a nouveau a partir du %(date)s a %(hour)s:00."
+msgstr "You can send again from %(date)s at %(hour)s:00."
+
+#: .\apps\web\views.py
+#, python-format
+msgid "Vous avez atteint votre plafond de %(cap)s HTG par jour."
+msgstr "You have reached your daily limit of %(cap)s HTG."
+
+#: .\apps\web\views.py
+#, python-format
+msgid "Vous avez atteint votre plafond de %(cap)s HTG sur 30 jours."
+msgstr "You have reached your 30-day limit of %(cap)s HTG."
+
+#: .\apps\web\views.py
 msgid "Trop de demandes. Patientez une minute."
 msgstr "Too many requests. Please wait a minute."
 
@@ -341,27 +401,36 @@ msgid "Trop de transferts en peu de temps. Réessayez plus tard."
 msgstr "Too many transfers in a short time. Please try again later."
 
 #: .\apps\web\views.py
-msgid "Les frais ont changé depuis votre saisie. Vérifiez le nouveau total avant de confirmer."
-msgstr "The fees have changed since you started. Check the new total before confirming."
+msgid ""
+"Les frais ont changé depuis votre saisie. Vérifiez le nouveau total avant de "
+"confirmer."
+msgstr ""
+"The fees have changed since you started. Check the new total before "
+"confirming."
 
 #: .\apps\web\views.py
 msgid "Cette demande est déjà en cours de traitement."
 msgstr "This request is already being processed."
 
 #: .\apps\web\views.py
-msgid "Le paiement n'a pas pu être créé. Aucun montant n'a été débité. Vous pouvez réessayer."
-msgstr "The payment couldn't be created. Nothing was charged. You can try again."
+msgid ""
+"Le paiement n'a pas pu être créé. Aucun montant n'a été débité. Vous pouvez "
+"réessayer."
+msgstr ""
+"The payment couldn't be created. Nothing was charged. You can try again."
 
 #: .\apps\web\views.py
 msgid "Trop de demandes de code pour ce numéro. Patientez avant de réessayer."
-msgstr "Too many code requests for this number. Please wait before trying again."
+msgstr ""
+"Too many code requests for this number. Please wait before trying again."
 
 #: .\apps\web\views.py
 msgid "Ce numéro ne peut pas recevoir de SMS."
 msgstr "This number can't receive SMS."
 
 #: .\apps\web\views.py
-msgid "L'envoi du SMS est momentanément impossible. Réessayez dans quelques minutes."
+msgid ""
+"L'envoi du SMS est momentanément impossible. Réessayez dans quelques minutes."
 msgstr "We can't send the SMS right now. Please try again in a few minutes."
 
 #: .\apps\web\views.py
@@ -381,5 +450,8 @@ msgid "Trop de tentatives. Demandez un nouveau code."
 msgstr "Too many attempts. Request a new code."
 
 #: .\apps\web\views.py
-msgid "La vérification est momentanément impossible. Réessayez dans quelques minutes."
-msgstr "Verification isn't possible right now. Please try again in a few minutes."
+msgid ""
+"La vérification est momentanément impossible. Réessayez dans quelques "
+"minutes."
+msgstr ""
+"Verification isn't possible right now. Please try again in a few minutes."

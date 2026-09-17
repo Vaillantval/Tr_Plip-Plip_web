@@ -1,4 +1,4 @@
-{% load console_tags %}
+{% load console_tags l10n %}
 <div id="methods-body" class="space-y-4">
   {% include "console/partials/messages.html" %}
   {% include "console/partials/pricing_banner.html" %}
@@ -141,5 +141,66 @@
         </tbody>
       </table>
     </div>
+  </section>
+
+  <section class="rounded border bg-white" data-section="limits">
+    <h2 class="border-b px-3 py-2 font-medium">Plafonds cumules par client</h2>
+    <div class="space-y-1 px-3 py-2 text-slate-600">
+      <p>
+        Fenetres <strong>glissantes</strong> : elles remontent depuis maintenant, elles ne se remettent pas a zero
+        a minuit ni le 1er du mois. Verifiees a la <strong>creation</strong> uniquement : une transaction encaissee
+        est une dette, aucun plafond ne bloque son decaissement.
+      </p>
+      <p>
+        Comptent : les transferts encaisses et non rembourses, plus ceux en attente de paiement dont le delai court
+        encore. Un remboursement libere le plafond. Maximum par transfert : {{ limits.max_net_amount|htg }} HTG.
+      </p>
+    </div>
+
+    {% if request.user.is_superadmin %}
+    <form data-console-action="limits" method="post" action="{% url 'console:limits_update' %}"
+          hx-post="{% url 'console:limits_update' %}" hx-target="#methods-body" hx-swap="outerHTML"
+          hx-disabled-elt="find button"
+          hx-confirm="Enregistrer ces plafonds ? Ils s'appliqueront aux nouvelles creations.">
+      {% csrf_token %}
+    {% endif %}
+      {% if limits_form.non_field_errors %}<p class="px-3 text-red-700">{{ limits_form.non_field_errors|join:" " }}</p>{% endif %}
+      <table class="w-full">
+        <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+          <tr>
+            <th class="px-3 py-1.5">Fenetre</th>
+            <th class="px-3 py-1.5 text-right">Plafond (HTG)</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y">
+          <tr>
+            <td class="px-3 py-1.5">{{ limits.day_hours }} dernieres heures</td>
+            <td class="px-3 py-1.5 text-right">
+              {% if request.user.is_superadmin %}
+                <input type="number" step="0.01" min="1" name="daily_cap" value="{{ limits_form.daily_cap.value|unlocalize }}"
+                       class="w-32 rounded border px-2 py-1 text-right font-mono">
+              {% else %}<span class="font-mono">{{ limits.policy.daily_cap|htg }}</span>{% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td class="px-3 py-1.5">{{ limits.month_days }} derniers jours</td>
+            <td class="px-3 py-1.5 text-right">
+              {% if request.user.is_superadmin %}
+                <input type="number" step="0.01" min="1" name="monthly_cap" value="{{ limits_form.monthly_cap.value|unlocalize }}"
+                       class="w-32 rounded border px-2 py-1 text-right font-mono">
+              {% else %}<span class="font-mono">{{ limits.policy.monthly_cap|htg }}</span>{% endif %}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="px-3 py-2 text-xs text-slate-400">
+        {% if limits.policy.updated_at %}Modifies le {{ limits.policy.updated_at|date:"d/m/Y H:i" }}{% if limits.policy.updated_by %} par {{ limits.policy.updated_by }}{% endif %}.{% else %}Valeurs de depart, jamais modifiees.{% endif %}
+      </p>
+    {% if request.user.is_superadmin %}
+      <div class="border-t px-3 py-2">
+        <button class="rounded bg-slate-900 px-3 py-1.5 font-medium text-white">Enregistrer les plafonds</button>
+      </div>
+    </form>
+    {% endif %}
   </section>
 </div>

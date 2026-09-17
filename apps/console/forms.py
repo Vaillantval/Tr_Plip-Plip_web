@@ -82,6 +82,17 @@ class TopupForm(forms.Form):
     reference = forms.CharField(label="Reference du rechargement plopplop", max_length=64)
 
 
+class LimitsForm(forms.Form):
+    """Plafonds cumules par client, en HTG."""
+
+    daily_cap = forms.DecimalField(
+        label="Plafond par jour glissant (HTG)", max_digits=12, decimal_places=2, min_value=Decimal("1")
+    )
+    monthly_cap = forms.DecimalField(
+        label="Plafond sur 30 jours glissants (HTG)", max_digits=12, decimal_places=2, min_value=Decimal("1")
+    )
+
+
 class ConsoleLoginForm(AuthenticationForm):
     """Connexion a la console.
 

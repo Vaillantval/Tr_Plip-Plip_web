@@ -172,6 +172,14 @@ PRICING = {
     "MAX_NET_AMOUNT": Decimal(env("MAX_NET_AMOUNT", "50000")),
 }
 
+# Plafonds cumules par client : les MONTANTS se reglent dans la console
+# (superadmin), la LONGUEUR des fenetres est ici -- elle definit le sens
+# des deux plafonds, ce n'est pas un bouton metier.
+TRANSFER_LIMITS = {
+    "day": int(env("LIMIT_DAY_SECONDS", str(24 * 3600))),
+    "month": int(env("LIMIT_MONTH_SECONDS", str(30 * 24 * 3600))),
+}
+
 TREASURY = {
     "THRESHOLDS": {
         "warning": Decimal(env("FLOAT_WARNING", "50000")),

@@ -6,9 +6,44 @@
     <h1 class="font-mono text-lg font-semibold">{{ txn.reference }}</h1>
     {% include "console/partials/state_badge.html" with state=txn.state %}
     <span class="text-slate-700">{{ txn.get_source_wallet_display }} → {{ txn.get_destination_wallet_display }}</span>
-    <span class="text-slate-500">beneficiaire <span class="font-mono text-slate-700">{{ txn.recipient_phone }}</span>{% if txn.sender_phone %} · payeur <span class="font-mono text-slate-700">{{ txn.sender_phone }}</span>{% endif %}{% if txn.customer %} · client API <span class="font-mono text-slate-700">{{ txn.customer.phone }}</span>{% endif %}</span>
+    <span class="text-slate-500">beneficiaire <span class="font-mono text-slate-700">{{ txn.recipient_phone }}</span>{% if txn.sender_phone %} · payeur <span class="font-mono text-slate-700">{{ txn.sender_phone }}</span>{% endif %}{% if txn.customer %} · client <a class="font-mono text-slate-700 underline decoration-slate-300 hover:decoration-slate-700" href="{% url 'console:transactions' %}?customer={{ txn.customer.phone }}" title="Tous les transferts de ce client">{{ txn.customer.phone }}</a>{% endif %}</span>
     <span class="ml-auto text-slate-500">creee le {{ txn.created_at|date:"d/m/Y H:i:s" }}{% if txn.created_by %} par {{ txn.created_by }}{% endif %}</span>
   </header>
+
+  {% if consumption %}
+  <section class="rounded border bg-white">
+    <h2 class="border-b px-3 py-2 font-medium">Plafonds du client</h2>
+    <table class="w-full">
+      <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+        <tr>
+          <th class="px-3 py-1.5">Fenetre</th>
+          <th class="px-3 py-1.5 text-right">Encaisse</th>
+          <th class="px-3 py-1.5 text-right">Reserve</th>
+          <th class="px-3 py-1.5 text-right">Total</th>
+          <th class="px-3 py-1.5 text-right">Plafond</th>
+          <th class="px-3 py-1.5 text-right">Restant</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        {% for window in consumption %}
+        <tr class="{% if not window.remaining %}bg-red-50 text-red-900{% endif %}">
+          <td class="px-3 py-1.5">{{ window.label }}</td>
+          <td class="px-3 py-1.5 text-right font-mono">{{ window.collected|htg }}</td>
+          <td class="px-3 py-1.5 text-right font-mono {% if window.reserved %}text-amber-700{% else %}text-slate-400{% endif %}">{{ window.reserved|htg }}</td>
+          <td class="px-3 py-1.5 text-right font-mono">{{ window.used|htg }}</td>
+          <td class="px-3 py-1.5 text-right font-mono">{{ window.cap|htg }}</td>
+          <td class="px-3 py-1.5 text-right font-mono">{{ window.remaining|htg }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="px-3 py-2 text-xs text-slate-400">
+      Fenetres glissantes, a l'instant. Verifiees a la creation seulement : ce transfert n'est pas bloque par un plafond.
+      « Reserve » : des transferts crees mais pas encore payes, dont le delai de paiement court toujours.
+      Le client n'a rien envoye ; sa reservation se libere d'elle-meme a l'expiration du paiement.
+    </p>
+  </section>
+  {% endif %}
 
   {% if txn.failure_code %}
   <div class="rounded border border-red-300 bg-red-50 px-3 py-2 text-red-800">

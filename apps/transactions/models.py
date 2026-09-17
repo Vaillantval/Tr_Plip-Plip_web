@@ -81,6 +81,37 @@ class WalletSetting(models.Model):
         return f"{self.get_wallet_display()} (entree={self.payment_enabled}, sortie={self.payout_enabled})"
 
 
+class TransferLimitPolicy(models.Model):
+    """Plafonds cumules par client. Une seule ligne (pk=1).
+
+    Fenetres GLISSANTES : elles remontent depuis maintenant, elles ne se
+    remettent pas a zero a minuit ni le 1er du mois. Verifiees a la
+    CREATION uniquement : une transaction encaissee est une dette, aucun
+    plafond ne bloque jamais son decaissement.
+
+    Le plafond par transaction (PRICING["MAX_NET_AMOUNT"]) reste separe :
+    il protege d'une faute de frappe, ceux-ci d'un cumul.
+    """
+
+    daily_cap = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("50000"))
+    monthly_cap = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("200000"))
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(daily_cap__gt=0) & models.Q(monthly_cap__gte=models.F("daily_cap")),
+                name="monthly_cap_covers_daily_cap",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"Plafonds {self.daily_cap} HTG/jour, {self.monthly_cap} HTG/30 jours"
+
+
 class PricingPolicy(models.Model):
     """Reglages de tarification globaux. Une seule ligne (pk=1).
 
@@ -194,6 +225,7 @@ class Transaction(models.Model):
     class Meta:
         ordering = ("-created_at",)
         indexes = [
+            models.Index(fields=["customer", "state", "payment_confirmed_at"], name="txn_customer_window_idx"),
             models.Index(fields=["state", "created_at"]),
             models.Index(fields=["recipient_phone"]),
         ]
