@@ -11,3 +11,9 @@ staticfiles/
 # dans l'image par le Dockerfile. Ne pas committer.
 node_modules/
 apps/console/static/console/tailwind.css
+
+# Sauvegardes. Un export contient les numeros de telephone et les montants
+# de TOUS les clients : il ne part jamais dans git, meme sur un depot prive.
+sauvegardes/
+plipplip-*.json
+plipplip-*.json.enc

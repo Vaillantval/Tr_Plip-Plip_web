@@ -13,6 +13,9 @@ __pycache__
 !.env.example
 dev.sqlite3
 *.sqlite3
+sauvegardes
+plipplip-*.json
+plipplip-*.json.enc
 staticfiles
 tests
 pytest.ini

@@ -41,6 +41,7 @@ Tailwind.
 | `apps/console` | Console d'exploitation (`/console/`, Django templates + HTMX). |
 | `apps/api` | API publique v1 (DRF) pour le front web et l'app Flutter. |
 | `apps/providers/twilio` | Seul module qui parle à Twilio Verify (codes SMS). |
+| `apps/backup` | Export, vérification d'intégrité et restauration. Voir [RESTAURATION.md](RESTAURATION.md). |
 
 ## Site client — `/`
 
@@ -264,6 +265,10 @@ Réglages facultatifs, valeurs par défaut dans `.env.example` :
   `web` / `celery-worker` si plopplop filtre aussi l'encaissement.
 - **Pas d'environnement de test chez plopplop** : le premier déploiement
   parle à la production plopplop. Recette avec de petits montants.
+- **Sauvegardes** : les sauvegardes Railway vivent chez Railway et ne
+  protègent pas de la perte de Railway. Un export hebdomadaire
+  (`manage.py export_data --encrypt`) doit vivre ailleurs. Marche à suivre
+  et restauration : [RESTAURATION.md](RESTAURATION.md).
 
 ## La contrainte du cooldown
 
