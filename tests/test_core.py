@@ -227,7 +227,7 @@ def test_payout_to_non_capable_wallet_is_refused():
         services.create_transaction(
             source_wallet=Wallet.MONCASH,
             destination_wallet=Wallet.CARTE,
-            recipient_phone="50912345678",
+            recipient_phone="50932345678",
             net_amount=Decimal("1000"),
         )
 
@@ -236,6 +236,6 @@ def _make_txn() -> Transaction:
     return services.create_transaction(
         source_wallet=Wallet.MONCASH,
         destination_wallet=Wallet.NATCASH,
-        recipient_phone="50912345678",
+        recipient_phone="50932345678",
         net_amount=Decimal("1000"),
     )

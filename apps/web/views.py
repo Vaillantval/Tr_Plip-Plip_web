@@ -91,6 +91,21 @@ def _saturation_message(saturation) -> str:
     )
 
 
+def _recipient_limit_message() -> str:
+    """Plafond du beneficiaire : le refus, et rien d'autre.
+
+    Aucun chiffre, aucune date de liberation, aucun historique. « Ce numero
+    a deja recu 45 000 HTG aujourd'hui » divulguerait les finances d'un
+    tiers a quelqu'un qui n'a aucun droit de les connaitre.
+
+    Et pas de « verifiez le numero » : le numero saisi est bon, c'est le
+    beneficiaire qui est sature. Ce conseil enverrait l'expediteur chercher
+    une erreur qui n'existe pas, et ses ressaisies consommeraient son quota
+    de sondage -- il finirait etrangle pour avoir suivi notre conseil.
+    """
+    return _("Ce numéro ne peut pas recevoir ce montant pour le moment. Réessayez plus tard.")
+
+
 def _limit_message(exc) -> str:
     """Plafond atteint : ce que le client peut faire, et quand."""
     cap = format_htg(exc.window.cap)
@@ -256,6 +271,21 @@ def _confirm_post(request):
         # La saisie du client est bonne : on la garde et on explique.
         messages.error(request, _saturation_message(exc.saturation))
         return redirect("web:home")
+    except transactions.RecipientLimitExceeded:
+        # Aucun chiffre, aucune date, aucun historique : l'expediteur n'est
+        # pas en cause et n'a aucun droit de connaitre l'activite du
+        # beneficiaire. On garde sa saisie, comme pour son propre plafond.
+        messages.error(request, _recipient_limit_message())
+        return _render_confirm(
+            request,
+            draft,
+            transactions.quote_transfer(
+                source_wallet=draft["source_wallet"],
+                destination_wallet=draft["destination_wallet"],
+                net_amount=Decimal(draft["net_amount"]),
+            ),
+            status=409,
+        )
     except transactions.LimitExceeded as exc:
         # Contrairement aux autres refus, on garde le client sur sa page de
         # confirmation : sa saisie est bonne, c'est le moment qui ne l'est pas.

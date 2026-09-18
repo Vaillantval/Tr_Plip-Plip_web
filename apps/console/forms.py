@@ -108,13 +108,22 @@ class TopupForm(forms.Form):
 
 
 class LimitsForm(forms.Form):
-    """Plafonds cumules par client, en HTG."""
+    """Plafonds cumules, en HTG. Expediteur et beneficiaire."""
 
     daily_cap = forms.DecimalField(
-        label="Plafond par jour glissant (HTG)", max_digits=12, decimal_places=2, min_value=Decimal("1")
+        label="Expediteur : par jour glissant (HTG)", max_digits=12, decimal_places=2, min_value=Decimal("1")
     )
     monthly_cap = forms.DecimalField(
-        label="Plafond sur 30 jours glissants (HTG)", max_digits=12, decimal_places=2, min_value=Decimal("1")
+        label="Expediteur : sur 30 jours glissants (HTG)", max_digits=12, decimal_places=2, min_value=Decimal("1")
+    )
+    recipient_daily_cap = forms.DecimalField(
+        label="Beneficiaire : par jour glissant (HTG)", max_digits=12, decimal_places=2, min_value=Decimal("1")
+    )
+    recipient_monthly_cap = forms.DecimalField(
+        label="Beneficiaire : sur 30 jours glissants (HTG)",
+        max_digits=12,
+        decimal_places=2,
+        min_value=Decimal("1"),
     )
 
 

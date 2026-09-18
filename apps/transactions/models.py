@@ -95,6 +95,20 @@ class TransferLimitPolicy(models.Model):
 
     daily_cap = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("50000"))
     monthly_cap = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("200000"))
+
+    # Plafonds du BENEFICIAIRE, par numero. Recevoir de plusieurs personnes
+    # est legitime : ils sont trois fois plus larges que ceux de l'emission.
+    # Le rapport mensuel est volontairement plus serre (4 jours au plafond,
+    # contre 12 cote expediteur) : recevoir gros tous les jours pendant un
+    # mois est justement le profil a faire remonter.
+    #
+    # CE SONT DES HYPOTHESES. Comme les 50 000 de l'expediteur et comme les
+    # taux de la note conceptuelle, elles n'ont ete mesurees sur rien :
+    # personne n'a encore observe un seul transfert reel. A ajuster apres le
+    # pilote, quand on saura ce qu'est un usage normal.
+    recipient_daily_cap = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("150000"))
+    recipient_monthly_cap = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("600000"))
+
     updated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
@@ -105,7 +119,12 @@ class TransferLimitPolicy(models.Model):
             models.CheckConstraint(
                 condition=models.Q(daily_cap__gt=0) & models.Q(monthly_cap__gte=models.F("daily_cap")),
                 name="monthly_cap_covers_daily_cap",
-            )
+            ),
+            models.CheckConstraint(
+                condition=models.Q(recipient_daily_cap__gt=0)
+                & models.Q(recipient_monthly_cap__gte=models.F("recipient_daily_cap")),
+                name="recipient_monthly_cap_covers_daily_cap",
+            ),
         ]
 
     def __str__(self) -> str:
@@ -227,7 +246,11 @@ class Transaction(models.Model):
         indexes = [
             models.Index(fields=["customer", "state", "payment_confirmed_at"], name="txn_customer_window_idx"),
             models.Index(fields=["state", "created_at"]),
-            models.Index(fields=["recipient_phone"]),
+            # Le plafond du beneficiaire balaie 30 jours par numero a CHAQUE
+            # creation : sans cet index, c'est le point lent du parcours.
+            # Il remplace l'index sur le seul recipient_phone, dont il est le
+            # prefixe -- les recherches par numero seul restent servies.
+            models.Index(fields=["recipient_phone", "payment_confirmed_at"], name="txn_recipient_window_idx"),
         ]
 
     def __str__(self) -> str:

@@ -107,7 +107,46 @@ s'affiche échappé, toujours.
 > qui balaie tout `apps/`. Évite d'écrire la chaîne littérale dans un
 > commentaire : le test la verrait.
 
-### 7. Les services métier restent appelables sans requête HTTP
+### 7. Les numéros sont normalisés au point d'écriture
+
+`create_transaction()` (`apps/transactions/services.py`) applique
+`apps.accounts.phone.normalize()` à `recipient_phone` et `sender_phone`. **Ne
+te repose jamais sur l'appelant** : cette garantie ne tenait auparavant qu'aux
+deux couches de saisie — `PhoneField` du site et du sérialiseur — et tout
+autre chemin (console, script, test, futur canal USSD) stockait ce qu'il
+voulait.
+
+Conséquence : `509XXXXXXXX` et `XXXXXXXX` en base feraient **deux
+bénéficiaires distincts**, et le plafond du bénéficiaire se contournerait en
+changeant le format de saisie.
+
+**Un numéro qui ne peut pas recevoir d'argent est refusé à la création, jamais
+découvert au décaissement.** MonCash et NatCash sont rattachés à des lignes
+mobiles ; un numéro fixe accepté à la création échouerait au versement —
+c'est-à-dire **après l'encaissement**, avec l'argent du client entre nos mains
+et un opérateur à mobiliser pour le rembourser. Le contrôle de validité
+appartient au moment où l'on ne doit encore rien à personne.
+
+> Gardé par `tests/test_recipient_limits.py::test_two_formats_of_the_same_number_share_one_cap`
+> et `::test_an_unusable_number_is_refused_at_creation`.
+
+### 8. Un refus ne dépend jamais visiblement de l'activité d'un tiers
+
+Le plafond du bénéficiaire refuse l'expéditeur pour une raison qui ne le
+concerne pas. Son message ne contient **aucun chiffre, aucune date, aucun
+historique** — et pas de « vérifiez le numéro » : le numéro est bon.
+
+Mais un message constant ne suffit pas : **la frontière accepté/refusé est
+elle-même un canal**. Un expéditeur qui essaie des montants décroissants
+déduit la marge du bénéficiaire. D'où l'étranglement dans
+`limits.check_recipient_allowed()`, qui cesse de consulter le plafond après
+quelques refus. Ce n'est pas une étanchéité, c'est un arbitrage — la note au
+dessus du code le dit.
+
+Vaut pour toute nouvelle règle qui refuse en fonction de données qu'un tiers
+possède.
+
+### 9. Les services métier restent appelables sans requête HTTP
 
 L'API publique servira une application mobile. Un service reçoit le client et
 des valeurs simples, et lève des **exceptions typées qui portent le message
@@ -116,6 +155,18 @@ touche ni à `request` ni à la session. Le site et l'API le rendent chacun à
 leur façon.
 
 > Gardé, pour les réclamations, par `tests/test_claims.py::test_services_take_no_request_and_no_http_object`.
+
+### 10. Deux verrous, deux natures — l'asymétrie est voulue
+
+Le plafond **expéditeur** verrouille la ligne du client
+(`select_for_update`) : c'est une limite que nous lui **promettons**, un
+dépassement serait une promesse rompue.
+
+Le plafond **bénéficiaire** ne verrouille rien : c'est une borne de
+**surveillance**, et il n'y a aucune ligne à verrouiller — un bénéficiaire
+n'est pas un client. Deux créations simultanées vers le même numéro peuvent
+dépasser d'un transfert au plus. **Ne « corrige » pas cette asymétrie en
+croyant à un oubli** ; la raison est écrite à l'endroit du contrôle.
 
 ---
 

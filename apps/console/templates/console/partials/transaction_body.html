@@ -61,6 +61,45 @@
   </section>
   {% endif %}
 
+  <section class="rounded border bg-white">
+    <h2 class="border-b px-3 py-2 font-medium">
+      Plafonds du beneficiaire <span class="font-mono text-slate-600">{{ txn.recipient_phone }}</span>
+      <span class="font-normal text-slate-500">
+        — {{ recipient_senders }} expediteur{{ recipient_senders|pluralize }} distinct{{ recipient_senders|pluralize }} sur 30 jours
+      </span>
+    </h2>
+    <table class="w-full">
+      <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+        <tr>
+          <th class="px-3 py-1.5">Fenetre</th>
+          <th class="px-3 py-1.5 text-right">Encaisse</th>
+          <th class="px-3 py-1.5 text-right">Reserve</th>
+          <th class="px-3 py-1.5 text-right">Total</th>
+          <th class="px-3 py-1.5 text-right">Plafond</th>
+          <th class="px-3 py-1.5 text-right">Restant</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        {% for window in recipient_consumption %}
+        <tr class="{% if window.over_cap %}bg-red-100 font-medium text-red-900{% elif not window.remaining %}bg-red-50 text-red-900{% endif %}">
+          <td class="px-3 py-1.5">{{ window.label }}{% if window.over_cap %} — DEPASSE{% endif %}</td>
+          <td class="px-3 py-1.5 text-right font-mono">{{ window.collected|htg }}</td>
+          <td class="px-3 py-1.5 text-right font-mono {% if window.reserved %}text-amber-700{% else %}text-slate-500{% endif %}">{{ window.reserved|htg }}</td>
+          <td class="px-3 py-1.5 text-right font-mono">{{ window.used|htg }}</td>
+          <td class="px-3 py-1.5 text-right font-mono">{{ window.cap|htg }}</td>
+          <td class="px-3 py-1.5 text-right font-mono">{{ window.remaining|htg }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="px-3 py-2 text-xs text-slate-500">
+      Borne de surveillance, pas une limite promise au client : elle vise le schema « beaucoup d'expediteurs vers un meme numero ».
+      Le nombre d'expediteurs distincts est le chiffre a regarder.
+      Un transfert cree depuis la console n'est jamais refuse par ce plafond, mais il compte dans ce total.
+      Un depassement signale soit deux creations simultanees, soit un reglage a revoir : il ne devrait pas durer.
+    </p>
+  </section>
+
   {% if txn.failure_code %}
   <div class="rounded border border-red-300 bg-red-50 px-3 py-2 text-red-800">
     <span class="font-mono font-medium">{{ txn.failure_code }}</span> — {{ txn.failure_message }}

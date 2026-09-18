@@ -16,6 +16,7 @@ from django.db import transaction as db_transaction
 from django.utils import timezone
 
 from apps.accounts.models import Customer
+from apps.accounts.phone import normalize as normalize_phone
 from apps.ledger import services as ledger
 from apps.notifications import services as notifications
 from apps.providers.plopplop import exceptions as pp
@@ -36,10 +37,15 @@ from .limits import DAY as LIMIT_DAY  # noqa: F401
 from .limits import MONTH as LIMIT_MONTH  # noqa: F401
 from .limits import (  # noqa: F401
     LimitExceeded,
+    RecipientLimitExceeded,
     audit_limit_refusal,
+    audit_recipient_refusal,
+    check_recipient_allowed,
     check_transfer_allowed,
     customer_consumption,
+    distinct_senders,
     limit_policy,
+    recipient_consumption,
     window_seconds,
 )
 from .models import PAYOUT_CAPABLE, PricingPolicy, Transaction, TransferLimitPolicy, Wallet, WalletSetting
@@ -221,30 +227,79 @@ def limits_overview() -> dict:
         "day_hours": seconds[LIMIT_DAY] // 3600,
         "month_days": seconds[LIMIT_MONTH] // 86400,
         "max_net_amount": settings.PRICING["MAX_NET_AMOUNT"],
+        "narrow_ratios": narrow_limit_ratios(policy),
     }
 
 
+#: En deca de ce rapport beneficiaire/expediteur, quelques expediteurs au
+#: plafond suffisent a saturer un numero.
+MIN_LIMIT_RATIO = Decimal("2")
+
+
+def narrow_limit_ratios(policy: TransferLimitPolicy) -> list[dict]:
+    """Fenetres ou le plafond beneficiaire serre trop celui de l'expediteur.
+
+    AVERTISSEMENT, pas erreur : un tel reglage est legitime, mais il
+    refusera des expediteurs innocents pour l'activite d'un tiers. Le
+    superadmin doit le voir venir, pas le decouvrir dans le journal d'audit.
+    """
+    pairs = (
+        ("jour", policy.recipient_daily_cap, policy.daily_cap),
+        ("30 jours", policy.recipient_monthly_cap, policy.monthly_cap),
+    )
+    return [
+        {"window": label, "ratio": (recipient / sender).quantize(Decimal("0.1")), "recipient": recipient, "sender": sender}
+        for label, recipient, sender in pairs
+        if sender > ZERO and recipient / sender < MIN_LIMIT_RATIO
+    ]
+
+
 @db_transaction.atomic
-def update_transfer_limits(*, daily_cap: Decimal, monthly_cap: Decimal, actor) -> TransferLimitPolicy:
-    """Change les plafonds cumules par client.
+def update_transfer_limits(
+    *,
+    daily_cap: Decimal,
+    monthly_cap: Decimal,
+    recipient_daily_cap: Decimal,
+    recipient_monthly_cap: Decimal,
+    actor,
+) -> TransferLimitPolicy:
+    """Change les plafonds cumules, expediteur et beneficiaire.
 
     Ne touche aucune transaction existante : les plafonds sont verifies a
     la creation. Baisser un plafond ne bloque donc jamais un decaissement
     en cours.
     """
-    if daily_cap <= ZERO or monthly_cap <= ZERO:
+    caps = (daily_cap, monthly_cap, recipient_daily_cap, recipient_monthly_cap)
+    if any(cap <= ZERO for cap in caps):
         raise InvalidLimits("Un plafond doit etre strictement positif")
     if monthly_cap < daily_cap:
         raise InvalidLimits("Le plafond mensuel ne peut pas etre inferieur au plafond journalier")
+    if recipient_monthly_cap < recipient_daily_cap:
+        raise InvalidLimits(
+            "Le plafond mensuel du beneficiaire ne peut pas etre inferieur a son plafond journalier"
+        )
     if daily_cap < settings.PRICING["MAX_NET_AMOUNT"]:
         raise InvalidLimits(
             f"Le plafond journalier doit couvrir le maximum par transfert "
             f"({settings.PRICING['MAX_NET_AMOUNT']} HTG), sinon aucune date de liberation n'a de sens"
         )
+    # Sur LES DEUX fenetres : un plafond de reception plus bas que celui
+    # d'emission refuserait un transfert que l'expediteur a le droit de
+    # faire, et le refus tomberait sur quelqu'un qui n'y est pour rien.
+    if recipient_daily_cap < daily_cap:
+        raise InvalidLimits(
+            "Le plafond journalier du beneficiaire ne peut pas etre inferieur a celui de l'expediteur"
+        )
+    if recipient_monthly_cap < monthly_cap:
+        raise InvalidLimits(
+            "Le plafond mensuel du beneficiaire ne peut pas etre inferieur a celui de l'expediteur"
+        )
 
     policy, _ = TransferLimitPolicy.objects.select_for_update().get_or_create(pk=1)
     policy.daily_cap = daily_cap
     policy.monthly_cap = monthly_cap
+    policy.recipient_daily_cap = recipient_daily_cap
+    policy.recipient_monthly_cap = recipient_monthly_cap
     policy.updated_by = actor
     policy.save()
     return policy
@@ -347,6 +402,16 @@ def create_transaction(
         destination_wallet=destination_wallet,
         net_amount=net_amount,
     )
+    # NORMALISATION AU POINT D'ECRITURE, pas chez l'appelant.
+    #
+    # normalize() etait jusqu'ici applique par les deux couches de saisie
+    # seulement -- PhoneField du site et du serialiseur. Tout autre appelant
+    # (console, script, test, futur canal USSD) stockait ce qu'il voulait.
+    # Or 509XXXXXXXX et XXXXXXXX cohabitant en base font deux beneficiaires
+    # distincts, et le plafond du beneficiaire se contourne alors en
+    # changeant le format de saisie. La garantie doit etre structurelle.
+    recipient_phone = normalize_phone(recipient_phone)
+    sender_phone = normalize_phone(sender_phone) if sender_phone else ""
     if customer is not None:
         # Avant tout : la file peut-elle encore absorber un transfert ?
         # Une transaction de console n'est jamais refusee, un operateur
@@ -360,6 +425,13 @@ def create_transaction(
         # operateur n'est pas plafonne.
         Customer.objects.select_for_update().filter(pk=customer.pk).first()
         check_transfer_allowed(customer, net_amount=q.net_amount)
+        # Plafond du beneficiaire. Sans verrou, volontairement : la raison
+        # est ecrite dans check_recipient_allowed(). Jamais applique a une
+        # transaction de console -- un operateur doit pouvoir reemettre vers
+        # un numero sature, typiquement pour reparer notre propre erreur.
+        # Ces transferts comptent quand meme dans la consommation du
+        # beneficiaire : le controle ne s'applique pas, le compteur si.
+        check_recipient_allowed(recipient_phone, net_amount=q.net_amount, customer=customer)
     cost_in, cost_out = _provider_costs(
         q,
         {"payment_cost_rate": source.payment_cost_rate},

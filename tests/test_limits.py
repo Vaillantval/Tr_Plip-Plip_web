@@ -35,6 +35,11 @@ PHONE = "50937123456"
 GET_CLIENT = "apps.transactions.services.get_client"
 CAP_DAY = Decimal("50000")
 CAP_MONTH = Decimal("200000")
+#: Le formulaire de reglage porte les quatre plafonds depuis l'ajout de
+#: ceux du beneficiaire. Ces tests-ci ne parlent que de l'expediteur : ils
+#: renvoient les valeurs du beneficiaire inchangees, comme le ferait la
+#: console.
+CAPS = {"recipient_daily_cap": "150000", "recipient_monthly_cap": "600000"}
 
 
 @pytest.fixture(autouse=True)
@@ -375,7 +380,7 @@ def test_only_the_superadmin_can_change_the_caps(client, role):
     _login(client, role)
 
     response = client.post(
-        reverse("console:limits_update"), {"daily_cap": "90000", "monthly_cap": "900000"}, HTTP_HX_REQUEST="true"
+        reverse("console:limits_update"), {**CAPS, "daily_cap": "90000", "monthly_cap": "900000"}, HTTP_HX_REQUEST="true"
     )
 
     assert response.status_code == 403
@@ -387,8 +392,13 @@ def test_only_the_superadmin_can_change_the_caps(client, role):
 def test_the_superadmin_changes_the_caps_and_it_is_audited(client):
     user = _login(client)
 
+    # Les plafonds du beneficiaire suivent : ils ne peuvent pas rester sous
+    # ceux de l'expediteur, sinon un transfert autorise a l'emission serait
+    # refuse a la reception.
     response = client.post(
-        reverse("console:limits_update"), {"daily_cap": "90000", "monthly_cap": "900000"}, HTTP_HX_REQUEST="true"
+        reverse("console:limits_update"),
+        {"daily_cap": "90000", "monthly_cap": "900000", "recipient_daily_cap": "270000", "recipient_monthly_cap": "2700000"},
+        HTTP_HX_REQUEST="true",
     )
 
     policy = TransferLimitPolicy.objects.get(pk=1)
@@ -403,8 +413,8 @@ def test_the_superadmin_changes_the_caps_and_it_is_audited(client):
 @pytest.mark.parametrize(
     "caps, expected",
     [
-        ({"daily_cap": "200000", "monthly_cap": "100000"}, "mensuel"),
-        ({"daily_cap": "1000", "monthly_cap": "200000"}, "maximum par transfert"),
+        ({**CAPS, "daily_cap": "200000", "monthly_cap": "100000"}, "mensuel"),
+        ({**CAPS, "daily_cap": "1000", "monthly_cap": "200000"}, "maximum par transfert"),
     ],
 )
 def test_impossible_caps_are_refused_and_audited(client, caps, expected):
@@ -422,7 +432,7 @@ def test_lowering_the_caps_never_blocks_a_transfer_in_flight(client, customer):
     txn = _collected(customer, "50000")
     _login(client)
 
-    client.post(reverse("console:limits_update"), {"daily_cap": "50000", "monthly_cap": "60000"}, HTTP_HX_REQUEST="true")
+    client.post(reverse("console:limits_update"), {**CAPS, "daily_cap": "50000", "monthly_cap": "60000"}, HTTP_HX_REQUEST="true")
 
     with mock.patch(GET_CLIENT) as get_client:
         get_client.return_value.withdraw.return_value = mock.Mock(

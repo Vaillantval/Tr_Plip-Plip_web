@@ -1,4 +1,13 @@
-"""Plafonds cumules par client, sur fenetres glissantes.
+"""Plafonds cumules sur fenetres glissantes.
+
+Deux sujets, deux natures :
+
+  - par CLIENT (expediteur) : une limite que nous lui promettons ;
+  - par NUMERO BENEFICIAIRE : une borne de surveillance anti-blanchiment.
+
+Le second n'est pas une extension du premier. Un beneficiaire n'est pas un
+client : il n'a jamais rien cree. Seule _conditions() est partagee.
+
 
 Le plafond par transaction (PRICING["MAX_NET_AMOUNT"]) protege d'une faute
 de frappe. Ceux-ci protegent d'un cumul : c'est une obligation applicable a
@@ -204,6 +213,242 @@ def check_transfer_allowed(customer, *, net_amount: Decimal, now=None) -> None:
             amount=net_amount,
             frees_at=moment,
         )
+
+
+# ----------------------------------------------------------------------
+# Plafond du BENEFICIAIRE
+#
+# Un beneficiaire n'est PAS un client : il n'a jamais rien cree, il existe
+# uniquement comme recipient_phone sur une transaction. Rien de ce qui suit
+# ne generalise les fonctions ci-dessus -- seule _conditions() est partagee,
+# parce qu'elle ne mentionne aucun sujet.
+#
+# Et ce plafond n'a pas la meme nature que celui du client. Le plafond
+# expediteur est une limite que nous PROMETTONS ; celui-ci est une borne de
+# SURVEILLANCE. Beaucoup d'expediteurs vers un meme numero est le schema que
+# la lutte anti-blanchiment cherche a detecter, et il ne se lit nulle part
+# aujourd'hui. Sa valeur est dans la trace qu'il laisse, plus que dans le
+# refus lui-meme : quelqu'un de determine changera de numero.
+# ----------------------------------------------------------------------
+
+#: Refus pour plafond beneficiaire tolerees avant que la reponse cesse de
+#: dependre du montant. Bas volontairement : un expediteur legitime qui se
+#: heurte a un numero sature s'arrete ou change de numero. Trois refus sur
+#: ce motif en une heure sont deja anormaux.
+PROBE_MAX_REFUSALS = 3
+PROBE_WINDOW_SECONDS = 3600
+
+
+class RecipientLimitExceeded(ValueError):
+    """Plafond du beneficiaire atteint.
+
+    Porte ce qu'il faut a l'AUDIT, jamais ce qu'on dira au client :
+    l'expediteur n'est pas en cause et n'a aucun droit de connaitre
+    l'activite d'un tiers. Le texte client est une CONSTANTE, il ne se
+    calcule pas a partir de cette exception -- ne jamais rendre str(exc)
+    sur une surface publique.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        phone: str,
+        amount: Decimal,
+        window: LimitWindow | None = None,
+        senders: int = 0,
+        throttled: bool = False,
+    ):
+        super().__init__(message)
+        self.phone = phone
+        self.amount = amount
+        #: None quand le refus vient de l'etranglement : on n'a pas consulte
+        #: le plafond, donc on n'a rien a en dire.
+        self.window = window
+        self.senders = senders
+        self.throttled = throttled
+
+
+def _counted_for_recipient(phone: str, *, since: datetime, now: datetime):
+    """Transferts recus par ce numero sur la fenetre.
+
+    Aucun filtre sur le client : un transfert cree depuis la console compte
+    dans la consommation du beneficiaire meme s'il n'est jamais refuse.
+    Le controle ne s'applique pas a l'operateur, le compteur si -- sinon un
+    numero qui recoit beaucoup par la console devient invisible au capteur,
+    exactement la ou l'on voudrait voir.
+    """
+    collected, reserved = _conditions(since=since, now=now)
+    return Transaction.objects.filter(recipient_phone=phone).filter(collected | reserved)
+
+
+def recipient_consumption(phone: str, *, now=None, policy=None) -> list[LimitWindow]:
+    """Ce que ce numero a recu sur les deux fenetres. Lecture seule."""
+    now = now or timezone.now()
+    policy = policy or limit_policy()
+    caps = {DAY: policy.recipient_daily_cap, MONTH: policy.recipient_monthly_cap}
+    windows = []
+    for name, seconds in window_seconds().items():
+        since = now - timedelta(seconds=seconds)
+        collected, reserved = _conditions(since=since, now=now)
+        sums = _counted_for_recipient(phone, since=since, now=now).aggregate(
+            collected=Sum("net_amount", filter=collected),
+            reserved=Sum("net_amount", filter=reserved),
+        )
+        windows.append(
+            LimitWindow(
+                name=name,
+                seconds=seconds,
+                cap=caps[name],
+                collected=(sums["collected"] or ZERO).quantize(CENT),
+                reserved=(sums["reserved"] or ZERO).quantize(CENT),
+            )
+        )
+    return windows
+
+
+def distinct_senders(phone: str, window: LimitWindow, *, now=None) -> int:
+    """Expediteurs distincts vers ce numero sur la fenetre.
+
+    LE signal de ce capteur. Quinze expediteurs vers un meme numero ne se
+    lit nulle part aujourd'hui -- ni ecran, ni journal, ni alerte. Les
+    transferts de console n'ont pas de client et ne comptent pas ici.
+    """
+    now = now or timezone.now()
+    since = now - timedelta(seconds=window.seconds)
+    return (
+        _counted_for_recipient(phone, since=since, now=now)
+        .filter(customer__isnull=False)
+        .values("customer_id")
+        .distinct()
+        .count()
+    )
+
+
+def _probe_key(customer) -> str:
+    return f"limits:recipient-probe:{customer.pk}"
+
+
+def _probe_blocked(customer) -> bool:
+    from django.core.cache import cache
+
+    return (cache.get(_probe_key(customer)) or 0) >= PROBE_MAX_REFUSALS
+
+
+def _probe_record(customer) -> None:
+    """Compte un refus. Fenetre fixe, comme apps/web/ratelimit."""
+    from django.core.cache import cache
+
+    key = _probe_key(customer)
+    if cache.add(key, 1, PROBE_WINDOW_SECONDS):
+        return
+    try:
+        cache.incr(key)
+    except ValueError:  # cle expiree entre add et incr
+        cache.set(key, 1, PROBE_WINDOW_SECONDS)
+
+
+def check_recipient_allowed(phone: str, *, net_amount: Decimal, customer, now=None) -> None:
+    """Leve RecipientLimitExceeded si ce numero ne peut pas recevoir ce montant.
+
+    AUCUN VERROU ici, contrairement au plafond du client, et ce n'est pas un
+    oubli. Le plafond expediteur est une limite que nous PROMETTONS au
+    client : un depassement serait une promesse rompue, d'ou le
+    select_for_update. Celui-ci est une borne de SURVEILLANCE : sa valeur
+    est dans la trace qu'il laisse, pas dans son etancheite a la
+    milliseconde. Et il n'y a aucune ligne a verrouiller -- un beneficiaire
+    n'est pas un client. Deux creations simultanees vers le meme numero
+    peuvent donc depasser d'UN transfert au plus ; la suivante est refusee.
+    Quelqu'un qui blanchit ne synchronise pas deux transferts a la
+    milliseconde pres, il change de numero, ce qu'aucun verrou n'arrete.
+
+    N'ECRIT PAS la trace du refus : comme pour le plafond client, nous
+    sommes dans la transaction de base qui va etre annulee. C'est
+    audit_recipient_refusal() qui l'ecrit, apres l'annulation.
+    """
+    now = now or timezone.now()
+
+    # ETRANGLEMENT DU SONDAGE.
+    #
+    # Le message rendu au client est une constante, sans chiffre ni date.
+    # Cela ne suffit pas : c'est la frontiere acceptee/refusee qui parle. Un
+    # expediteur qui essaie des montants decroissants jusqu'a ce que ca
+    # passe -- refuse a 30 000, accepte a 12 000 -- connait la marge
+    # restante du beneficiaire a quelques milliers pres, et la reconstitue
+    # jour apres jour.
+    #
+    # Passe ce seuil, on refuse SANS consulter le plafond : la meme reponse,
+    # qu'un montant serait passe ou non. La recherche dichotomique ne
+    # converge plus.
+    #
+    # On ne supprime pas l'oracle, on le rend lent et bruyant. Tant que la
+    # reponse depend du montant demande, un sondage assez patient finit par
+    # deduire la marge restante. Le seul remede complet serait de refuser
+    # identiquement TOUS les transferts vers un numero des le premier refus,
+    # ce qui punirait des expediteurs innocents pour l'activite d'un tiers.
+    # C'est un arbitrage, pas une etancheite : le prochain lecteur doit le
+    # savoir avant de croire le canal ferme.
+    #
+    # POURQUOI CE COMPTEUR VIT ICI et non dans apps/web/ratelimit.py, ou
+    # vivent les autres limites de debit : ce module-ci est traverse par le
+    # site ET par l'API. Dans la couche web, seul le site serait protege --
+    # et l'API est justement le canal qu'un sondeur automatise choisirait,
+    # parce qu'elle repond en JSON, sans page a analyser. Une protection
+    # qui ne couvre pas le chemin le plus commode n'en est pas une.
+    # (apps.transactions ne doit de toute facon pas importer apps.web.)
+    if _probe_blocked(customer):
+        _probe_record(customer)
+        raise RecipientLimitExceeded(
+            f"Refus sans consultation du plafond : {PROBE_MAX_REFUSALS} refus deja comptes "
+            f"pour ce client en {PROBE_WINDOW_SECONDS} s",
+            phone=phone,
+            amount=net_amount,
+            throttled=True,
+        )
+
+    for window in recipient_consumption(phone, now=now):
+        if window.allows(net_amount):
+            continue
+        _probe_record(customer)
+        raise RecipientLimitExceeded(
+            f"Plafond beneficiaire {window.name} atteint pour {phone} : "
+            f"{window.used} + {net_amount} > {window.cap} HTG",
+            phone=phone,
+            amount=net_amount,
+            window=window,
+            senders=distinct_senders(phone, window, now=now),
+        )
+
+
+def audit_recipient_refusal(exc: RecipientLimitExceeded) -> None:
+    """Trace d'un refus pour plafond beneficiaire. HORS transaction de base.
+
+    Cette ligne vaut plus que le refus. Elle porte le numero vise, la
+    fenetre atteinte, le montant demande -- une suite de montants
+    decroissants vers un meme numero est un signal de sondage -- et surtout
+    le nombre d'expediteurs distincts, qui est ce que ce capteur existe pour
+    montrer.
+    """
+    from apps.accounts.models import AuditLog
+
+    detail = {
+        "requested": str(exc.amount),
+        "throttled": exc.throttled,
+    }
+    if exc.window is not None:
+        detail |= {
+            "window": exc.window.name,
+            "cap": str(exc.window.cap),
+            "used": str(exc.window.used),
+            "senders": exc.senders,
+        }
+    AuditLog.objects.create(
+        user=None,
+        action="limit.recipient_refused",
+        target=exc.phone,
+        allowed=False,
+        detail=detail,
+    )
 
 
 def audit_limit_refusal(exc: LimitExceeded, *, customer) -> None:

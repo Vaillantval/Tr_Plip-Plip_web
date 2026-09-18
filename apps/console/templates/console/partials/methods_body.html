@@ -144,7 +144,21 @@
   </section>
 
   <section class="rounded border bg-white" data-section="limits">
-    <h2 class="border-b px-3 py-2 font-medium">Plafonds cumules par client</h2>
+    <h2 class="border-b px-3 py-2 font-medium">Plafonds cumules</h2>
+    {% if limits.narrow_ratios %}
+    <div class="border-b border-amber-200 bg-amber-50 px-3 py-2 text-amber-900" role="alert">
+      <p class="font-medium">Reglage a regarder de pres</p>
+      <p>
+        {% for row in limits.narrow_ratios %}
+        Sur {{ row.window }}, le plafond du beneficiaire ne vaut que {{ row.ratio }} fois celui de l'expediteur
+        ({{ row.recipient|htg }} contre {{ row.sender|htg }}){% if not forloop.last %} ;{% else %}.{% endif %}
+        {% endfor %}
+        Quelques expediteurs au plafond suffiront alors a saturer un numero, et ce sont des expediteurs
+        innocents qui seront refuses pour l'activite d'un tiers. Ce n'est pas une erreur, mais mieux vaut
+        le decider que le subir.
+      </p>
+    </div>
+    {% endif %}
     <div class="space-y-1 px-3 py-2 text-slate-600">
       <p>
         Fenetres <strong>glissantes</strong> : elles remontent depuis maintenant, elles ne se remettent pas a zero
@@ -169,7 +183,8 @@
         <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
           <tr>
             <th class="px-3 py-1.5">Fenetre</th>
-            <th class="px-3 py-1.5 text-right">Plafond (HTG)</th>
+            <th class="px-3 py-1.5 text-right">Expediteur (HTG)</th>
+            <th class="px-3 py-1.5 text-right">Beneficiaire (HTG)</th>
           </tr>
         </thead>
         <tbody class="divide-y">
@@ -181,6 +196,12 @@
                        class="w-32 rounded border px-2 py-1 text-right font-mono">
               {% else %}<span class="font-mono">{{ limits.policy.daily_cap|htg }}</span>{% endif %}
             </td>
+            <td class="px-3 py-1.5 text-right">
+              {% if request.user.is_superadmin %}
+                <input type="number" step="0.01" min="1" name="recipient_daily_cap" value="{{ limits_form.recipient_daily_cap.value|unlocalize }}"
+                       class="w-32 rounded border px-2 py-1 text-right font-mono">
+              {% else %}<span class="font-mono">{{ limits.policy.recipient_daily_cap|htg }}</span>{% endif %}
+            </td>
           </tr>
           <tr>
             <td class="px-3 py-1.5">{{ limits.month_days }} derniers jours</td>
@@ -190,9 +211,21 @@
                        class="w-32 rounded border px-2 py-1 text-right font-mono">
               {% else %}<span class="font-mono">{{ limits.policy.monthly_cap|htg }}</span>{% endif %}
             </td>
+            <td class="px-3 py-1.5 text-right">
+              {% if request.user.is_superadmin %}
+                <input type="number" step="0.01" min="1" name="recipient_monthly_cap" value="{{ limits_form.recipient_monthly_cap.value|unlocalize }}"
+                       class="w-32 rounded border px-2 py-1 text-right font-mono">
+              {% else %}<span class="font-mono">{{ limits.policy.recipient_monthly_cap|htg }}</span>{% endif %}
+            </td>
           </tr>
         </tbody>
       </table>
+      <p class="px-3 pt-2 text-xs text-slate-500">
+        Le plafond du <strong>beneficiaire</strong> porte sur un NUMERO, pas sur un compte : il vise le schema
+        « beaucoup d'expediteurs vers un meme numero ». C'est une borne de surveillance, pas une limite promise
+        au client — sa valeur est surtout dans la trace que le refus laisse au journal d'audit. Il ne s'applique
+        jamais a un transfert cree depuis la console, mais ces transferts comptent dans son total.
+      </p>
       <p class="px-3 py-2 text-xs text-slate-500">
         {% if limits.policy.updated_at %}Modifies le {{ limits.policy.updated_at|date:"d/m/Y H:i" }}{% if limits.policy.updated_by %} par {{ limits.policy.updated_by }}{% endif %}.{% else %}Valeurs de depart, jamais modifiees.{% endif %}
       </p>

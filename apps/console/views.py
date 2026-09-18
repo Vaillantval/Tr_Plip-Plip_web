@@ -132,7 +132,7 @@ def transaction_list(request):
 WINDOW_LABELS = {txn_services.LIMIT_DAY: "24 dernieres heures", txn_services.LIMIT_MONTH: "30 derniers jours"}
 
 
-def _consumption_rows(customer) -> list[dict]:
+def _rows(windows) -> list[dict]:
     return [
         {
             "label": WINDOW_LABELS.get(w.name, w.name),
@@ -141,9 +141,24 @@ def _consumption_rows(customer) -> list[dict]:
             "used": w.used,
             "cap": w.cap,
             "remaining": w.remaining,
+            # Un depassement est soit une course benigne entre deux
+            # creations simultanees, soit le signe qu'on regarde au mauvais
+            # endroit. Dans les deux cas il doit se voir : un depassement
+            # invisible est un capteur en panne.
+            "over_cap": w.used > w.cap,
         }
-        for w in txn_services.customer_consumption(customer)
+        for w in windows
     ]
+
+
+def _consumption_rows(customer) -> list[dict]:
+    return _rows(txn_services.customer_consumption(customer))
+
+
+def _recipient_consumption_rows(phone: str) -> list[dict]:
+    """Ce que ce NUMERO a recu. Un beneficiaire n'est pas un client : cette
+    consommation se lit sans qu'il existe de compte en face."""
+    return _rows(txn_services.recipient_consumption(phone))
 
 
 def _transaction_context(txn: Transaction, *, refund_form=None, release_form=None) -> dict:
@@ -164,6 +179,14 @@ def _transaction_context(txn: Transaction, *, refund_form=None, release_form=Non
         "release_form": release_form or ReleaseForm(),
         "max_attempts": settings.PAYOUT_MAX_ATTEMPTS,
         "consumption": _consumption_rows(txn.customer) if txn.customer_id else None,
+        # Cote beneficiaire : toujours affiche, meme sans client en face.
+        # C'est ce qui permet a un operateur qui reemet vers un numero
+        # sature de savoir ce qu'il fait -- il n'est pas bloque, mais la
+        # difference entre une decision et un reflexe tient a cet affichage.
+        "recipient_consumption": _recipient_consumption_rows(txn.recipient_phone),
+        "recipient_senders": txn_services.distinct_senders(
+            txn.recipient_phone, txn_services.recipient_consumption(txn.recipient_phone)[-1]
+        ),
         # Ce que le client dit de ce transfert, a lire avant d'agir dessus.
         "claims": txn.claims.all(),
     }
@@ -280,7 +303,12 @@ def _limits_context(*, limits_form=None) -> dict:
         "limits": overview,
         "limits_form": limits_form
         or LimitsForm(
-            initial={"daily_cap": overview["policy"].daily_cap, "monthly_cap": overview["policy"].monthly_cap}
+            initial={
+                "daily_cap": overview["policy"].daily_cap,
+                "monthly_cap": overview["policy"].monthly_cap,
+                "recipient_daily_cap": overview["policy"].recipient_daily_cap,
+                "recipient_monthly_cap": overview["policy"].recipient_monthly_cap,
+            }
         ),
     }
 
@@ -343,7 +371,10 @@ PRICING_AUDIT_FIELDS = ("platform_fee_rate",) + tuple(
 
 @login_required
 @require_POST
-@require_superadmin("limits.update", audit_fields=("daily_cap", "monthly_cap"))
+@require_superadmin(
+    "limits.update",
+    audit_fields=("daily_cap", "monthly_cap", "recipient_daily_cap", "recipient_monthly_cap"),
+)
 def limits_update(request):
     """Plafonds cumules par client. Superadmin uniquement."""
     form = LimitsForm(request.POST)

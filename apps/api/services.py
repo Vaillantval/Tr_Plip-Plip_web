@@ -99,6 +99,11 @@ def create_transfer(
         # Ici, l'annulation a deja eu lieu : la trace survit.
         transactions.audit_limit_refusal(exc, customer=customer)
         raise
+    except transactions.RecipientLimitExceeded as exc:
+        # Meme raison. Et cette trace-ci compte plus que le refus : c'est
+        # elle qui montre combien d'expediteurs distincts visent ce numero.
+        transactions.audit_recipient_refusal(exc)
+        raise
     except IntegrityError:
         # Requete concurrente avec la meme cle, validee entre-temps.
         existing = _existing(customer, idempotency_key, digest)

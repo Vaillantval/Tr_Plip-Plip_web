@@ -93,6 +93,27 @@ def _limit_error(exc: transactions.LimitExceeded) -> APIError:
     )
 
 
+#: Constante, jamais calculee a partir de l'exception. Pas de « verifiez le
+#: numero » : le numero saisi est bon, c'est le beneficiaire qui est sature.
+#: Ce conseil enverrait l'expediteur chercher une erreur inexistante, et ses
+#: ressaisies consommeraient son quota de sondage -- il finirait etrangle
+#: pour avoir suivi notre conseil.
+RECIPIENT_LIMIT_MESSAGE = "Ce numero ne peut pas recevoir ce montant pour le moment. Reessayez plus tard."
+
+
+def _recipient_limit_error(exc: transactions.RecipientLimitExceeded) -> APIError:
+    """Plafond du beneficiaire atteint.
+
+    Ne dit RIEN de plus que le refus. L'expediteur n'est pas en cause et
+    n'a aucun droit de connaitre l'activite d'un tiers : « ce numero a deja
+    recu 45 000 HTG » divulguerait les finances de quelqu'un d'autre.
+
+    Aucun `extra`, pas meme vide, et surtout pas str(exc) -- contrairement
+    a _limit_error() juste au-dessus, qui ne parle que du client lui-meme.
+    """
+    return APIError("RECIPIENT_LIMIT_EXCEEDED", RECIPIENT_LIMIT_MESSAGE, http_status=422)
+
+
 # ----------------------------------------------------------------------
 # Identification
 # ----------------------------------------------------------------------
@@ -298,6 +319,8 @@ class TransferListCreateView(ListAPIView):
             raise _saturated_error(exc) from exc
         except transactions.LimitExceeded as exc:
             raise _limit_error(exc) from exc
+        except transactions.RecipientLimitExceeded as exc:
+            raise _recipient_limit_error(exc) from exc
         except ROUTE_ERRORS as exc:
             raise _route_error(exc) from exc
 

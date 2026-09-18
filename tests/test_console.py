@@ -56,7 +56,7 @@ def _queued_txn(net_amount=Decimal("1000")) -> Transaction:
     txn = services.create_transaction(
         source_wallet=Wallet.MONCASH,
         destination_wallet=Wallet.NATCASH,
-        recipient_phone="50912345678",
+        recipient_phone="50932345678",
         sender_phone="50937000000",
         net_amount=net_amount,
     )
