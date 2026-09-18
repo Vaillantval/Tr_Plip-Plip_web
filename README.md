@@ -28,6 +28,10 @@ npm run build:css     # ou npm run watch:css pendant le développement
 Le site client (`/`) est en CSS écrit à la main et ne dépend ni de npm ni de
 Tailwind.
 
+**Avant de modifier le code**, lire [`AGENTS.md`](AGENTS.md) : les invariants
+du projet et les pièges qui ne se devinent pas à la lecture du dépôt.
+En cas de panne, [`RESTAURATION.md`](RESTAURATION.md).
+
 ## Structure
 
 | Dossier | Rôle |

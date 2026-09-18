@@ -4,6 +4,9 @@
 quelle. Si une étape vous oblige à deviner quelque chose, elle est fausse :
 signalez-la, elle sera réécrite.
 
+Ce document ne traite que de la panne. Pour modifier le code, voir
+[`AGENTS.md`](AGENTS.md) ; pour découvrir le projet, [`README.md`](README.md).
+
 Vous aurez besoin de trois choses :
 
 1. le fichier de sauvegarde `plipplip-AAAAMMJJ-HHMMSS.json` (ou `.json.enc`) ;
