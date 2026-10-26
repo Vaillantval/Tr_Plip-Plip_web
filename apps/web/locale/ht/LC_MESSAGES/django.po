@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Plip-Plip web\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-18 12:18-0400\n"
+"POT-Creation-Date: 2026-09-18 13:09-0400\n"
 "PO-Revision-Date: 2026-09-14 17:45-0400\n"
 "Last-Translator: \n"
 "Language-Team: Kreyòl ayisyen\n"
@@ -20,6 +20,14 @@ msgstr ""
 msgid "Numéro invalide : 8 chiffres d'un mobile haïtien, avec ou sans +509."
 msgstr ""
 "Nimewo a pa bon : 8 chif yon nimewo selilè ayisyen, avèk oswa san +509."
+
+#: .\apps\web\forms.py
+msgid ""
+"Ce numéro ne peut pas recevoir d'argent : MonCash et NatCash fonctionnent "
+"uniquement sur des lignes mobiles."
+msgstr ""
+"Nimero sa paka resevwa lajan: moncash ak Natcash fonksyone selman sou rezo "
+"lokal yo"
 
 #: .\apps\web\forms.py
 msgid "Votre numéro de téléphone"

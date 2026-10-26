@@ -5,7 +5,7 @@ from decimal import Decimal
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from apps.accounts.phone import InvalidPhone, normalize
+from apps.accounts.phone import InvalidPhone, NotAMobileNumber, normalize
 from apps.claims import services as claims
 from apps.claims.models import Reason
 
@@ -15,6 +15,14 @@ from .labels import wallet_label
 class PhoneField(forms.CharField):
     default_error_messages = {
         "invalid_phone": _("Numéro invalide : 8 chiffres d'un mobile haïtien, avec ou sans +509."),
+        # Message distinct, et ce n'est pas un detail : devant un fixe
+        # parfaitement ecrit, « numero invalide » pousse le client a le
+        # ressaisir a l'identique, puis a recommencer. Il faut lui dire
+        # que ce numero-la ne peut pas recevoir d'argent.
+        "not_mobile": _(
+            "Ce numéro ne peut pas recevoir d'argent : MonCash et NatCash "
+            "fonctionnent uniquement sur des lignes mobiles."
+        ),
     }
 
     def __init__(self, **kwargs):
@@ -27,6 +35,8 @@ class PhoneField(forms.CharField):
             return ""
         try:
             return normalize(value)
+        except NotAMobileNumber as exc:
+            raise forms.ValidationError(self.error_messages["not_mobile"], code="not_mobile") from exc
         except InvalidPhone as exc:
             raise forms.ValidationError(self.error_messages["invalid_phone"], code="invalid_phone") from exc
 

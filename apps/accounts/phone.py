@@ -17,8 +17,24 @@ _CANONICAL = re.compile(r"^509[345]\d{7}$")
 _SEPARATORS = re.compile(r"[\s\-.()]")
 
 
+#: Numero haitien bien forme, mobile ou non. Sert a distinguer « vous avez
+#: mal tape » de « ce numero ne peut pas recevoir d'argent » : les deux
+#: n'appellent pas la meme reaction du client.
+_WELL_FORMED = re.compile(r"^509\d{8}$")
+
+
 class InvalidPhone(ValueError):
     pass
+
+
+class NotAMobileNumber(InvalidPhone):
+    """Numero correct, mais incapable de porter un portefeuille.
+
+    Le distinguer compte : un client a qui l'on dit « numero invalide »
+    devant un fixe parfaitement ecrit le ressaisit a l'identique, et
+    recommence. Il faut lui dire que ce numero-la ne peut pas recevoir
+    d'argent.
+    """
 
 
 def normalize(value: str) -> str:
@@ -30,6 +46,11 @@ def normalize(value: str) -> str:
     if len(raw) == 8:
         raw = COUNTRY_CODE + raw
     if not _CANONICAL.match(raw):
+        if _WELL_FORMED.match(raw):
+            raise NotAMobileNumber(
+                "Ce numero ne peut pas recevoir d'argent : MonCash et NatCash fonctionnent "
+                "uniquement sur des lignes mobiles"
+            )
         raise InvalidPhone("Numero haitien invalide : 8 chiffres, mobile (3, 4 ou 5), avec ou sans +509")
     return raw
 

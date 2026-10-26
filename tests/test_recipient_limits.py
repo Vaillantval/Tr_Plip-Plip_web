@@ -150,12 +150,48 @@ def test_creation_normalises_the_sender_number_too(senders):
 
 
 def test_an_unusable_number_is_refused_at_creation(senders):
-    """Un numero qui ne peut pas recevoir n'a rien a faire en base : il
-    echouerait au decaissement, apres qu'on a pris l'argent."""
-    from apps.accounts.phone import InvalidPhone
+    """Un numero qui ne peut pas recevoir n'a rien a faire en base.
 
-    with pytest.raises(InvalidPhone):
+    Sans ce controle, le transfert serait cree, encaisse, puis echouerait
+    au DECAISSEMENT : l'argent du client entre nos mains, et un operateur
+    a mobiliser pour le rendre. Le controle de validite appartient au
+    moment ou l'on ne doit encore rien a personne.
+    """
+    from apps.accounts.phone import NotAMobileNumber
+
+    before = Transaction.objects.count()
+    with pytest.raises(NotAMobileNumber):
         _create(senders[0], "1000", recipient="50912345678")  # fixe, pas mobile
+
+    assert Transaction.objects.count() == before, "rien ne doit avoir ete ecrit"
+
+
+def test_a_landline_is_told_it_cannot_receive_money_not_that_it_is_malformed(client, senders):
+    """Le message decide de ce que le client fait ensuite.
+
+    « Numero invalide » devant un fixe parfaitement ecrit le pousse a le
+    ressaisir a l'identique, puis a recommencer. Il doit apprendre que ce
+    numero-la ne peut pas recevoir d'argent.
+    """
+    session = client.session
+    session["web:customer_id"] = senders[0].pk
+    session["web:last_seen"] = 9999999999
+    session.save()
+
+    html = client.post(
+        reverse("web:send"),
+        {
+            "source_wallet": Wallet.MONCASH,
+            "destination_wallet": Wallet.NATCASH,
+            "recipient_phone": "50912345678",  # fixe, bien ecrit
+            "net_amount": "1000",
+            "sender_phone": "",
+        },
+    ).content.decode()
+
+    assert "ne peut pas recevoir d" in html
+    assert "lignes mobiles" in html
+    assert "invalide" not in html, "un fixe bien ecrit n'est pas une faute de frappe"
 
 
 # ----------------------------------------------------------------------
