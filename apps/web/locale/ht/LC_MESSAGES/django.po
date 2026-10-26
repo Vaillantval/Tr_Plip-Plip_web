@@ -26,7 +26,7 @@ msgid ""
 "Ce numéro ne peut pas recevoir d'argent : MonCash et NatCash fonctionnent "
 "uniquement sur des lignes mobiles."
 msgstr ""
-"Nimero sa paka resevwa lajan: moncash ak Natcash fonksyone selman sou rezo "
+"Nimewo sa paka resevwa lajan: moncash ak Natcash fonksyone selman sou rezo "
 "lokal yo"
 
 #: .\apps\web\forms.py
