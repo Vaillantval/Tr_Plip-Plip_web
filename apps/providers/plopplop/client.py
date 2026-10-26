@@ -23,7 +23,7 @@ from typing import Any
 import requests
 
 from .exceptions import PlopPlopError, PlopPlopIndeterminate, from_response
-from .signing import sign_withdrawal
+from .signing import json_amount, sign_withdrawal
 
 logger = logging.getLogger(__name__)
 
@@ -248,7 +248,7 @@ class PlopPlopClient:
         payload = self._post(
             "api/auth/marchand/withdrawal-token",
             {
-                "amount": float(formatted),
+                "amount": json_amount(formatted),
                 "method": method,
                 "recipient": recipient,
                 "reference": reference,
@@ -276,7 +276,7 @@ class PlopPlopClient:
         payload = self._post(
             "api/withdraw/marchand",
             {
-                "amount": float(amount),
+                "amount": json_amount(amount),
                 "method": method,
                 "recipient": recipient,
                 "reference": reference,

@@ -23,14 +23,33 @@ def format_amount(amount: Decimal | int | float | str) -> str:
     """Normalise un montant pour la signature ET pour le corps JSON.
 
     Le meme rendu doit etre utilise des deux cotes, sinon la signature
-    ne correspondra pas au payload envoye. On rend un entier sans
-    decimale quand c'est possible (500 et non 500.00), sinon deux
-    decimales.
+    ne correspondra pas au payload envoye. On rend la forme la plus
+    courte, sans zero final : 500 et non 500.00, 500.5 et non 500.50.
+
+    Ce n'est pas une affaire de gout. Le corps part en JSON numerique,
+    et un nombre JSON n'a pas de zero final : 500.50 y devient 500.5.
+    Que plopplop resigne le litteral recu ou le nombre decode (PHP le
+    rend aussi sous sa forme la plus courte), il retombe sur 500.5. Signer
+    500.50 donnait INVALID_SIGNATURE sur tout montant en x.x0, apres
+    qu'on a encaisse le client.
     """
     value = Decimal(str(amount)).quantize(Decimal("0.01"))
     if value == value.to_integral_value():
         return str(int(value))
-    return f"{value:.2f}"
+    return format(value.normalize(), "f")
+
+
+def json_amount(formatted: str) -> int | float:
+    """Le montant tel qu'il part dans le corps JSON, a partir de format_amount.
+
+    Un entier part en entier (500, pas 500.0). Sinon un float, dont la
+    serialisation JSON redonne exactement `formatted` : Python, comme
+    PHP, ecrit un float sous sa forme la plus courte.
+    """
+    value = Decimal(formatted)
+    if value == value.to_integral_value():
+        return int(value)
+    return float(value)
 
 
 def build_payload(

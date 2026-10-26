@@ -54,7 +54,57 @@ def test_amount_formatting_is_stable():
     # sinon plopplop repond INVALID_SIGNATURE.
     assert format_amount(Decimal("500.00")) == "500"
     assert format_amount(500) == "500"
-    assert format_amount("500.50") == "500.50"
+    assert format_amount("500.50") == "500.5"
+    assert format_amount("500.25") == "500.25"
+    assert format_amount("1000.10") == "1000.1"
+
+
+@pytest.mark.parametrize("amount", ["500", "500.50", "500.25", "1000.10", "0.05", "149999.90", "20"])
+def test_the_signed_amount_is_the_amount_plopplop_receives(amount):
+    """La signature doit se recalculer a partir du corps tel qu'il part.
+
+    plopplop ne voit pas notre chaine signee : il voit le JSON. Si
+    500.50 est signe mais que le corps porte 500.5, chaque retrait en
+    x.x0 echoue en INVALID_SIGNATURE, une fois le client deja encaisse.
+    """
+    import json
+    import re
+
+    from apps.providers.plopplop.client import PlopPlopClient
+
+    secret = "s" * 64
+    sent = []
+
+    def post(url, *, json, headers, timeout):
+        sent.append((url, json))
+        response = mock.Mock(status_code=200)
+        if url.endswith("withdrawal-token"):
+            response.json.return_value = {"success": True, "withdrawal_token": "wt"}
+        else:
+            response.json.return_value = {"success": True, "data": {"status": "success", "transaction_id": "T"}}
+        return response
+
+    session = mock.Mock()
+    session.post.side_effect = post
+    client = PlopPlopClient(base_url="https://pp.test", client_id="pp_x", client_secret=secret, session=session)
+
+    token, formatted = client.withdrawal_token(
+        auth_token="auth", amount=Decimal(amount), method="natcash", recipient="50912345678", reference="R-1"
+    )
+    client.execute_withdrawal(
+        withdrawal_token=token, amount=formatted, method="natcash", recipient="50912345678", reference="R-1"
+    )
+
+    step2, step3 = (body for _, body in sent)
+    literals = [re.search(r'"amount": ([^,}]+)', json.dumps(body)).group(1) for body in (step2, step3)]
+    assert literals == [formatted, formatted], "le corps JSON doit porter le montant signe, au caractere pres"
+
+    resigned = hmac.new(
+        secret.encode(),
+        f"{literals[0]}|natcash|50912345678|R-1|{step2['timestamp']}".encode(),
+        hashlib.sha256,
+    ).hexdigest()
+    assert step2["withdrawal_signature"] == resigned
 
 
 # ----------------------------------------------------------------------
