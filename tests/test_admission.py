@@ -287,7 +287,7 @@ def test_the_web_refuses_the_creation_and_explains(client):
     session.save()
 
     response = client.post(
-        reverse("web:confirm"), {"idempotency_key": "cle-1", "expected_total": str(quote.total_charged)}
+        reverse("web:confirm"), {"idempotency_key": "cle-1", "expected_total": str(quote.total_charged), "recipient_phone_confirm": "50932123456"}
     )
     html = client.get(response["Location"]).content.decode()
 

@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Plip-Plip web\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-18 13:09-0400\n"
+"POT-Creation-Date: 2026-10-27 18:55-0400\n"
 "PO-Revision-Date: 2026-09-14 17:45-0400\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
@@ -24,7 +24,9 @@ msgstr ""
 msgid ""
 "Ce numéro ne peut pas recevoir d'argent : MonCash et NatCash fonctionnent "
 "uniquement sur des lignes mobiles."
-msgstr "This number cannot receive money: MonCash and NatCash only work on mobile lines."
+msgstr ""
+"This number cannot receive money: MonCash and NatCash only work on mobile "
+"lines."
 
 #: .\apps\web\forms.py
 msgid "Votre numéro de téléphone"
@@ -49,6 +51,16 @@ msgstr "Tell us in a few words"
 #: .\apps\web\forms.py
 msgid "Ajouter un message"
 msgstr "Add a message"
+
+#: .\apps\web\forms.py
+msgid "Retapez le numéro du bénéficiaire"
+msgstr "Retype the recipient's number"
+
+#: .\apps\web\forms.py
+msgid ""
+"Les deux numéros ne correspondent pas. Retapez-le, ou modifiez l'envoi si le "
+"premier était faux."
+msgstr "The two numbers do not match. Retype it, or edit the transfer if the first one was wrong."
 
 #: .\apps\web\forms.py
 msgid "J'envoie depuis"

@@ -36,7 +36,7 @@ from apps.transactions.models import Transaction
 from apps.transactions.pricing import MIN_NET, AmountTooLarge, AmountTooSmall
 
 from . import ratelimit
-from .forms import ClaimForm, ClaimMessageForm, CodeForm, PhoneForm, TransferForm
+from .forms import ClaimForm, ClaimMessageForm, CodeForm, PhoneForm, RecipientCheckForm, TransferForm
 from .labels import format_htg
 from .polling import poll_interval
 from .session import customer_required, get_customer, login_customer, logout_customer
@@ -222,7 +222,7 @@ def confirm(request):
     return _render_confirm(request, draft, q)
 
 
-def _render_confirm(request, draft: dict, q, *, status: int = 200):
+def _render_confirm(request, draft: dict, q, *, status: int = 200, check: RecipientCheckForm | None = None):
     # Une cle par page de confirmation : un double envoi du formulaire rejoue
     # la meme cle, et ne cree qu'un seul transfert.
     key = secrets.token_urlsafe(18)
@@ -232,7 +232,12 @@ def _render_confirm(request, draft: dict, q, *, status: int = 200):
     return render(
         request,
         "web/confirm.html",
-        {"draft": draft, "quote": q, "idempotency_key": key},
+        {
+            "draft": draft,
+            "quote": q,
+            "idempotency_key": key,
+            "check": check or RecipientCheckForm(expected=draft["recipient_phone"]),
+        },
         status=status,
     )
 
@@ -248,6 +253,21 @@ def _confirm_post(request):
     except InvalidOperation:
         messages.error(request, _("Cette confirmation a expiré. Vérifiez à nouveau votre envoi."))
         return redirect("web:confirm")
+
+    # Avant tout le reste : un numero mal retape ne doit rien consommer,
+    # ni le quota de transferts, ni une cle d'idempotence.
+    check = RecipientCheckForm(request.POST, expected=draft["recipient_phone"])
+    if not check.is_valid():
+        try:
+            q = transactions.quote_transfer(
+                source_wallet=draft["source_wallet"],
+                destination_wallet=draft["destination_wallet"],
+                net_amount=Decimal(draft["net_amount"]),
+            )
+        except ROUTE_ERRORS as exc:
+            messages.error(request, _route_error_message(exc))
+            return redirect("web:home")
+        return _render_confirm(request, draft, q, status=400, check=check)
 
     if not ratelimit.allow("transfer_create_customer", request.customer.pk):
         messages.error(request, _("Trop de transferts en peu de temps. Réessayez plus tard."))

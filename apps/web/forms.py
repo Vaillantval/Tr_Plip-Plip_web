@@ -83,6 +83,34 @@ class ClaimMessageForm(forms.Form):
     )
 
 
+class RecipientCheckForm(forms.Form):
+    """Ressaisie du numero du beneficiaire, avant de payer.
+
+    Un chiffre faux envoie l'argent a un inconnu, et rien ne le fait
+    revenir : le decaissement est definitif. La ressaisie se fait sur la
+    page de confirmation, ou le numero n'est plus affiche qu'en partie,
+    pour que le client le retape au lieu de le recopier.
+    """
+
+    recipient_phone_confirm = PhoneField(
+        label=_("Retapez le numéro du bénéficiaire"),
+        widget=forms.TextInput(attrs={"inputmode": "tel", "autocomplete": "off"}),
+    )
+
+    def __init__(self, *args, expected: str, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.expected = expected
+
+    def clean_recipient_phone_confirm(self):
+        value = self.cleaned_data["recipient_phone_confirm"]
+        if value != self.expected:
+            raise forms.ValidationError(
+                _("Les deux numéros ne correspondent pas. Retapez-le, ou modifiez l'envoi si le premier était faux."),
+                code="mismatch",
+            )
+        return value
+
+
 class TransferForm(forms.Form):
     """Formulaire d'envoi. Les portefeuilles proposes sont ceux ouverts."""
 

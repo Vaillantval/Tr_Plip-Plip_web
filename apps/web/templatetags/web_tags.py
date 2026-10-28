@@ -20,6 +20,20 @@ def wallet(code):
 
 
 @register.filter
+def masked_phone(phone):
+    """509 ••• •• 56 : assez pour reconnaitre un contact, pas pour recopier.
+
+    La page de confirmation demande de retaper le numero du beneficiaire.
+    Affiche en clair a cote du champ, il serait recopie, et la ressaisie
+    ne verifierait plus rien.
+    """
+    phone = str(phone or "")
+    if len(phone) != 11:
+        return "509 ••• •• ••"
+    return f"509 ••• •• {phone[-2:]}"
+
+
+@register.filter
 def status_of(txn):
     return public_status(txn.state)
 

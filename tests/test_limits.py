@@ -339,7 +339,7 @@ def test_the_web_keeps_the_customer_on_the_confirmation_page(client):
 
     response = client.post(
         reverse("web:confirm"),
-        {"idempotency_key": "cle-1", "expected_total": str(quote.total_charged)},
+        {"idempotency_key": "cle-1", "expected_total": str(quote.total_charged), "recipient_phone_confirm": "50932123456"},
     )
     html = response.content.decode()
 

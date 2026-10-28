@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Plip-Plip web\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-18 13:09-0400\n"
+"POT-Creation-Date: 2026-10-27 18:55-0400\n"
 "PO-Revision-Date: 2026-09-14 17:45-0400\n"
 "Last-Translator: \n"
 "Language-Team: Kreyòl ayisyen\n"
@@ -52,6 +52,18 @@ msgstr "Esplike an de mo"
 #: .\apps\web\forms.py
 msgid "Ajouter un message"
 msgstr "Ajoute yon mesaj"
+
+#: .\apps\web\forms.py
+msgid "Retapez le numéro du bénéficiaire"
+msgstr "Retape Nimewo moun wap voye kob ba li a"
+
+#: .\apps\web\forms.py
+msgid ""
+"Les deux numéros ne correspondent pas. Retapez-le, ou modifiez l'envoi si le "
+"premier était faux."
+msgstr ""
+"2 nimewo yo pa koresponn, retape l oubyen modifye enfomasyon yo si saw te "
+"ekri yo pa te bon."
 
 #: .\apps\web\forms.py
 msgid "J'envoie depuis"

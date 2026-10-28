@@ -395,7 +395,7 @@ def test_no_amount_and_no_date_leak_to_the_sender(client, senders):
     key = page.split('name="idempotency_key" value="')[1].split('"')[0]
     total = page.split('name="expected_total" value="')[1].split('"')[0]
     html = client.post(
-        reverse("web:confirm"), {"idempotency_key": key, "expected_total": total}
+        reverse("web:confirm"), {"idempotency_key": key, "expected_total": total, "recipient_phone_confirm": RECIPIENT}
     ).content.decode()
 
     assert "ne peut pas recevoir ce montant" in html

@@ -29,6 +29,7 @@ GET_CLIENT = "apps.transactions.services.get_client"
 CODE = "123456"
 PHONE = "50937123456"
 OTHER = "50948123456"
+RECIPIENT = "50932123456"
 LOCALE_DIR = Path(__file__).resolve().parent.parent / "apps" / "web" / "locale"
 
 SEND = {
@@ -176,14 +177,19 @@ def test_sending_while_logged_out_goes_through_login_then_confirmation(client):
 
     assert response["Location"] == reverse("web:confirm")
     page = client.get(reverse("web:confirm")).content.decode()
-    assert "Payer 1 090,00 HTG" in page and "+50932123456" not in page and "50932123456" in page
+    # Masque : le client doit le retaper, pas le recopier.
+    assert "Payer 1 090,00 HTG" in page and "50932123456" not in page and "509 ••• •• 56" in page
 
 
 @pytest.mark.django_db
 def test_double_submit_of_the_confirmation_creates_a_single_transfer(client):
     _login(client)
     page = _confirm_page(client)
-    body = {"idempotency_key": _hidden(page, "idempotency_key"), "expected_total": _hidden(page, "expected_total")}
+    body = {
+        "idempotency_key": _hidden(page, "idempotency_key"),
+        "expected_total": _hidden(page, "expected_total"),
+        "recipient_phone_confirm": RECIPIENT,
+    }
 
     with mock.patch(GET_CLIENT) as get_client:
         get_client.return_value.create_payment.return_value = _intent()
@@ -200,7 +206,7 @@ def test_double_submit_of_the_confirmation_creates_a_single_transfer(client):
 def test_changed_fees_require_a_new_confirmation(client):
     _login(client)
     page = _confirm_page(client)
-    body = {"idempotency_key": _hidden(page, "idempotency_key"), "expected_total": "1080.00"}
+    body = {"idempotency_key": _hidden(page, "idempotency_key"), "expected_total": "1080.00", "recipient_phone_confirm": RECIPIENT}
 
     with mock.patch(GET_CLIENT) as get_client:
         response = client.post(reverse("web:confirm"), body)
@@ -210,6 +216,69 @@ def test_changed_fees_require_a_new_confirmation(client):
     assert _hidden(response, "expected_total") == "1090.00"
     get_client.return_value.create_payment.assert_not_called()
     assert not Transaction.objects.exists()
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("retyped", ["50932123465", "32123465", ""])
+def test_a_mistyped_recipient_number_stops_everything_before_payment(client, retyped):
+    """Un chiffre faux envoie l'argent a un inconnu, et rien ne le fait revenir.
+
+    La ressaisie est le dernier moment ou l'erreur ne coute rien : aucun
+    transfert, aucun appel a plopplop, et le client reste sur sa page.
+    """
+    _login(client)
+    page = _confirm_page(client)
+    with mock.patch(GET_CLIENT) as get_client:
+        response = client.post(
+            reverse("web:confirm"),
+            {
+                "idempotency_key": _hidden(page, "idempotency_key"),
+                "expected_total": _hidden(page, "expected_total"),
+                "recipient_phone_confirm": retyped,
+            },
+        )
+
+    assert response.status_code == 400
+    assert "Payer 1 090,00 HTG" in response.content.decode()
+    get_client.return_value.create_payment.assert_not_called()
+    assert not Transaction.objects.exists()
+
+
+@pytest.mark.django_db
+def test_a_mistyped_recipient_number_says_so(client):
+    _login(client)
+    page = _confirm_page(client)
+    html = client.post(
+        reverse("web:confirm"),
+        {
+            "idempotency_key": _hidden(page, "idempotency_key"),
+            "expected_total": _hidden(page, "expected_total"),
+            "recipient_phone_confirm": "50932123465",
+        },
+    ).content.decode()
+    assert "ne correspondent pas" in html
+    assert "50932123456" not in html, "le numero attendu ne doit pas etre redonne en clair"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("retyped", ["+509 3212 3456", "3212-3456", "32123456"])
+def test_the_retyped_number_may_be_written_differently(client, retyped):
+    """Seuls les chiffres comptent : refuser +509 devant 509 serait une
+    fausse alerte, et le client finirait par ne plus lire le message."""
+    _login(client)
+    page = _confirm_page(client)
+    with mock.patch(GET_CLIENT) as get_client:
+        get_client.return_value.create_payment.return_value = _intent()
+        response = client.post(
+            reverse("web:confirm"),
+            {
+                "idempotency_key": _hidden(page, "idempotency_key"),
+                "expected_total": _hidden(page, "expected_total"),
+                "recipient_phone_confirm": retyped,
+            },
+        )
+    assert response.status_code == 302
+    assert Transaction.objects.get().recipient_phone == RECIPIENT
 
 
 @pytest.mark.django_db
@@ -231,7 +300,11 @@ def test_payment_provider_refusal_is_reported_without_charging(client):
         get_client.return_value.create_payment.side_effect = pp.MethodNotConfigured("inactif", code="METHOD_NOT_CONFIGURED", status=400)
         response = client.post(
             reverse("web:confirm"),
-            {"idempotency_key": _hidden(page, "idempotency_key"), "expected_total": _hidden(page, "expected_total")},
+            {
+                "idempotency_key": _hidden(page, "idempotency_key"),
+                "expected_total": _hidden(page, "expected_total"),
+                "recipient_phone_confirm": RECIPIENT,
+            },
             follow=True,
         )
     html = response.content.decode()
