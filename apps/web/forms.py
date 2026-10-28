@@ -5,6 +5,7 @@ from decimal import Decimal
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+from apps.accounts.models import NotificationChannel
 from apps.accounts.phone import InvalidPhone, NotAMobileNumber, normalize
 from apps.claims import services as claims
 from apps.claims.models import Reason
@@ -95,6 +96,19 @@ class RecipientCheckForm(forms.Form):
     recipient_phone_confirm = PhoneField(
         label=_("Retapez le numéro du bénéficiaire"),
         widget=forms.TextInput(attrs={"inputmode": "tel", "autocomplete": "off"}),
+    )
+
+    #: Propose seulement quand WhatsApp est pret (voir la vue). Facultatif :
+    #: absent, le choix deja enregistre ne bouge pas.
+    notify_by = forms.ChoiceField(
+        label=_("Recevoir les avis de ce transfert par"),
+        choices=NotificationChannel.choices,
+        widget=forms.RadioSelect,
+        required=False,
+        help_text=_(
+            "En choisissant WhatsApp, vous acceptez d'y recevoir les avis de vos transferts. "
+            "Si le message ne peut pas vous être livré, il vous est envoyé par SMS."
+        ),
     )
 
     def __init__(self, *args, expected: str, **kwargs):

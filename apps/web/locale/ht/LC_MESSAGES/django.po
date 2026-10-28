@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Plip-Plip web\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-27 18:55-0400\n"
+"POT-Creation-Date: 2026-10-28 11:04-0400\n"
 "PO-Revision-Date: 2026-09-14 17:45-0400\n"
 "Last-Translator: \n"
 "Language-Team: Kreyòl ayisyen\n"
@@ -56,6 +56,19 @@ msgstr "Ajoute yon mesaj"
 #: .\apps\web\forms.py
 msgid "Retapez le numéro du bénéficiaire"
 msgstr "Retape Nimewo moun wap voye kob ba li a"
+
+#: .\apps\web\forms.py
+msgid "Recevoir les avis de ce transfert par"
+msgstr "Resevwa konfimasyon an pa"
+
+#: .\apps\web\forms.py
+msgid ""
+"En choisissant WhatsApp, vous acceptez d'y recevoir les avis de vos "
+"transferts. Si le message ne peut pas vous être livré, il vous est envoyé "
+"par SMS."
+msgstr ""
+"Siw chwazi whatsapp, ou aksepte resevwa konfimasyon transfè ou yo. Si mesaj "
+"lan paka al jwenn ou pa whatsapp li prale par sms."
 
 #: .\apps\web\forms.py
 msgid ""

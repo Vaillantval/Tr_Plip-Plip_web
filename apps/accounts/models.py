@@ -47,6 +47,11 @@ class User(AbstractUser):
         return self.role == Role.SUPERADMIN
 
 
+class NotificationChannel(models.TextChoices):
+    SMS = "sms", "SMS"
+    WHATSAPP = "whatsapp", "WhatsApp"
+
+
 class Customer(models.Model):
     """Client de l'API publique, identifie par son telephone.
 
@@ -61,6 +66,14 @@ class Customer(models.Model):
     #: Une tache Celery n'a ni requete ni cookie : sans ce champ, un SMS
     #: partirait toujours en francais.
     language = models.CharField(max_length=5, blank=True, default="")
+    #: Canal des avis de transfert, choisi par le client sur la page de
+    #: confirmation. WhatsApp retombe sur le SMS quand il ne peut pas livrer.
+    notification_channel = models.CharField(
+        max_length=16, choices=NotificationChannel.choices, default=NotificationChannel.SMS
+    )
+    #: Moment ou le client a choisi WhatsApp : la preuve de son accord,
+    #: exigee par Meta. Remis a vide s'il revient au SMS.
+    whatsapp_opt_in_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     last_login_at = models.DateTimeField(null=True, blank=True)
 

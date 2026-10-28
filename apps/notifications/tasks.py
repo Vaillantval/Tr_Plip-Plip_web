@@ -30,7 +30,7 @@ def _backoff(retries: int) -> int:
 
 @shared_task(name="notifications.send_notification", bind=True, acks_late=True, max_retries=4)
 def send_notification(self, notification_id: int) -> str:
-    """Envoie un SMS. Toujours vers un statut terminal, jamais en suspens."""
+    """Envoie un avis. Toujours vers un statut terminal, jamais en suspens."""
     from . import services
 
     note = services.claim(notification_id)
@@ -43,7 +43,7 @@ def send_notification(self, notification_id: int) -> str:
         if self.request.retries >= self.max_retries:
             # Pas d'autoretry_for : il laisserait la ligne « a envoyer »
             # pour toujours une fois les reprises epuisees.
-            services._finish(note, status=services.Status.FAILED, error_code="UNAVAILABLE", error=str(exc))
+            services.give_up(note, error_code="UNAVAILABLE", error=str(exc))
             return "failed"
         raise self.retry(exc=exc, countdown=_backoff(self.request.retries))
 

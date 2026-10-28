@@ -268,6 +268,19 @@ TWILIO = {
     "MESSAGING_SERVICE_SID": env("TWILIO_MESSAGING_SERVICE_SID", ""),
     "FROM_NUMBER": env("TWILIO_FROM_NUMBER", ""),
     "TIMEOUT": float(env("TWILIO_TIMEOUT", "10")),
+    # WhatsApp : canal choisi par le client, avec repli SMS. Tant qu'un
+    # seul de ces reglages manque, tout part en SMS, sans erreur.
+    #   WHATSAPP_FROM : numero expediteur enregistre chez Twilio (E.164).
+    #   WHATSAPP_CONTENT_SIDS : un modele approuve par Meta par avis (HX...).
+    #   STATUS_CALLBACK_URL : URL publique EXACTE de la vue des statuts ;
+    #     la signature Twilio est calculee sur elle, au caractere pres.
+    "WHATSAPP_FROM": env("TWILIO_WHATSAPP_FROM", ""),
+    "WHATSAPP_CONTENT_SIDS": {
+        "transfer_completed": env("TWILIO_WA_TRANSFER_COMPLETED_SID", ""),
+        "transfer_refunded": env("TWILIO_WA_TRANSFER_REFUNDED_SID", ""),
+        "claim_answered": env("TWILIO_WA_CLAIM_ANSWERED_SID", ""),
+    },
+    "STATUS_CALLBACK_URL": env("TWILIO_STATUS_CALLBACK_URL", ""),
 }
 
 # ----------------------------------------------------------------------

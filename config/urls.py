@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.urls import include, path
 
+from apps.notifications.views import twilio_status
+
 from .health import health
 
 urlpatterns = [
@@ -11,6 +13,7 @@ urlpatterns = [
     path("api/v1/", include("apps.api.urls", namespace="api")),
     path("console/", include("apps.console.urls", namespace="console")),
     path("i18n/", include("django.conf.urls.i18n")),
+    path("webhooks/twilio/status/", twilio_status, name="twilio_status"),
     # Site client, a la racine.
     path("", include("apps.web.urls", namespace="web")),
 ]

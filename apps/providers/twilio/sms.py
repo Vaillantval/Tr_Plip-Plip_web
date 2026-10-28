@@ -11,6 +11,7 @@ couvrent deja Messages (21211, 21614 sont des codes Messages).
 
 from __future__ import annotations
 
+import json
 import logging
 from dataclasses import dataclass
 
@@ -64,7 +65,36 @@ class TwilioSMSClient:
             data["MessagingServiceSid"] = self.messaging_service_sid
         else:
             data["From"] = self.from_number
+        return self._create(data, idempotency_key=idempotency_key)
 
+    def send_whatsapp(
+        self,
+        *,
+        to: str,
+        from_number: str,
+        content_sid: str,
+        variables: dict[str, str],
+        status_callback: str,
+        idempotency_key: str = "",
+    ) -> SentMessage:
+        """Envoie un modele WhatsApp approuve. `to` et `from_number` en E.164.
+
+        Pas de Body : hors fenetre de conversation, Meta n'accepte qu'un
+        modele approuve (ContentSid), dont on ne fournit que les variables.
+
+        Un 201 ne veut pas dire livre. Le cas courant d'echec -- numero sans
+        compte WhatsApp -- n'arrive qu'ensuite, sur `status_callback`.
+        """
+        data = {
+            "To": f"whatsapp:{to}",
+            "From": f"whatsapp:{from_number}",
+            "ContentSid": content_sid,
+            "ContentVariables": json.dumps(variables, ensure_ascii=False),
+            "StatusCallback": status_callback,
+        }
+        return self._create(data, idempotency_key=idempotency_key)
+
+    def _create(self, data: dict, *, idempotency_key: str) -> SentMessage:
         headers = {"I-Twilio-Idempotency-Token": idempotency_key} if idempotency_key else {}
         url = f"{BASE_URL}/Accounts/{self.account_sid}/Messages.json"
         try:
