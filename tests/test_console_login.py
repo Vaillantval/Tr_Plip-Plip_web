@@ -114,3 +114,18 @@ def test_disabled_account_cannot_connect(client, operator):
 
     assert response.status_code == 200
     assert client.get(reverse("console:dashboard")).status_code == 302
+
+
+@pytest.mark.django_db
+def test_every_console_screen_offers_a_sign_out_that_really_ends_the_session(client, operator):
+    client.force_login(operator)
+    html = client.get(reverse("console:dashboard")).content.decode()
+
+    logout = reverse("console:logout")
+    form = re.search(r'<form method="post" action="' + re.escape(logout) + r'">(.*?)</form>', html, re.S)
+    assert form and "Se déconnecter" in form.group(1) and "csrfmiddlewaretoken" in form.group(1)
+
+    response = client.post(logout)
+    assert response.status_code == 302 and response.url == reverse("console:login")
+    after = client.get(reverse("console:dashboard"))
+    assert after.status_code == 302 and after.url.startswith(reverse("console:login"))

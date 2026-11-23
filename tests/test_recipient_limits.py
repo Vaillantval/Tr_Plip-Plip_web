@@ -31,6 +31,16 @@ from apps.transactions import limits, services
 from apps.transactions.models import Transaction, TransferLimitPolicy, Wallet
 from apps.transactions.states import State
 
+
+@pytest.fixture
+def client(client):
+    """Ces tests lisent les textes francais du site, dont le creole est la
+    langue par defaut : le client choisit le francais, comme avec le
+    selecteur de langue."""
+    client.cookies["django_language"] = "fr"
+    return client
+
+
 RECIPIENT = "50932123456"
 #: Le meme numero, tel qu'un client le saisirait : sans indicatif, avec des
 #: separateurs. C'est par la que le plafond se contournerait.

@@ -44,7 +44,8 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.locale.LocaleMiddleware",
+    # Creole par defaut sur le site client, francais en console.
+    "apps.web.locale_middleware.SiteLanguageMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -84,10 +85,13 @@ DATABASES = {
     }
 }
 
-# Site client : francais par defaut, creole et anglais. La console reste
-# en francais. Django ne connait pas le creole haitien : il est declare
-# ici, ses traductions vivent dans apps/web/locale/ht.
+# Site client : creole par defaut (SITE_DEFAULT_LANGUAGE), francais et
+# anglais au choix. La console reste en francais. LANGUAGE_CODE reste
+# « fr » : c'est la langue des taches sans requete et de la console.
+# Django ne connait pas le creole haitien : il est declare ici, ses
+# traductions vivent dans apps/web/locale/ht.
 LANGUAGE_CODE = "fr"
+SITE_DEFAULT_LANGUAGE = "ht"
 LANGUAGES = [
     ("fr", "Français"),
     ("ht", "Kreyòl ayisyen"),

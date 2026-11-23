@@ -29,6 +29,16 @@ from apps.transactions import services as transactions
 from apps.transactions.models import Transaction, Wallet
 from apps.transactions.states import State
 
+
+@pytest.fixture
+def client(client):
+    """Ces tests lisent les textes francais du site, dont le creole est la
+    langue par defaut : le client choisit le francais, comme avec le
+    selecteur de langue."""
+    client.cookies["django_language"] = "fr"
+    return client
+
+
 SEND = "apps.notifications.sms.send"
 HTMX = {"HTTP_HX_REQUEST": "true"}
 

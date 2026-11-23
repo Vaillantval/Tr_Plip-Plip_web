@@ -21,7 +21,14 @@
     <a href="{% url 'console:claims' %}" class="{% if current == 'claims' or current == 'claim_detail' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Reclamations{% open_claim_count %}</a>
     <a href="{% url 'console:treasury' %}" class="{% if current == 'treasury' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Tresorerie</a>
     <a href="{% url 'console:methods' %}" class="{% if current == 'methods' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Methodes et tarifs</a>
-    <span class="ml-auto text-slate-500">{{ request.user }} — {{ request.user.get_role_display }}</span>
+    <div class="ml-auto flex items-center gap-3">
+      <span class="text-slate-500">{{ request.user }} — {{ request.user.get_role_display }}</span>
+      {# POST obligatoire : LogoutView refuse le GET depuis Django 5. #}
+      <form method="post" action="{% url 'console:logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="rounded border border-slate-300 px-2.5 py-1 text-slate-700 hover:bg-slate-100">Se déconnecter</button>
+      </form>
+    </div>
   </nav>
   {% endwith %}
   {% payout_worker_alert %}

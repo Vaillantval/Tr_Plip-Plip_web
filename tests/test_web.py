@@ -25,6 +25,16 @@ from apps.transactions import services
 from apps.transactions.models import Transaction
 from apps.transactions.states import State
 
+
+@pytest.fixture
+def client(client):
+    """Ces tests lisent les textes francais du site, dont le creole est la
+    langue par defaut : le client choisit le francais, comme avec le
+    selecteur de langue."""
+    client.cookies["django_language"] = "fr"
+    return client
+
+
 GET_CLIENT = "apps.transactions.services.get_client"
 CODE = "123456"
 PHONE = "50937123456"
@@ -405,8 +415,38 @@ def test_home_page_in_each_language(client, language, expected):
 
 
 @pytest.mark.django_db
-def test_french_is_the_default_language(client):
-    html = client.get(reverse("web:home"), HTTP_ACCEPT_LANGUAGE="de").content.decode()
+@pytest.mark.parametrize("browser", ["fr-FR,fr;q=0.9", "en-US,en;q=0.8", "de", ""])
+def test_creole_is_the_default_language_whatever_the_browser_says(browser):
+    # Client neuf, sans le cookie francais des autres tests : premiere visite.
+    from django.test import Client
+
+    html = Client().get(reverse("web:home"), HTTP_ACCEPT_LANGUAGE=browser).content.decode()
+    assert '<html lang="ht">' in html
+
+
+@pytest.mark.django_db
+def test_the_language_choice_is_kept_on_the_next_pages():
+    from django.test import Client
+
+    visitor = Client()
+    visitor.post(reverse("set_language"), {"language": "fr", "next": "/"})
+    assert '<html lang="fr">' in visitor.get(reverse("web:home")).content.decode()
+
+
+@pytest.mark.django_db
+def test_the_language_menu_applies_on_change_without_an_ok_button(client):
+    html = client.get(reverse("web:home")).content.decode()
+    menu = html[html.index('id="language"') :]
+    menu = menu[: menu.index("</select>")]
+    assert "this.form.requestSubmit()" in menu
+    # Sans JavaScript, le bouton reste le seul moyen : il est dans <noscript>.
+    assert re.search(r"<noscript>\s*<button", html)
+
+
+@pytest.mark.django_db
+def test_the_console_stays_in_french_even_with_a_creole_cookie(client):
+    client.cookies["django_language"] = "ht"
+    html = client.get(reverse("console:login")).content.decode()
     assert '<html lang="fr">' in html
 
 

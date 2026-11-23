@@ -38,6 +38,16 @@ from apps.transactions.models import Transaction, Wallet
 from apps.transactions.states import State
 from apps.web.polling import poll_interval
 
+
+@pytest.fixture
+def client(client):
+    """Ces tests lisent les textes francais du site, dont le creole est la
+    langue par defaut : le client choisit le francais, comme avec le
+    selecteur de langue."""
+    client.cookies["django_language"] = "fr"
+    return client
+
+
 APPS_DIR = Path(__file__).resolve().parent.parent / "apps"
 GET_CLIENT = "apps.transactions.services.get_client"
 CODE = "123456"

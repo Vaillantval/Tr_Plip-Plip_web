@@ -30,6 +30,16 @@ from apps.transactions import limits, services
 from apps.transactions.models import Transaction, TransferLimitPolicy, Wallet
 from apps.transactions.states import State
 
+
+@pytest.fixture
+def client(client):
+    """Ces tests lisent les textes francais du site, dont le creole est la
+    langue par defaut : le client choisit le francais, comme avec le
+    selecteur de langue."""
+    client.cookies["django_language"] = "fr"
+    return client
+
+
 CODE = "123456"
 PHONE = "50937123456"
 GET_CLIENT = "apps.transactions.services.get_client"

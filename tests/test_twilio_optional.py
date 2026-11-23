@@ -19,6 +19,16 @@ from django.core.cache import cache
 from django.urls import reverse
 from rest_framework.test import APIClient
 
+
+@pytest.fixture
+def client(client):
+    """Ces tests lisent les textes francais du site, dont le creole est la
+    langue par defaut : le client choisit le francais, comme avec le
+    selecteur de langue."""
+    client.cookies["django_language"] = "fr"
+    return client
+
+
 ROOT = Path(__file__).resolve().parent.parent
 PHONE = "50937123456"
 

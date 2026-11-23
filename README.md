@@ -98,8 +98,9 @@ services que l'API : aucune règle métier n'y est dupliquée.
   (`WEB_SESSION_IDLE_SECONDS`).
 - **Double clic** : chaque page de confirmation porte sa clé d'idempotence ;
   un double envoi ne crée qu'un transfert.
-- **Langues** : français par défaut, créole haïtien (`ht`) et anglais,
-  choix en pied de page. Après modification d'un texte :
+- **Langues** : créole haïtien (`ht`) par défaut, quelle que soit la langue
+  du navigateur ; français et anglais au choix en pied de page (appliqué dès
+  la sélection). La console reste en français. Après modification d'un texte :
 
   ```bash
   python manage.py makemessages -l en -l ht --add-location file --no-obsolete --ignore ".venv/*" --ignore "tests/*"
