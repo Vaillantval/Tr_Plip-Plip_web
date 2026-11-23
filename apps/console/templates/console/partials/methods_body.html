@@ -3,8 +3,8 @@
   {% include "console/partials/messages.html" %}
   {% include "console/partials/pricing_banner.html" %}
 
-  <div class="rounded border bg-white">
-    <h1 class="border-b px-3 py-2 font-medium">Methodes de transfert</h1>
+  <div class="card">
+    <h1 class="card-title">Methodes de transfert</h1>
     <p class="px-3 py-2 text-slate-600">
       Un portefeuille ferme est refuse pour toute <strong>nouvelle</strong> transaction (devis et creation via l'API).
       Les transactions deja creees continuent : une transaction encaissee est une dette, sa sortie n'est jamais bloquee.
@@ -12,15 +12,15 @@
     </p>
     <div class="overflow-x-auto">
       <table class="w-full">
-        <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+        <thead class="thead">
           <tr>
-            <th class="px-3 py-1.5">Portefeuille</th>
-            <th class="px-3 py-1.5">Entree (encaissement)</th>
-            <th class="px-3 py-1.5">Sortie (decaissement)</th>
-            <th class="px-3 py-1.5">Derniere modification</th>
+            <th class="px-4 py-2">Portefeuille</th>
+            <th class="px-4 py-2">Entree (encaissement)</th>
+            <th class="px-4 py-2">Sortie (decaissement)</th>
+            <th class="px-4 py-2">Derniere modification</th>
           </tr>
         </thead>
-        <tbody class="divide-y">
+        <tbody class="divide-y divide-slate-100">
           {% for row in rows %}
           <tr class="align-top">
             <td class="px-3 py-2 font-medium">{{ row.label }} <span class="font-mono text-xs text-slate-500">{{ row.wallet }}</span></td>
@@ -42,8 +42,8 @@
     </div>
   </div>
 
-  <section id="tarification" class="rounded border bg-white">
-    <h2 class="border-b px-3 py-2 font-medium">
+  <section id="tarification" class="card">
+    <h2 class="card-title">
       Tarification
       <span class="font-normal text-slate-500">
         {% if pricing.unreviewed %}· jamais validee{% else %}· validee le {{ pricing.policy.reviewed_at|date:"d/m/Y H:i" }} par {{ pricing.policy.reviewed_by|default:"?" }}{% endif %}
@@ -65,24 +65,24 @@
       {% if pricing_form.non_field_errors %}<p class="px-3 text-red-700">{{ pricing_form.non_field_errors|join:" " }}</p>{% endif %}
       <div class="overflow-x-auto">
         <table class="w-full">
-          <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+          <thead class="thead">
             <tr>
-              <th class="px-3 py-1.5">Portefeuille</th>
-              {% for label in rate_labels %}<th class="px-3 py-1.5 text-right">{{ label }}</th>{% endfor %}
+              <th class="px-4 py-2">Portefeuille</th>
+              {% for label in rate_labels %}<th class="px-4 py-2 text-right">{{ label }}</th>{% endfor %}
             </tr>
           </thead>
-          <tbody class="divide-y">
+          <tbody class="divide-y divide-slate-100">
             {% for rate_row in rate_rows %}
             <tr>
-              <td class="px-3 py-1.5 font-medium">{{ rate_row.wallet.label }}</td>
+              <td class="px-4 py-2 font-medium">{{ rate_row.wallet.label }}</td>
               {% for cell in rate_row.cells %}
-              <td class="px-3 py-1.5 text-right">
+              <td class="px-4 py-2 text-right">
                 {% if not cell.applicable %}
                   <span class="text-slate-300">—</span>
                 {% elif request.user.is_superadmin %}
                   <input name="{{ cell.bound.html_name }}" type="number" step="0.01" min="0" max="49.99" required
                          value="{{ cell.bound.value|default_if_none:'' }}"
-                         class="w-20 rounded border {% if cell.bound.errors %}border-red-500{% else %}border-slate-300{% endif %} px-1.5 py-0.5 text-right font-mono"> %
+                         class="w-20 rounded-md border {% if cell.bound.errors %}border-red-500{% else %}border-slate-300{% endif %} px-1.5 py-0.5 text-right font-mono"> %
                 {% else %}
                   <span class="font-mono">{{ cell.percent }} %</span>
                 {% endif %}
@@ -91,12 +91,12 @@
             </tr>
             {% endfor %}
             <tr class="bg-slate-50">
-              <td class="px-3 py-1.5 font-medium">Commission Plip-Plip</td>
-              <td class="px-3 py-1.5 text-right" colspan="4">
+              <td class="px-4 py-2 font-medium">Commission Plip-Plip</td>
+              <td class="px-4 py-2 text-right" colspan="4">
                 {% if request.user.is_superadmin %}
                   <input name="platform_fee_rate" type="number" step="0.01" min="0" max="49.99" required
                          value="{{ pricing_form.platform_fee_rate.value|default_if_none:'' }}"
-                         class="w-20 rounded border border-slate-300 px-1.5 py-0.5 text-right font-mono"> % du montant net, sur toutes les routes
+                         class="w-20 rounded-md border border-slate-300 px-1.5 py-0.5 text-right font-mono"> % du montant net, sur toutes les routes
                 {% else %}
                   <span class="font-mono">{{ pricing.policy.platform_fee_rate|percent_rate }}</span> du montant net
                 {% endif %}
@@ -107,7 +107,7 @@
       </div>
     {% if request.user.is_superadmin %}
       <div class="px-3 py-2">
-        <button type="submit" class="rounded bg-slate-800 px-3 py-1 font-medium text-white hover:bg-slate-900 disabled:opacity-50">
+        <button type="submit" class="btn-primary">
           {% if pricing.unreviewed %}Valider cette tarification{% else %}Enregistrer la tarification{% endif %}
         </button>
       </div>
@@ -117,25 +117,25 @@
     <h3 class="border-t px-3 py-2 font-medium">Apercu par route <span class="font-normal text-slate-500">pour {{ pricing.preview_net_amount|htg }} HTG recus, tarifs enregistres</span></h3>
     <div class="overflow-x-auto">
       <table class="w-full">
-        <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+        <thead class="thead">
           <tr>
-            <th class="px-3 py-1.5">Route</th>
-            <th class="px-3 py-1.5 text-right">Frais client</th>
-            <th class="px-3 py-1.5 text-right">Client paie</th>
-            <th class="px-3 py-1.5 text-right">Cout encaissement</th>
-            <th class="px-3 py-1.5 text-right">Cout retrait</th>
-            <th class="px-3 py-1.5 text-right">Marge estimee</th>
+            <th class="px-4 py-2">Route</th>
+            <th class="px-4 py-2 text-right">Frais client</th>
+            <th class="px-4 py-2 text-right">Client paie</th>
+            <th class="px-4 py-2 text-right">Cout encaissement</th>
+            <th class="px-4 py-2 text-right">Cout retrait</th>
+            <th class="px-4 py-2 text-right">Marge estimee</th>
           </tr>
         </thead>
-        <tbody class="divide-y">
+        <tbody class="divide-y divide-slate-100">
           {% for route in pricing.routes %}
           <tr class="{% if not route.open %}text-slate-500{% elif route.margin < 0 %}bg-red-50 text-red-900{% endif %}">
-            <td class="px-3 py-1.5">{{ route.source.label }} → {{ route.destination.label }}{% if not route.open %} <span class="text-xs">(fermee)</span>{% endif %}</td>
-            <td class="px-3 py-1.5 text-right font-mono">{{ route.quote.total_fees|htg }}</td>
-            <td class="px-3 py-1.5 text-right font-mono">{{ route.quote.total_charged|htg }}</td>
-            <td class="px-3 py-1.5 text-right font-mono">{{ route.cost_in|htg }}</td>
-            <td class="px-3 py-1.5 text-right font-mono">{{ route.cost_out|htg }}</td>
-            <td class="px-3 py-1.5 text-right font-mono {% if route.margin < 0 %}font-semibold{% endif %}">{{ route.margin|htg }}</td>
+            <td class="px-4 py-2">{{ route.source.label }} → {{ route.destination.label }}{% if not route.open %} <span class="text-xs">(fermee)</span>{% endif %}</td>
+            <td class="px-4 py-2 text-right font-mono">{{ route.quote.total_fees|htg }}</td>
+            <td class="px-4 py-2 text-right font-mono">{{ route.quote.total_charged|htg }}</td>
+            <td class="px-4 py-2 text-right font-mono">{{ route.cost_in|htg }}</td>
+            <td class="px-4 py-2 text-right font-mono">{{ route.cost_out|htg }}</td>
+            <td class="px-4 py-2 text-right font-mono {% if route.margin < 0 %}font-semibold{% endif %}">{{ route.margin|htg }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -143,8 +143,8 @@
     </div>
   </section>
 
-  <section class="rounded border bg-white" data-section="limits">
-    <h2 class="border-b px-3 py-2 font-medium">Plafonds cumules</h2>
+  <section class="card" data-section="limits">
+    <h2 class="card-title">Plafonds cumules</h2>
     {% if limits.narrow_ratios %}
     <div class="border-b border-amber-200 bg-amber-50 px-3 py-2 text-amber-900" role="alert">
       <p class="font-medium">Reglage a regarder de pres</p>
@@ -180,41 +180,41 @@
     {% endif %}
       {% if limits_form.non_field_errors %}<p class="px-3 text-red-700">{{ limits_form.non_field_errors|join:" " }}</p>{% endif %}
       <table class="w-full">
-        <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+        <thead class="thead">
           <tr>
-            <th class="px-3 py-1.5">Fenetre</th>
-            <th class="px-3 py-1.5 text-right">Expediteur (HTG)</th>
-            <th class="px-3 py-1.5 text-right">Beneficiaire (HTG)</th>
+            <th class="px-4 py-2">Fenetre</th>
+            <th class="px-4 py-2 text-right">Expediteur (HTG)</th>
+            <th class="px-4 py-2 text-right">Beneficiaire (HTG)</th>
           </tr>
         </thead>
-        <tbody class="divide-y">
+        <tbody class="divide-y divide-slate-100">
           <tr>
-            <td class="px-3 py-1.5">{{ limits.day_hours }} dernieres heures</td>
-            <td class="px-3 py-1.5 text-right">
+            <td class="px-4 py-2">{{ limits.day_hours }} dernieres heures</td>
+            <td class="px-4 py-2 text-right">
               {% if request.user.is_superadmin %}
                 <input type="number" step="0.01" min="1" name="daily_cap" value="{{ limits_form.daily_cap.value|unlocalize }}"
-                       class="w-32 rounded border px-2 py-1 text-right font-mono">
+                       class="field w-32 text-right font-mono">
               {% else %}<span class="font-mono">{{ limits.policy.daily_cap|htg }}</span>{% endif %}
             </td>
-            <td class="px-3 py-1.5 text-right">
+            <td class="px-4 py-2 text-right">
               {% if request.user.is_superadmin %}
                 <input type="number" step="0.01" min="1" name="recipient_daily_cap" value="{{ limits_form.recipient_daily_cap.value|unlocalize }}"
-                       class="w-32 rounded border px-2 py-1 text-right font-mono">
+                       class="field w-32 text-right font-mono">
               {% else %}<span class="font-mono">{{ limits.policy.recipient_daily_cap|htg }}</span>{% endif %}
             </td>
           </tr>
           <tr>
-            <td class="px-3 py-1.5">{{ limits.month_days }} derniers jours</td>
-            <td class="px-3 py-1.5 text-right">
+            <td class="px-4 py-2">{{ limits.month_days }} derniers jours</td>
+            <td class="px-4 py-2 text-right">
               {% if request.user.is_superadmin %}
                 <input type="number" step="0.01" min="1" name="monthly_cap" value="{{ limits_form.monthly_cap.value|unlocalize }}"
-                       class="w-32 rounded border px-2 py-1 text-right font-mono">
+                       class="field w-32 text-right font-mono">
               {% else %}<span class="font-mono">{{ limits.policy.monthly_cap|htg }}</span>{% endif %}
             </td>
-            <td class="px-3 py-1.5 text-right">
+            <td class="px-4 py-2 text-right">
               {% if request.user.is_superadmin %}
                 <input type="number" step="0.01" min="1" name="recipient_monthly_cap" value="{{ limits_form.recipient_monthly_cap.value|unlocalize }}"
-                       class="w-32 rounded border px-2 py-1 text-right font-mono">
+                       class="field w-32 text-right font-mono">
               {% else %}<span class="font-mono">{{ limits.policy.recipient_monthly_cap|htg }}</span>{% endif %}
             </td>
           </tr>
@@ -231,7 +231,7 @@
       </p>
     {% if request.user.is_superadmin %}
       <div class="border-t px-3 py-2">
-        <button class="rounded bg-slate-900 px-3 py-1.5 font-medium text-white">Enregistrer les plafonds</button>
+        <button class="rounded bg-slate-900 px-4 py-2 font-medium text-white">Enregistrer les plafonds</button>
       </div>
     </form>
     {% endif %}

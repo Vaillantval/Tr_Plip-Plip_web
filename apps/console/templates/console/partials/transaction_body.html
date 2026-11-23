@@ -11,11 +11,11 @@
   </header>
 
   {% if claims %}
-  <section class="rounded border-2 border-amber-400 bg-white">
+  <section class="rounded-xl border-2 border-amber-400 bg-white">
     <h2 class="border-b border-amber-200 bg-amber-50 px-3 py-2 font-medium text-amber-900">
       Le client a signale un probleme sur ce transfert
     </h2>
-    <ul class="divide-y">
+    <ul class="divide-y divide-slate-100">
       {% for row in claims %}
       <li class="px-3 py-2">
         <a class="underline underline-offset-2" href="{% url 'console:claim_detail' row.pk %}">{{ row.get_reason_display }}</a>
@@ -27,28 +27,28 @@
   {% endif %}
 
   {% if consumption %}
-  <section class="rounded border bg-white">
-    <h2 class="border-b px-3 py-2 font-medium">Plafonds du client</h2>
+  <section class="card">
+    <h2 class="card-title">Plafonds du client</h2>
     <table class="w-full">
-      <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+      <thead class="thead">
         <tr>
-          <th class="px-3 py-1.5">Fenetre</th>
-          <th class="px-3 py-1.5 text-right">Encaisse</th>
-          <th class="px-3 py-1.5 text-right">Reserve</th>
-          <th class="px-3 py-1.5 text-right">Total</th>
-          <th class="px-3 py-1.5 text-right">Plafond</th>
-          <th class="px-3 py-1.5 text-right">Restant</th>
+          <th class="px-4 py-2">Fenetre</th>
+          <th class="px-4 py-2 text-right">Encaisse</th>
+          <th class="px-4 py-2 text-right">Reserve</th>
+          <th class="px-4 py-2 text-right">Total</th>
+          <th class="px-4 py-2 text-right">Plafond</th>
+          <th class="px-4 py-2 text-right">Restant</th>
         </tr>
       </thead>
-      <tbody class="divide-y">
+      <tbody class="divide-y divide-slate-100">
         {% for window in consumption %}
         <tr class="{% if not window.remaining %}bg-red-50 text-red-900{% endif %}">
-          <td class="px-3 py-1.5">{{ window.label }}</td>
-          <td class="px-3 py-1.5 text-right font-mono">{{ window.collected|htg }}</td>
-          <td class="px-3 py-1.5 text-right font-mono {% if window.reserved %}text-amber-700{% else %}text-slate-500{% endif %}">{{ window.reserved|htg }}</td>
-          <td class="px-3 py-1.5 text-right font-mono">{{ window.used|htg }}</td>
-          <td class="px-3 py-1.5 text-right font-mono">{{ window.cap|htg }}</td>
-          <td class="px-3 py-1.5 text-right font-mono">{{ window.remaining|htg }}</td>
+          <td class="px-4 py-2">{{ window.label }}</td>
+          <td class="px-4 py-2 text-right font-mono">{{ window.collected|htg }}</td>
+          <td class="px-4 py-2 text-right font-mono {% if window.reserved %}text-amber-700{% else %}text-slate-500{% endif %}">{{ window.reserved|htg }}</td>
+          <td class="px-4 py-2 text-right font-mono">{{ window.used|htg }}</td>
+          <td class="px-4 py-2 text-right font-mono">{{ window.cap|htg }}</td>
+          <td class="px-4 py-2 text-right font-mono">{{ window.remaining|htg }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -61,33 +61,33 @@
   </section>
   {% endif %}
 
-  <section class="rounded border bg-white">
-    <h2 class="border-b px-3 py-2 font-medium">
+  <section class="card">
+    <h2 class="card-title">
       Plafonds du beneficiaire <span class="font-mono text-slate-600">{{ txn.recipient_phone }}</span>
       <span class="font-normal text-slate-500">
         — {{ recipient_senders }} expediteur{{ recipient_senders|pluralize }} distinct{{ recipient_senders|pluralize }} sur 30 jours
       </span>
     </h2>
     <table class="w-full">
-      <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+      <thead class="thead">
         <tr>
-          <th class="px-3 py-1.5">Fenetre</th>
-          <th class="px-3 py-1.5 text-right">Encaisse</th>
-          <th class="px-3 py-1.5 text-right">Reserve</th>
-          <th class="px-3 py-1.5 text-right">Total</th>
-          <th class="px-3 py-1.5 text-right">Plafond</th>
-          <th class="px-3 py-1.5 text-right">Restant</th>
+          <th class="px-4 py-2">Fenetre</th>
+          <th class="px-4 py-2 text-right">Encaisse</th>
+          <th class="px-4 py-2 text-right">Reserve</th>
+          <th class="px-4 py-2 text-right">Total</th>
+          <th class="px-4 py-2 text-right">Plafond</th>
+          <th class="px-4 py-2 text-right">Restant</th>
         </tr>
       </thead>
-      <tbody class="divide-y">
+      <tbody class="divide-y divide-slate-100">
         {% for window in recipient_consumption %}
         <tr class="{% if window.over_cap %}bg-red-100 font-medium text-red-900{% elif not window.remaining %}bg-red-50 text-red-900{% endif %}">
-          <td class="px-3 py-1.5">{{ window.label }}{% if window.over_cap %} — DEPASSE{% endif %}</td>
-          <td class="px-3 py-1.5 text-right font-mono">{{ window.collected|htg }}</td>
-          <td class="px-3 py-1.5 text-right font-mono {% if window.reserved %}text-amber-700{% else %}text-slate-500{% endif %}">{{ window.reserved|htg }}</td>
-          <td class="px-3 py-1.5 text-right font-mono">{{ window.used|htg }}</td>
-          <td class="px-3 py-1.5 text-right font-mono">{{ window.cap|htg }}</td>
-          <td class="px-3 py-1.5 text-right font-mono">{{ window.remaining|htg }}</td>
+          <td class="px-4 py-2">{{ window.label }}{% if window.over_cap %} — DEPASSE{% endif %}</td>
+          <td class="px-4 py-2 text-right font-mono">{{ window.collected|htg }}</td>
+          <td class="px-4 py-2 text-right font-mono {% if window.reserved %}text-amber-700{% else %}text-slate-500{% endif %}">{{ window.reserved|htg }}</td>
+          <td class="px-4 py-2 text-right font-mono">{{ window.used|htg }}</td>
+          <td class="px-4 py-2 text-right font-mono">{{ window.cap|htg }}</td>
+          <td class="px-4 py-2 text-right font-mono">{{ window.remaining|htg }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -101,13 +101,13 @@
   </section>
 
   {% if txn.failure_code %}
-  <div class="rounded border border-red-300 bg-red-50 px-3 py-2 text-red-800">
+  <div class="rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-red-800">
     <span class="font-mono font-medium">{{ txn.failure_code }}</span> — {{ txn.failure_message }}
   </div>
   {% endif %}
 
   {% if actions.release %}
-  <div class="rounded border-2 border-red-500 bg-red-50 px-3 py-2 text-red-900">
+  <div class="rounded-xl border-2 border-red-500 bg-red-50 px-3 py-2 text-red-900">
     <strong>Encaissement bloque avant decaissement.</strong>
     Devis <span class="font-mono">{{ txn.total_charged|htg }}</span> HTG ·
     recu {% if txn.payment_amount_received is not None %}<span class="font-mono">{{ txn.payment_amount_received|htg }}</span> HTG{% else %}<strong>non communique par plopplop</strong>{% endif %}.
@@ -116,7 +116,7 @@
   {% endif %}
 
   {% if request.user.can_act %}{% if actions.retry or actions.verify or actions.refund or actions.release %}
-  <section class="rounded border bg-white p-3">
+  <section class="card p-4">
     <h2 class="mb-2 font-medium">Actions</h2>
     <div class="flex flex-wrap items-start gap-3">
       {% if actions.retry %}
@@ -141,60 +141,60 @@
   {% endif %}{% endif %}
 
   <div class="grid gap-4 lg:grid-cols-2">
-    <section class="rounded border bg-white">
-      <h2 class="border-b px-3 py-2 font-medium">Devis</h2>
+    <section class="card">
+      <h2 class="card-title">Devis</h2>
       <table class="w-full">
-        <tbody class="divide-y">
-          <tr><td class="px-3 py-1.5 text-slate-600">Montant net au beneficiaire</td><td class="px-3 py-1.5 text-right font-mono">{{ txn.net_amount|htg }}</td></tr>
-          <tr><td class="px-3 py-1.5 text-slate-600">Frais entree</td><td class="px-3 py-1.5 text-right font-mono">{{ txn.fee_in|htg }}</td></tr>
-          <tr><td class="px-3 py-1.5 text-slate-600">Frais sortie</td><td class="px-3 py-1.5 text-right font-mono">{{ txn.fee_out|htg }}</td></tr>
-          <tr><td class="px-3 py-1.5 text-slate-600">Commission plateforme</td><td class="px-3 py-1.5 text-right font-mono">{{ txn.fee_platform|htg }}</td></tr>
-          <tr class="bg-slate-50 font-semibold"><td class="px-3 py-1.5">Total debite au payeur</td><td class="px-3 py-1.5 text-right font-mono">{{ txn.total_charged|htg }}</td></tr>
-          <tr><td class="px-3 py-1.5 text-slate-600">Cout encaissement plopplop (estime)</td><td class="px-3 py-1.5 text-right font-mono">{{ txn.provider_fee_in|htg }}</td></tr>
-          <tr><td class="px-3 py-1.5 text-slate-600">Cout retrait plopplop (estime)</td><td class="px-3 py-1.5 text-right font-mono">{{ txn.provider_fee_out_estimate|htg }}</td></tr>
-          <tr><td class="px-3 py-1.5 text-slate-600">Frais operateur reels</td><td class="px-3 py-1.5 text-right font-mono">{% if txn.payout_fee_actual is not None %}{{ txn.payout_fee_actual|htg }}{% else %}<span class="font-sans text-slate-500">non verse</span>{% endif %}</td></tr>
-          <tr><td class="px-3 py-1.5 text-slate-600">Marge estimee</td><td class="px-3 py-1.5 text-right font-mono {% if txn.margin_estimate < 0 %}font-semibold text-red-700{% endif %}">{{ txn.margin_estimate|htg }}</td></tr>
+        <tbody class="divide-y divide-slate-100">
+          <tr><td class="px-4 py-2 text-slate-600">Montant net au beneficiaire</td><td class="px-4 py-2 text-right font-mono">{{ txn.net_amount|htg }}</td></tr>
+          <tr><td class="px-4 py-2 text-slate-600">Frais entree</td><td class="px-4 py-2 text-right font-mono">{{ txn.fee_in|htg }}</td></tr>
+          <tr><td class="px-4 py-2 text-slate-600">Frais sortie</td><td class="px-4 py-2 text-right font-mono">{{ txn.fee_out|htg }}</td></tr>
+          <tr><td class="px-4 py-2 text-slate-600">Commission plateforme</td><td class="px-4 py-2 text-right font-mono">{{ txn.fee_platform|htg }}</td></tr>
+          <tr class="bg-slate-50 font-semibold"><td class="px-4 py-2">Total debite au payeur</td><td class="px-4 py-2 text-right font-mono">{{ txn.total_charged|htg }}</td></tr>
+          <tr><td class="px-4 py-2 text-slate-600">Cout encaissement plopplop (estime)</td><td class="px-4 py-2 text-right font-mono">{{ txn.provider_fee_in|htg }}</td></tr>
+          <tr><td class="px-4 py-2 text-slate-600">Cout retrait plopplop (estime)</td><td class="px-4 py-2 text-right font-mono">{{ txn.provider_fee_out_estimate|htg }}</td></tr>
+          <tr><td class="px-4 py-2 text-slate-600">Frais operateur reels</td><td class="px-4 py-2 text-right font-mono">{% if txn.payout_fee_actual is not None %}{{ txn.payout_fee_actual|htg }}{% else %}<span class="font-sans text-slate-500">non verse</span>{% endif %}</td></tr>
+          <tr><td class="px-4 py-2 text-slate-600">Marge estimee</td><td class="px-4 py-2 text-right font-mono {% if txn.margin_estimate < 0 %}font-semibold text-red-700{% endif %}">{{ txn.margin_estimate|htg }}</td></tr>
         </tbody>
       </table>
-      <p class="border-t px-3 py-1.5 text-xs text-slate-500">Montants en HTG. Devis fige a la creation.</p>
+      <p class="border-t px-4 py-2 text-xs text-slate-500">Montants en HTG. Devis fige a la creation.</p>
     </section>
 
-    <section class="rounded border bg-white">
-      <h2 class="border-b px-3 py-2 font-medium">Identifiants plopplop</h2>
+    <section class="card">
+      <h2 class="card-title">Identifiants plopplop</h2>
       <table class="w-full">
-        <tbody class="divide-y">
+        <tbody class="divide-y divide-slate-100">
           <tr><th colspan="2" class="bg-slate-50 px-3 py-1 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Encaissement</th></tr>
-          <tr><td class="px-3 py-1.5 text-slate-600">ID transaction</td><td class="px-3 py-1.5 font-mono">{{ txn.payment_provider_id|default:"—" }}</td></tr>
-          <tr><td class="px-3 py-1.5 text-slate-600">Montant encaisse</td><td class="px-3 py-1.5 font-mono {% if actions.release %}font-semibold text-red-700{% endif %}">{% if txn.payment_amount_received is not None %}{{ txn.payment_amount_received|htg }}{% else %}—{% endif %}</td></tr>
-          <tr><td class="px-3 py-1.5 text-slate-600">Confirme le</td><td class="px-3 py-1.5">{{ txn.payment_confirmed_at|date:"d/m/Y H:i:s"|default:"—" }}</td></tr>
-          <tr><td class="px-3 py-1.5 text-slate-600">Expiration</td><td class="px-3 py-1.5">{{ txn.payment_expires_at|date:"d/m/Y H:i:s"|default:"—" }}</td></tr>
-          <tr><td class="px-3 py-1.5 text-slate-600">Verifications</td><td class="px-3 py-1.5">{{ txn.poll_count }}{% if txn.last_polled_at %} <span class="text-slate-500">(derniere {{ txn.last_polled_at|date:"d/m H:i:s" }})</span>{% endif %}</td></tr>
+          <tr><td class="px-4 py-2 text-slate-600">ID transaction</td><td class="px-4 py-2 font-mono">{{ txn.payment_provider_id|default:"—" }}</td></tr>
+          <tr><td class="px-4 py-2 text-slate-600">Montant encaisse</td><td class="px-4 py-2 font-mono {% if actions.release %}font-semibold text-red-700{% endif %}">{% if txn.payment_amount_received is not None %}{{ txn.payment_amount_received|htg }}{% else %}—{% endif %}</td></tr>
+          <tr><td class="px-4 py-2 text-slate-600">Confirme le</td><td class="px-4 py-2">{{ txn.payment_confirmed_at|date:"d/m/Y H:i:s"|default:"—" }}</td></tr>
+          <tr><td class="px-4 py-2 text-slate-600">Expiration</td><td class="px-4 py-2">{{ txn.payment_expires_at|date:"d/m/Y H:i:s"|default:"—" }}</td></tr>
+          <tr><td class="px-4 py-2 text-slate-600">Verifications</td><td class="px-4 py-2">{{ txn.poll_count }}{% if txn.last_polled_at %} <span class="text-slate-500">(derniere {{ txn.last_polled_at|date:"d/m H:i:s" }})</span>{% endif %}</td></tr>
           <tr><th colspan="2" class="bg-slate-50 px-3 py-1 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Decaissement</th></tr>
-          <tr><td class="px-3 py-1.5 text-slate-600">Reference de retrait</td><td class="px-3 py-1.5 font-mono">{{ txn.payout_reference|default:"—" }}</td></tr>
-          <tr><td class="px-3 py-1.5 text-slate-600">ID transaction</td><td class="px-3 py-1.5 font-mono">{{ txn.payout_provider_id|default:"—" }}</td></tr>
-          <tr><td class="px-3 py-1.5 text-slate-600">Reference API</td><td class="px-3 py-1.5 font-mono">{{ txn.payout_api_reference|default:"—" }}</td></tr>
-          <tr><td class="px-3 py-1.5 text-slate-600">Tentatives</td><td class="px-3 py-1.5">{{ txn.payout_attempts }} <span class="text-slate-500">/ {{ max_attempts }} automatiques</span></td></tr>
-          <tr><td class="px-3 py-1.5 text-slate-600">Verse le</td><td class="px-3 py-1.5">{{ txn.payout_completed_at|date:"d/m/Y H:i:s"|default:"—" }}</td></tr>
+          <tr><td class="px-4 py-2 text-slate-600">Reference de retrait</td><td class="px-4 py-2 font-mono">{{ txn.payout_reference|default:"—" }}</td></tr>
+          <tr><td class="px-4 py-2 text-slate-600">ID transaction</td><td class="px-4 py-2 font-mono">{{ txn.payout_provider_id|default:"—" }}</td></tr>
+          <tr><td class="px-4 py-2 text-slate-600">Reference API</td><td class="px-4 py-2 font-mono">{{ txn.payout_api_reference|default:"—" }}</td></tr>
+          <tr><td class="px-4 py-2 text-slate-600">Tentatives</td><td class="px-4 py-2">{{ txn.payout_attempts }} <span class="text-slate-500">/ {{ max_attempts }} automatiques</span></td></tr>
+          <tr><td class="px-4 py-2 text-slate-600">Verse le</td><td class="px-4 py-2">{{ txn.payout_completed_at|date:"d/m/Y H:i:s"|default:"—" }}</td></tr>
         </tbody>
       </table>
     </section>
   </div>
 
-  <section class="rounded border bg-white">
-    <h2 class="border-b px-3 py-2 font-medium">Timeline <span class="font-normal text-slate-500">{{ events|length }}</span></h2>
+  <section class="card">
+    <h2 class="card-title">Timeline <span class="font-normal text-slate-500">{{ events|length }}</span></h2>
     <div class="overflow-x-auto">
       <table class="w-full">
-        <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-          <tr><th class="px-3 py-1.5">Date</th><th class="px-3 py-1.5">Transition</th><th class="px-3 py-1.5">Acteur</th><th class="px-3 py-1.5">Note</th><th class="px-3 py-1.5">Donnees</th></tr>
+        <thead class="thead">
+          <tr><th class="px-4 py-2">Date</th><th class="px-4 py-2">Transition</th><th class="px-4 py-2">Acteur</th><th class="px-4 py-2">Note</th><th class="px-4 py-2">Donnees</th></tr>
         </thead>
-        <tbody class="divide-y">
+        <tbody class="divide-y divide-slate-100">
           {% for event in events %}
           <tr class="align-top">
-            <td class="whitespace-nowrap px-3 py-1.5 font-mono">{{ event.created_at|date:"d/m H:i:s" }}</td>
-            <td class="whitespace-nowrap px-3 py-1.5">{% if event.from_state == event.to_state %}<span class="text-slate-500">constat en</span> {% elif event.from_state %}<span class="text-slate-500">{{ event.from_state|state_label }}</span> → {% endif %}{% include "console/partials/state_badge.html" with state=event.to_state %}</td>
-            <td class="px-3 py-1.5">{{ event.actor|default:"systeme" }}</td>
-            <td class="px-3 py-1.5">{{ event.note }}</td>
-            <td class="px-3 py-1.5 font-mono text-xs text-slate-500">{% if event.data %}{{ event.data }}{% endif %}</td>
+            <td class="whitespace-nowrap px-4 py-2 font-mono">{{ event.created_at|date:"d/m H:i:s" }}</td>
+            <td class="whitespace-nowrap px-4 py-2">{% if event.from_state == event.to_state %}<span class="text-slate-500">constat en</span> {% elif event.from_state %}<span class="text-slate-500">{{ event.from_state|state_label }}</span> → {% endif %}{% include "console/partials/state_badge.html" with state=event.to_state %}</td>
+            <td class="px-4 py-2">{{ event.actor|default:"systeme" }}</td>
+            <td class="px-4 py-2">{{ event.note }}</td>
+            <td class="px-4 py-2 font-mono text-xs text-slate-500">{% if event.data %}{{ event.data }}{% endif %}</td>
           </tr>
           {% empty %}
           <tr><td colspan="5" class="px-3 py-2 text-slate-500">Aucun evenement.</td></tr>
@@ -204,11 +204,11 @@
     </div>
   </section>
 
-  <section class="rounded border bg-white">
-    <h2 class="border-b px-3 py-2 font-medium">Grand livre <span class="font-normal text-slate-500">{{ entries|length }} ecriture(s)</span></h2>
+  <section class="card">
+    <h2 class="card-title">Grand livre <span class="font-normal text-slate-500">{{ entries|length }} ecriture(s)</span></h2>
     {% for item in entries %}
     <div class="border-b last:border-b-0">
-      <div class="flex flex-wrap items-center gap-x-4 gap-y-1 bg-slate-50 px-3 py-1.5">
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-1 bg-slate-50 px-4 py-2">
         <span class="font-mono font-medium">{{ item.entry.reference }}</span>
         <span>{{ item.entry.description }}</span>
         {% if item.entry.reverses %}<span class="text-slate-500">extourne de <span class="font-mono">{{ item.entry.reverses.reference }}</span></span>{% endif %}
@@ -217,7 +217,7 @@
       </div>
       <div class="overflow-x-auto">
         <table class="w-full">
-          <thead class="text-left text-xs uppercase tracking-wide text-slate-500">
+          <thead class="thead">
             <tr><th class="px-3 py-1">Compte</th><th class="px-3 py-1">Libelle</th><th class="px-3 py-1 text-right">Debit</th><th class="px-3 py-1 text-right">Credit</th><th class="px-3 py-1">Memo</th></tr>
           </thead>
           <tbody>

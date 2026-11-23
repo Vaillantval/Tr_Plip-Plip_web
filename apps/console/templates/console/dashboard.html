@@ -6,26 +6,26 @@
   {% include "console/partials/pricing_banner.html" %}
 
   <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-    <div class="rounded border bg-white p-4">
+    <div class="card p-4">
       <div class="text-sm text-slate-500">Float disponible</div>
       <div class="text-2xl">{{ float.balance|htg }} HTG</div>
       {% if not float.coverage_ok %}
         <div class="mt-2 text-sm text-red-600">Ne couvre pas les engagements en cours</div>
       {% endif %}
     </div>
-    <div class="rounded border bg-white p-4">
+    <div class="card p-4">
       <div class="text-sm text-slate-500">Engagements</div>
       <div class="text-2xl">{{ liability_total|htg }} HTG</div>
       <div class="text-sm text-slate-500">{{ liability_count }} transaction(s)</div>
     </div>
-    <div class="rounded border bg-white p-4">
+    <div class="card p-4">
       <div class="text-sm text-slate-500">File de decaissement</div>
       <div class="text-2xl">{{ queue_depth }}</div>
     </div>
   </div>
 
   {% if request.user.is_superadmin %}
-  <div data-pricing-card class="rounded border bg-white p-4">
+  <div data-pricing-card class="card p-4">
     <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
       <span class="font-medium">Tarification</span>
       <span class="text-slate-500">commission Plip-Plip {{ pricing.policy.platform_fee_rate|percent_rate }}</span>
@@ -36,10 +36,10 @@
     </div>
     <div class="mt-2 overflow-x-auto">
       <table class="w-full text-sm">
-        <thead class="text-left text-xs uppercase tracking-wide text-slate-500">
+        <thead class="thead">
           <tr><th class="py-1 pr-3">Route ouverte</th><th class="py-1 pr-3 text-right">Client paie</th><th class="py-1 pr-3 text-right">Couts plopplop</th><th class="py-1 text-right">Marge</th></tr>
         </thead>
-        <tbody class="divide-y">
+        <tbody class="divide-y divide-slate-100">
           {% for route in pricing.routes %}{% if route.open %}
           <tr>
             <td class="py-1 pr-3">{{ route.source.label }} → {{ route.destination.label }}</td>

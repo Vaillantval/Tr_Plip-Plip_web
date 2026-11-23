@@ -6,33 +6,33 @@
   {% include "console/partials/messages.html" %}
 
   {% if customer_phone %}
-  <section class="rounded border bg-white">
-    <h1 class="border-b px-3 py-2 font-medium">
+  <section class="card">
+    <h1 class="card-title">
       Transferts du client <span class="font-mono">{{ customer_phone }}</span>
       {% if not customer %}<span class="font-normal text-slate-500">— aucun client a ce numero</span>{% endif %}
       <a class="ml-2 text-sm font-normal text-slate-500 underline" href="{% url 'console:transactions' %}">voir tous les transferts</a>
     </h1>
     {% if consumption %}
     <table class="w-full">
-      <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+      <thead class="thead">
         <tr>
-          <th class="px-3 py-1.5">Fenetre glissante</th>
-          <th class="px-3 py-1.5 text-right">Encaisse</th>
-          <th class="px-3 py-1.5 text-right">Reserve</th>
-          <th class="px-3 py-1.5 text-right">Total</th>
-          <th class="px-3 py-1.5 text-right">Plafond</th>
-          <th class="px-3 py-1.5 text-right">Restant</th>
+          <th class="px-4 py-2">Fenetre glissante</th>
+          <th class="px-4 py-2 text-right">Encaisse</th>
+          <th class="px-4 py-2 text-right">Reserve</th>
+          <th class="px-4 py-2 text-right">Total</th>
+          <th class="px-4 py-2 text-right">Plafond</th>
+          <th class="px-4 py-2 text-right">Restant</th>
         </tr>
       </thead>
-      <tbody class="divide-y">
+      <tbody class="divide-y divide-slate-100">
         {% for window in consumption %}
         <tr class="{% if not window.remaining %}bg-red-50 text-red-900{% endif %}">
-          <td class="px-3 py-1.5">{{ window.label }}</td>
-          <td class="px-3 py-1.5 text-right font-mono">{{ window.collected|htg }}</td>
-          <td class="px-3 py-1.5 text-right font-mono {% if window.reserved %}text-amber-700{% else %}text-slate-500{% endif %}">{{ window.reserved|htg }}</td>
-          <td class="px-3 py-1.5 text-right font-mono">{{ window.used|htg }}</td>
-          <td class="px-3 py-1.5 text-right font-mono">{{ window.cap|htg }}</td>
-          <td class="px-3 py-1.5 text-right font-mono">{{ window.remaining|htg }}</td>
+          <td class="px-4 py-2">{{ window.label }}</td>
+          <td class="px-4 py-2 text-right font-mono">{{ window.collected|htg }}</td>
+          <td class="px-4 py-2 text-right font-mono {% if window.reserved %}text-amber-700{% else %}text-slate-500{% endif %}">{{ window.reserved|htg }}</td>
+          <td class="px-4 py-2 text-right font-mono">{{ window.used|htg }}</td>
+          <td class="px-4 py-2 text-right font-mono">{{ window.cap|htg }}</td>
+          <td class="px-4 py-2 text-right font-mono">{{ window.remaining|htg }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -47,7 +47,7 @@
 
   <form method="get" class="flex flex-wrap items-end gap-2">
     <label class="text-slate-600">Etat
-      <select name="state" class="ml-1 rounded border px-2 py-1">
+      <select name="state" class="ml-1 rounded-xl border px-2 py-1">
         <option value="">tous</option>
         {% for value, label in states %}
         <option value="{{ value }}" {% if value == current_state %}selected{% endif %}>{{ label }}</option>
@@ -56,38 +56,38 @@
     </label>
     <label class="text-slate-600">Client
       <input type="text" name="customer" value="{{ customer_phone }}" placeholder="509XXXXXXXX"
-             class="ml-1 w-40 rounded border px-2 py-1 font-mono">
+             class="ml-1 w-40 rounded-xl border px-2 py-1 font-mono">
     </label>
-    <button class="rounded bg-slate-900 px-3 py-1.5 font-medium text-white">Filtrer</button>
+    <button class="rounded bg-slate-900 px-4 py-2 font-medium text-white">Filtrer</button>
   </form>
 
-  <div class="overflow-x-auto rounded border bg-white">
+  <div class="overflow-x-auto card">
     <table class="w-full">
-      <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+      <thead class="thead">
         <tr>
-          <th class="px-3 py-1.5">Reference</th>
-          <th class="px-3 py-1.5">Etat</th>
-          <th class="px-3 py-1.5">Route</th>
-          <th class="px-3 py-1.5">Beneficiaire</th>
-          <th class="px-3 py-1.5">Client</th>
-          <th class="px-3 py-1.5 text-right">Net</th>
-          <th class="px-3 py-1.5">Creee</th>
+          <th class="px-4 py-2">Reference</th>
+          <th class="px-4 py-2">Etat</th>
+          <th class="px-4 py-2">Route</th>
+          <th class="px-4 py-2">Beneficiaire</th>
+          <th class="px-4 py-2">Client</th>
+          <th class="px-4 py-2 text-right">Net</th>
+          <th class="px-4 py-2">Creee</th>
         </tr>
       </thead>
-      <tbody class="divide-y">
+      <tbody class="divide-y divide-slate-100">
         {% for txn in transactions %}
         <tr>
-          <td class="whitespace-nowrap px-3 py-1.5 font-mono">
+          <td class="whitespace-nowrap px-4 py-2 font-mono">
             <a class="underline decoration-slate-300 hover:decoration-slate-700" href="{% url 'console:transaction_detail' txn.reference %}">{{ txn.reference }}</a>
           </td>
-          <td class="px-3 py-1.5">{% include "console/partials/state_badge.html" with state=txn.state %}</td>
-          <td class="whitespace-nowrap px-3 py-1.5">{{ txn.get_source_wallet_display }} → {{ txn.get_destination_wallet_display }}</td>
-          <td class="px-3 py-1.5 font-mono">{{ txn.recipient_phone }}</td>
-          <td class="px-3 py-1.5 font-mono">
+          <td class="px-4 py-2">{% include "console/partials/state_badge.html" with state=txn.state %}</td>
+          <td class="whitespace-nowrap px-4 py-2">{{ txn.get_source_wallet_display }} → {{ txn.get_destination_wallet_display }}</td>
+          <td class="px-4 py-2 font-mono">{{ txn.recipient_phone }}</td>
+          <td class="px-4 py-2 font-mono">
             {% if txn.customer %}<a class="underline decoration-slate-300 hover:decoration-slate-700" href="?customer={{ txn.customer.phone }}">{{ txn.customer.phone }}</a>{% else %}—{% endif %}
           </td>
-          <td class="px-3 py-1.5 text-right font-mono">{{ txn.net_amount|htg }}</td>
-          <td class="whitespace-nowrap px-3 py-1.5">{{ txn.created_at|date:"d/m/Y H:i" }}</td>
+          <td class="px-4 py-2 text-right font-mono">{{ txn.net_amount|htg }}</td>
+          <td class="whitespace-nowrap px-4 py-2">{{ txn.created_at|date:"d/m/Y H:i" }}</td>
         </tr>
         {% empty %}
         <tr><td colspan="7" class="px-3 py-3 text-slate-500">Aucune transaction.</td></tr>

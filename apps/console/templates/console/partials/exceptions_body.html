@@ -3,7 +3,7 @@
   {% include "console/partials/messages.html" %}
 
   {% if stale %}
-  <section class="rounded border-2 border-red-500 bg-white">
+  <section class="rounded-xl border-2 border-red-500 bg-white">
     <h2 class="border-b border-red-200 bg-red-50 px-3 py-2 font-semibold text-red-800">
       Decaissements enlises : en attente operateur depuis plus de {{ stale_after|duration }}
       <span class="font-normal">({{ stale|length }})</span>
@@ -16,7 +16,7 @@
   {% endif %}
 
   {% if orphans %}
-  <section class="rounded border-2 border-red-500 bg-white" data-group="orphans">
+  <section class="rounded-xl border-2 border-red-500 bg-white" data-group="orphans">
     <h2 class="border-b border-red-200 bg-red-50 px-3 py-2 font-semibold text-red-800">
       Decaissements sans processus : « en cours » depuis plus de {{ orphan_after|duration }}
       <span class="font-normal">({{ orphans|length }})</span>
@@ -30,7 +30,7 @@
   </section>
   {% endif %}
 
-  <section class="rounded border {% if held %}border-2 border-red-500{% endif %} bg-white" data-group="held">
+  <section class="rounded-xl border {% if held %}border-2 border-red-500{% endif %} bg-white" data-group="held">
     <h2 class="flex items-center gap-2 border-b px-3 py-2 font-medium">
       <span class="rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">Montant non conforme</span>
       <span class="font-normal text-slate-500">{{ held|length }}</span>
@@ -47,7 +47,7 @@
   </section>
 
   {% for group in groups %}
-  <section class="rounded border bg-white">
+  <section class="card">
     <h2 class="flex items-center gap-2 border-b px-3 py-2 font-medium">
       {% include "console/partials/state_badge.html" with state=group.state %}
       <span class="font-normal text-slate-500">{{ group.rows|length }}</span>

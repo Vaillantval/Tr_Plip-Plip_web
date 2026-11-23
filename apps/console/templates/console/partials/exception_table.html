@@ -1,31 +1,31 @@
 {% load console_tags %}
 <div class="overflow-x-auto">
   <table class="w-full">
-    <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+    <thead class="thead">
       <tr>
-        <th class="px-3 py-1.5">Reference</th>
-        <th class="px-3 py-1.5">Dans cet etat depuis</th>
-        <th class="px-3 py-1.5">Route</th>
-        <th class="px-3 py-1.5 text-right">Net</th>
-        <th class="px-3 py-1.5">Code d'echec</th>
-        <th class="px-3 py-1.5 text-right">Tent.</th>
-        <th class="px-3 py-1.5">Ref. retrait</th>
-        {% if request.user.can_act %}<th class="px-3 py-1.5">Actions</th>{% endif %}
+        <th class="px-4 py-2">Reference</th>
+        <th class="px-4 py-2">Dans cet etat depuis</th>
+        <th class="px-4 py-2">Route</th>
+        <th class="px-4 py-2 text-right">Net</th>
+        <th class="px-4 py-2">Code d'echec</th>
+        <th class="px-4 py-2 text-right">Tent.</th>
+        <th class="px-4 py-2">Ref. retrait</th>
+        {% if request.user.can_act %}<th class="px-4 py-2">Actions</th>{% endif %}
       </tr>
     </thead>
-    <tbody class="divide-y">
+    <tbody class="divide-y divide-slate-100">
       {% for row in rows %}
       <tr class="align-top {% if row.stale %}bg-red-50{% endif %}"{% if row.stale %} data-stale="true"{% endif %}>
-        <td class="whitespace-nowrap px-3 py-1.5 font-mono">
+        <td class="whitespace-nowrap px-4 py-2 font-mono">
           <a class="underline decoration-slate-300 hover:decoration-slate-700" href="{% url 'console:transaction_detail' row.txn.reference %}">{{ row.txn.reference }}</a>
         </td>
-        <td class="whitespace-nowrap px-3 py-1.5 tabular-nums {% if row.stale %}font-semibold text-red-700{% endif %}">{{ row.since_seconds|duration }}</td>
-        <td class="px-3 py-1.5">
+        <td class="whitespace-nowrap px-4 py-2 tabular-nums {% if row.stale %}font-semibold text-red-700{% endif %}">{{ row.since_seconds|duration }}</td>
+        <td class="px-4 py-2">
           {{ row.txn.get_source_wallet_display }} → {{ row.txn.get_destination_wallet_display }}
           <div class="font-mono text-xs text-slate-500">{{ row.txn.recipient_phone }}</div>
         </td>
-        <td class="px-3 py-1.5 text-right font-mono">{{ row.txn.net_amount|htg }}</td>
-        <td class="px-3 py-1.5">
+        <td class="px-4 py-2 text-right font-mono">{{ row.txn.net_amount|htg }}</td>
+        <td class="px-4 py-2">
           <span class="font-mono text-xs">{{ row.txn.failure_code|default:"—" }}</span>
           {% if row.txn.state == "payout_failed" %}{% if row.txn.failure_code == "INSUFFICIENT_BALANCE" or row.txn.failure_code == "METHOD_NOT_CONFIGURED" %}
             <div class="text-xs text-red-700">Cause systemique : corriger avant de relancer</div>
@@ -34,10 +34,10 @@
             <div class="text-xs text-red-700">devis {{ row.txn.total_charged|htg }} · recu {% if row.txn.payment_amount_received is not None %}{{ row.txn.payment_amount_received|htg }}{% else %}non communique{% endif %}</div>
           {% elif row.txn.failure_message %}<div class="text-xs text-slate-500">{{ row.txn.failure_message|truncatechars:90 }}</div>{% endif %}
         </td>
-        <td class="px-3 py-1.5 text-right tabular-nums">{{ row.txn.payout_attempts }}</td>
-        <td class="whitespace-nowrap px-3 py-1.5 font-mono text-xs">{{ row.txn.payout_reference|default:"—" }}</td>
+        <td class="px-4 py-2 text-right tabular-nums">{{ row.txn.payout_attempts }}</td>
+        <td class="whitespace-nowrap px-4 py-2 font-mono text-xs">{{ row.txn.payout_reference|default:"—" }}</td>
         {% if request.user.can_act %}
-        <td class="px-3 py-1.5">
+        <td class="px-4 py-2">
           <div class="flex flex-wrap items-start gap-2">
             {% if row.actions.retry %}
               {% url 'console:payout_retry' row.txn.reference as retry_url %}

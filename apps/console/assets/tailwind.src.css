@@ -5,3 +5,26 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Composants de la console (refonte, logo A). Une seule definition par
+   element repete : changer une carte ou un bouton se fait ici. */
+@layer components {
+  .card { @apply rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]; }
+  .card-title { @apply border-b border-slate-100 px-4 py-3 font-semibold text-slate-900; }
+  .thead { @apply bg-slate-50/70 text-left text-[11px] font-medium uppercase tracking-wider text-slate-500; }
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-300 bg-white px-3 py-1.5 font-medium text-slate-700
+      hover:border-slate-400 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark/30 disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-brand-dark px-3 py-1.5 font-medium text-white
+      hover:bg-brand-deeper focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-dark/40 focus-visible:ring-offset-1 disabled:opacity-50;
+  }
+  .field {
+    @apply rounded-lg border border-slate-300 bg-white px-2.5 py-1.5
+      focus:border-brand-dark focus:outline-none focus:ring-2 focus:ring-brand-dark/15;
+  }
+  .tag { @apply inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium; }
+  .kpi-label { @apply text-[13px] text-slate-500; }
+  .kpi-value { @apply mt-1 text-2xl font-semibold tracking-tight tabular-nums text-slate-900; }
+}
