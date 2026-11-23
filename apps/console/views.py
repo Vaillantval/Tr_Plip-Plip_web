@@ -15,7 +15,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Case, Count, IntegerField, Q, Sum, When
+from django.db.models import Case, IntegerField, Q, Sum, When
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -93,15 +93,21 @@ def available_actions(txn: Transaction) -> dict:
 # ----------------------------------------------------------------------
 @login_required
 def dashboard(request):
+    from . import metrics
+
     liabilities = Transaction.objects.liabilities()
+    float_status = treasury.float_status()
     context = {
         "pricing": txn_services.pricing_overview(),
-        "float": treasury.float_status(),
+        "float": float_status,
         "liability_count": liabilities.count(),
         "liability_total": liabilities.aggregate(t=Sum("net_amount"))["t"] or 0,
         "queue_depth": Transaction.objects.payable().count(),
         "alerts": FloatAlert.objects.filter(acknowledged_at__isnull=True)[:5],
-        "by_state": Transaction.objects.values("state").annotate(n=Count("id")).order_by("-n"),
+        "delivered": metrics.delivered(24),
+        "volume": metrics.daily_volume(14),
+        "in_flight": metrics.in_flight(),
+        "health": metrics.health(float_level=float_status["level"]),
     }
     return render(request, "console/dashboard.html", context)
 

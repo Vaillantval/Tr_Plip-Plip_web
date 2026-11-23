@@ -2,57 +2,185 @@
 {% block heading %}Tableau de bord{% endblock %}
 {% load console_tags %}
 {% block content %}
-<div class="space-y-4">
+{# Les pourcentages des barres passent par stringformat : la localisation #}
+{# francaise ecrirait « 45,5 », que le CSS ne lit pas. #}
+<div class="space-y-5">
   {% include "console/partials/pricing_banner.html" %}
 
-  <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-    <div class="card p-4">
-      <div class="text-sm text-slate-500">Float disponible</div>
-      <div class="text-2xl">{{ float.balance|htg }} HTG</div>
+  {# Chiffres du moment #}
+  <div class="grid gap-4 sm:grid-cols-2 {% if request.user.is_superadmin %}xl:grid-cols-5{% else %}xl:grid-cols-4{% endif %}">
+    <div class="card p-4" data-kpi="float">
+      <div class="kpi-label">Float disponible</div>
+      <div class="kpi-value">{{ float.balance|htg }} <span class="text-sm font-medium text-slate-400">HTG</span></div>
       {% if not float.coverage_ok %}
-        <div class="mt-2 text-sm text-red-600">Ne couvre pas les engagements en cours</div>
+        <div class="mt-1 text-sm font-medium text-red-600">Ne couvre pas les engagements en cours</div>
+      {% else %}
+        <div class="mt-1 text-xs text-slate-500">couvre les engagements en cours</div>
       {% endif %}
     </div>
-    <div class="card p-4">
-      <div class="text-sm text-slate-500">Engagements</div>
-      <div class="text-2xl">{{ liability_total|htg }} HTG</div>
-      <div class="text-sm text-slate-500">{{ liability_count }} transaction(s)</div>
+    <div class="card p-4" data-kpi="liabilities">
+      <div class="kpi-label">Engagements</div>
+      <div class="kpi-value">{{ liability_total|htg }} <span class="text-sm font-medium text-slate-400">HTG</span></div>
+      <div class="mt-1 text-xs text-slate-500">{{ liability_count }} transaction(s) dont nous tenons les fonds</div>
     </div>
-    <div class="card p-4">
-      <div class="text-sm text-slate-500">File de decaissement</div>
-      <div class="text-2xl">{{ queue_depth }}</div>
+    <a href="{% url 'console:queue' %}" class="card block p-4 hover:border-brand-dark/40" data-kpi="queue">
+      <div class="kpi-label">File de décaissement</div>
+      <div class="kpi-value">{{ queue_depth }}</div>
+      <div class="mt-1 text-xs text-slate-500">transfert(s) payé(s) en attente de versement</div>
+    </a>
+    <div class="card p-4" data-kpi="delivered">
+      <div class="kpi-label">Livrés sur 24 h</div>
+      <div class="kpi-value">{{ delivered.count }}</div>
+      <div class="mt-1 text-xs text-slate-500">{{ delivered.volume|htg }} HTG versés</div>
     </div>
+    {% if request.user.is_superadmin %}
+    <div class="card p-4" data-kpi="platform-fees">
+      <div class="kpi-label">Commission sur 24 h</div>
+      <div class="kpi-value">{{ delivered.platform_fees|htg }} <span class="text-sm font-medium text-slate-400">HTG</span></div>
+      <div class="mt-1 text-xs text-slate-500">sur les transferts livrés</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="grid gap-4 xl:grid-cols-3">
+    {# Volume livre, 14 jours, par route #}
+    <section class="card xl:col-span-2" data-chart="volume">
+      <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-slate-100 px-4 py-3">
+        <h2 class="font-semibold">Volume livré par route</h2>
+        <span class="text-slate-500">14 derniers jours · {{ volume.total|htg }} HTG</span>
+      </div>
+      <div class="px-4 pb-4 pt-5">
+        {% if volume.total %}
+        <div class="flex h-44 items-end gap-1.5" role="img" aria-label="Volume livré par jour sur 14 jours">
+          {% for bar in volume.bars %}
+          <div class="flex h-full flex-1 flex-col justify-end" title="{{ bar.day|date:'d/m' }} : {{ bar.total|htg }} HTG">
+            <div class="flex w-full flex-col overflow-hidden rounded-t-md bg-slate-100" style="height: {% if bar.total %}{{ bar.height|stringformat:'.1f' }}%{% else %}3px{% endif %}">
+              {% for segment in bar.segments %}
+              <div style="height: {{ segment.share|stringformat:'.1f' }}%; background: {{ segment.color }}"></div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="mt-1.5 flex gap-1.5 text-[11px] text-slate-400">
+          {% for bar in volume.bars %}<div class="flex-1 text-center">{% if forloop.counter0|divisibleby:2 %}{{ bar.day|date:"d/m" }}{% endif %}</div>{% endfor %}
+        </div>
+        <ul class="mt-4 flex flex-wrap gap-x-5 gap-y-1.5">
+          {% for route in volume.routes %}
+          <li class="flex items-center gap-1.5 text-slate-600">
+            <span class="h-2.5 w-2.5 rounded-sm" style="background: {{ route.color }}" aria-hidden="true"></span>
+            {{ route.label }} <span class="font-mono text-slate-500">{{ route.volume|htg }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="py-10 text-center text-slate-500">Aucun transfert livré sur les 14 derniers jours.</p>
+        {% endif %}
+      </div>
+    </section>
+
+    {# Sante des maillons #}
+    <section class="card" data-panel="health">
+      <h2 class="card-title">Santé</h2>
+      <ul class="divide-y divide-slate-100">
+        {% for row in health %}
+        <li class="flex items-start gap-3 px-4 py-3">
+          <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full {% if row.status == 'ok' %}bg-lime-500{% elif row.status == 'warn' %}bg-amber-500{% else %}bg-red-600{% endif %}" aria-hidden="true"></span>
+          <div class="min-w-0 flex-1">
+            <div class="font-medium">{{ row.label }}</div>
+            {% if row.detail %}<div class="text-slate-500">{{ row.detail }}</div>{% endif %}
+            {% if "success_at" in row %}
+            <div class="text-slate-500">
+              dernier réussi : {% if row.success_at %}{{ row.success_at|date:"d/m H:i" }}{% else %}aucun{% endif %}
+              {% if row.failure_at %}· dernier échec : {{ row.failure_at|date:"d/m H:i" }}{% endif %}
+            </div>
+            {% endif %}
+          </div>
+          <span class="tag {% if row.status == 'ok' %}bg-brand-soft text-brand-dark{% elif row.status == 'warn' %}bg-amber-100 text-amber-800{% else %}bg-red-100 text-red-800{% endif %}">
+            {% if row.status == 'ok' %}Normal{% elif row.status == 'warn' %}À surveiller{% else %}Incident{% endif %}
+          </span>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+
+  <div class="grid gap-4 xl:grid-cols-3">
+    {# Transferts en cours #}
+    <section class="card {% if alerts %}xl:col-span-2{% else %}xl:col-span-3{% endif %}" data-panel="in-flight">
+      <div class="flex flex-wrap items-baseline gap-x-3 border-b border-slate-100 px-4 py-3">
+        <h2 class="font-semibold">Transferts en cours</h2>
+        <span class="text-slate-500">{{ in_flight.total }} au total</span>
+        <a class="ml-auto text-sm font-medium text-brand-dark underline-offset-2 hover:underline" href="{% url 'console:queue' %}">Ouvrir la file</a>
+      </div>
+      <div class="space-y-4 p-4">
+        <div class="flex h-2.5 overflow-hidden rounded-full bg-slate-100">
+          {% for group in in_flight.groups %}{% if group.count %}
+          <div style="width: {{ group.share|stringformat:'.1f' }}%; background: {{ group.color }}" title="{{ group.label }} : {{ group.count }}"></div>
+          {% endif %}{% endfor %}
+        </div>
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {% for group in in_flight.groups %}
+          <div class="rounded-lg bg-slate-50 p-3" data-in-flight="{{ group.key }}">
+            <div class="flex items-center gap-1.5 text-slate-500">
+              <span class="h-2 w-2 rounded-full" style="background: {{ group.color }}" aria-hidden="true"></span>{{ group.label }}
+            </div>
+            <div class="mt-1 text-xl font-semibold tabular-nums">{{ group.count }}</div>
+            <div class="font-mono text-xs text-slate-500">{{ group.amount|htg }} HTG</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    {% if alerts %}
+    <section class="card" data-panel="alerts">
+      <div class="flex items-baseline border-b border-slate-100 px-4 py-3">
+        <h2 class="font-semibold">Alertes de float</h2>
+        <a class="ml-auto text-sm font-medium text-brand-dark underline-offset-2 hover:underline" href="{% url 'console:treasury' %}">Trésorerie</a>
+      </div>
+      <ul class="divide-y divide-slate-100">
+        {% for alert in alerts %}
+        <li class="flex items-center gap-3 px-4 py-2.5">
+          <span class="tag {% if alert.level == 'critical' %}bg-red-100 text-red-800{% else %}bg-amber-100 text-amber-800{% endif %}">{{ alert.get_level_display }}</span>
+          <span class="min-w-0 flex-1 truncate">{{ alert.message }}</span>
+          <span class="whitespace-nowrap text-xs text-slate-500">{{ alert.created_at|date:"d/m H:i" }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
   </div>
 
   {% if request.user.is_superadmin %}
-  <div data-pricing-card class="card p-4">
-    <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-      <span class="font-medium">Tarification</span>
+  <section data-pricing-card class="card">
+    <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-slate-100 px-4 py-3">
+      <h2 class="font-semibold">Routes ouvertes</h2>
       <span class="text-slate-500">commission Plip-Plip {{ pricing.policy.platform_fee_rate|percent_rate }}</span>
       <span class="text-slate-500">
-        {% if pricing.unreviewed %}jamais validee{% else %}validee le {{ pricing.policy.reviewed_at|date:"d/m/Y H:i" }} par {{ pricing.policy.reviewed_by|default:"?" }}{% endif %}
+        {% if pricing.unreviewed %}tarification jamais validée{% else %}validée le {{ pricing.policy.reviewed_at|date:"d/m/Y H:i" }} par {{ pricing.policy.reviewed_by|default:"?" }}{% endif %}
       </span>
-      <a class="ml-auto underline" href="{% url 'console:methods' %}#tarification">Modifier</a>
+      <a class="ml-auto text-sm font-medium text-brand-dark underline-offset-2 hover:underline" href="{% url 'console:methods' %}#tarification">Modifier</a>
     </div>
-    <div class="mt-2 overflow-x-auto">
-      <table class="w-full text-sm">
+    <div class="overflow-x-auto">
+      <table class="w-full">
         <thead class="thead">
-          <tr><th class="py-1 pr-3">Route ouverte</th><th class="py-1 pr-3 text-right">Client paie</th><th class="py-1 pr-3 text-right">Couts plopplop</th><th class="py-1 text-right">Marge</th></tr>
+          <tr><th class="px-4 py-2">Route</th><th class="px-4 py-2 text-right">Client paie</th><th class="px-4 py-2 text-right">Coûts plopplop</th><th class="px-4 py-2 text-right">Marge</th></tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
           {% for route in pricing.routes %}{% if route.open %}
           <tr>
-            <td class="py-1 pr-3">{{ route.source.label }} → {{ route.destination.label }}</td>
-            <td class="py-1 pr-3 text-right font-mono">{{ route.quote.total_charged|htg }}</td>
-            <td class="py-1 pr-3 text-right font-mono">{{ route.cost_in|add_htg:route.cost_out|htg }}</td>
-            <td class="py-1 text-right font-mono {% if route.margin < 0 %}font-semibold text-red-700{% endif %}">{{ route.margin|htg }}</td>
+            <td class="px-4 py-2">{{ route.source.label }} → {{ route.destination.label }}</td>
+            <td class="px-4 py-2 text-right font-mono">{{ route.quote.total_charged|htg }}</td>
+            <td class="px-4 py-2 text-right font-mono">{{ route.cost_in|add_htg:route.cost_out|htg }}</td>
+            <td class="px-4 py-2 text-right font-mono {% if route.margin < 0 %}font-semibold text-red-700{% else %}text-brand-dark{% endif %}">{{ route.margin|htg }}</td>
           </tr>
           {% endif %}{% endfor %}
         </tbody>
       </table>
-      <p class="mt-1 text-xs text-slate-500">Pour {{ pricing.preview_net_amount|htg }} HTG recus par le beneficiaire.</p>
     </div>
-  </div>
+    <p class="px-4 py-2.5 text-xs text-slate-500">Pour {{ pricing.preview_net_amount|htg }} HTG reçus par le bénéficiaire.</p>
+  </section>
   {% endif %}
 </div>
 {% endblock %}
