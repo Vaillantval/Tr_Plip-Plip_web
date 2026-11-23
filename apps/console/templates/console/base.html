@@ -3,37 +3,68 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
   <title>{% block title %}Console Plip-Plip{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'console/logo.svg' %}">
   <!-- Servis localement : la console doit rester utilisable sur une
        connexion lente ou filtrante, comme le site client. HTMX est le
        fichier deja vendorise par apps/web (meme version). -->
   <link rel="stylesheet" href="{% static 'console/tailwind.css' %}">
   <script src="{% static 'web/htmx-2.0.4.min.js' %}"></script>
 </head>
-<body class="bg-slate-50 text-sm text-slate-900" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
-  {% with current=request.resolver_match.url_name %}
-  <nav class="flex flex-wrap gap-x-6 gap-y-1 border-b bg-white px-6 py-2.5">
-    <span class="font-semibold">Plip-Plip</span>
-    <a href="{% url 'console:dashboard' %}" class="{% if current == 'dashboard' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Tableau de bord</a>
-    <a href="{% url 'console:queue' %}" class="{% if current == 'queue' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">File</a>
-    <a href="{% url 'console:transactions' %}" class="{% if current == 'transactions' or current == 'transaction_detail' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Transactions</a>
-    <a href="{% url 'console:exceptions' %}" class="{% if current == 'exceptions' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Exceptions</a>
-    <a href="{% url 'console:claims' %}" class="{% if current == 'claims' or current == 'claim_detail' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Reclamations{% open_claim_count %}</a>
-    <a href="{% url 'console:treasury' %}" class="{% if current == 'treasury' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Tresorerie</a>
-    <a href="{% url 'console:methods' %}" class="{% if current == 'methods' %}font-medium underline underline-offset-4{% else %}text-slate-600 hover:text-slate-900{% endif %}">Methodes et tarifs</a>
-    <div class="ml-auto flex items-center gap-3">
-      <span class="text-slate-500">{{ request.user }} — {{ request.user.get_role_display }}</span>
-      {# POST obligatoire : LogoutView refuse le GET depuis Django 5. #}
-      <form method="post" action="{% url 'console:logout' %}">
-        {% csrf_token %}
-        <button type="submit" class="rounded border border-slate-300 px-2.5 py-1 text-slate-700 hover:bg-slate-100">Se déconnecter</button>
-      </form>
+<body class="min-h-screen bg-brand-bg text-sm text-slate-900 antialiased" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+<div class="lg:flex">
+
+  {# Bureau : menu lateral fixe. #}
+  <aside class="hidden bg-brand-dark text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:shrink-0 lg:flex-col">
+    <a href="{% url 'console:dashboard' %}" class="flex items-center gap-2.5 px-5 py-5">
+      <img src="{% static 'console/logo.svg' %}" alt="" class="h-9 w-9 rounded-[10px] ring-1 ring-white/15">
+      <span class="leading-tight">
+        <span class="block text-base font-semibold tracking-tight">Plip<span class="text-brand-lime">-</span>Plip</span>
+        <span class="block text-xs text-white/55">Console</span>
+      </span>
+    </a>
+    <div class="flex-1 overflow-y-auto px-3 pb-4">{% console_nav %}</div>
+    {% include "console/partials/user_box.html" %}
+  </aside>
+
+  {# Telephone : le meme menu, replie derriere un bouton, sans JavaScript. #}
+  <details class="group bg-brand-dark text-white lg:hidden">
+    <summary class="flex cursor-pointer list-none items-center gap-2.5 px-4 py-3 [&::-webkit-details-marker]:hidden">
+      <img src="{% static 'console/logo.svg' %}" alt="" class="h-8 w-8 rounded-lg ring-1 ring-white/15">
+      <span class="font-semibold">Plip<span class="text-brand-lime">-</span>Plip</span>
+      <span class="ml-auto rounded-lg border border-white/20 px-2.5 py-1 text-xs">
+        <span class="group-open:hidden">Menu</span><span class="hidden group-open:inline">Fermer</span>
+      </span>
+    </summary>
+    <div class="space-y-3 px-3 pb-4">
+      {% console_nav %}
+      {% include "console/partials/user_box.html" %}
     </div>
-  </nav>
-  {% endwith %}
-  {% payout_worker_alert %}
-  <div id="console-flash" class="mx-6 mt-3 hidden rounded border border-red-300 bg-red-50 px-3 py-2 text-red-800" role="alert"></div>
-  <main class="px-6 py-4">{% block content %}{% endblock %}</main>
+  </details>
+
+  <div class="min-w-0 flex-1">
+    <header class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-slate-200 bg-white px-4 py-3 lg:px-8">
+      <div class="text-lg font-semibold tracking-tight">{% block heading %}Console{% endblock %}</div>
+      {% environment_name as env %}
+      {% if env %}
+      <span data-environment class="rounded-full px-2.5 py-0.5 text-xs font-medium {% if env == 'production' %}bg-brand-soft text-brand-dark{% else %}bg-amber-100 text-amber-900{% endif %}">
+        ● {{ env|capfirst }}
+      </span>
+      {% endif %}
+      <form method="get" action="{% url 'console:transactions' %}" class="w-full sm:ml-auto sm:w-72" role="search">
+        <label for="console-search" class="sr-only">Rechercher un transfert</label>
+        <input id="console-search" name="q" type="search" value="{{ request.GET.q|default:'' }}"
+               placeholder="Référence ou téléphone"
+               class="w-full rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm focus:border-brand-dark focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-dark/20">
+      </form>
+    </header>
+
+    {% payout_worker_alert %}
+    <div id="console-flash" class="mx-4 mt-4 hidden rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-red-800 lg:mx-8" role="alert"></div>
+    <main class="px-4 py-5 lg:px-8 lg:py-6">{% block content %}{% endblock %}</main>
+  </div>
+</div>
   <script>
     // HTMX n'injecte pas les reponses 4xx/5xx : sans ce bandeau, un refus
     // ou une erreur serveur passerait inapercu.

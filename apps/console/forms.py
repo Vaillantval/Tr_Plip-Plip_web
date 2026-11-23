@@ -146,7 +146,7 @@ class ConsoleLoginForm(AuthenticationForm):
     #: apparaitre, meme le temps d'un chargement ou sans JavaScript.
     INPUT_CLASS = (
         "w-full rounded border border-slate-300 px-3 py-2 "
-        "focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+        "focus:border-brand-dark focus:outline-none focus:ring-1 focus:ring-brand-dark"
     )
 
     username = UsernameField(

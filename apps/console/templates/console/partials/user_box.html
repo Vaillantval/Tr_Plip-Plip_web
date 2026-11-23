@@ -1,0 +1,16 @@
+{# Utilisateur connecte et deconnexion, en bas du menu. #}
+<div class="mx-3 mb-3 flex items-center gap-2.5 rounded-xl bg-white/5 p-2.5">
+  <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-lime text-sm font-semibold uppercase text-brand-deeper" aria-hidden="true">{{ request.user.get_username|slice:":1" }}</span>
+  <span class="min-w-0 flex-1 leading-tight">
+    <span class="block truncate text-white" title="{{ request.user }}">{{ request.user }}</span>
+    <span class="block text-xs text-white/55">{{ request.user.get_role_display }}</span>
+  </span>
+  {# POST obligatoire : LogoutView refuse le GET depuis Django 5. #}
+  <form method="post" action="{% url 'console:logout' %}">
+    {% csrf_token %}
+    <button type="submit" title="Se déconnecter" class="rounded-lg p-2 text-white/70 hover:bg-white/10 hover:text-white">
+      <svg viewBox="0 0 24 24" class="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/></svg>
+      <span class="sr-only">Se déconnecter</span>
+    </button>
+  </form>
+</div>

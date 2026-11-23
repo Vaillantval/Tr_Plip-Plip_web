@@ -17,6 +17,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Case, Count, IntegerField, Q, Sum, When
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -105,9 +106,36 @@ def dashboard(request):
     return render(request, "console/dashboard.html", context)
 
 
+def _search(request, query: str):
+    """Recherche de la barre du haut : reference exacte, sinon telephone.
+
+    Une reference ouvre la fiche ; un numero ouvre les transferts de ce
+    client (meme ecran que le lien « client » d'une fiche). Rien d'autre :
+    pas de recherche floue sur des numeros de telephone.
+    """
+    from apps.accounts import phone as phones
+
+    reference = query.upper().replace(" ", "")
+    if Transaction.objects.filter(reference=reference).exists():
+        return redirect("console:transaction_detail", reference=reference)
+    try:
+        number = phones.normalize(query)
+    except phones.InvalidPhone:
+        number = ""
+    if number:
+        return redirect(f"{reverse('console:transactions')}?customer={number}")
+    messages.warning(request, f"Aucun transfert ne correspond à « {query} ». Saisir une référence complète ou un numéro.")
+    return None
+
+
 @login_required
 def transaction_list(request):
-    qs = Transaction.objects.select_related("customer").order_by("-created_at", "-id")
+    query = (request.GET.get("q") or "").strip()
+    if query:
+        found = _search(request, query)
+        if found is not None:
+            return found
+    qs =Transaction.objects.select_related("customer").order_by("-created_at", "-id")
     state = request.GET.get("state")
     customer_phone = (request.GET.get("customer") or "").strip()
     if state:

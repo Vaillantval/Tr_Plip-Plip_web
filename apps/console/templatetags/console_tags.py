@@ -81,17 +81,75 @@ def state_label(value):
         return value or EMPTY
 
 
-@register.simple_tag
-def open_claim_count():
-    """Nombre de reclamations a traiter, pour la barre de navigation.
+#: Icones du menu : traces SVG (viewBox 24, trait), sans bibliotheque.
+ICONS = {
+    "home": "M3 11l9-7 9 7M5 10v10h5v-6h4v6h5V10",
+    "queue": "M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0",
+    "swap": "M7 7h13l-4-4M17 17H4l4 4",
+    "alert": "M12 9v4M12 17h.01M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z",
+    "chat": "M21 12a8 8 0 0 1-11.6 7.1L4 20l1.1-4.4A8 8 0 1 1 21 12z",
+    "wallet": "M3 7h15a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V7zm0 0V6a2 2 0 0 1 2-2h11M16 14h.01",
+    "sliders": "M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4",
+}
 
-    Chaine vide quand il n'y en a aucune : une pastille « 0 » attire l'oeil
-    pour rien.
+#: Menu : (groupe, [(nom d'URL, libelle, icone, ecrans actifs, pastille)]).
+NAV = (
+    (
+        "Exploitation",
+        (
+            ("dashboard", "Tableau de bord", "home", {"dashboard"}, None),
+            ("queue", "File de décaissement", "queue", {"queue"}, None),
+            ("transactions", "Transactions", "swap", {"transactions", "transaction_detail"}, None),
+            ("exceptions", "Exceptions", "alert", {"exceptions"}, "exceptions"),
+            ("claims", "Réclamations", "chat", {"claims", "claim_detail"}, "claims"),
+        ),
+    ),
+    (
+        "Argent",
+        (
+            ("treasury", "Trésorerie", "wallet", {"treasury"}, None),
+            ("methods", "Méthodes et tarifs", "sliders", {"methods"}, None),
+        ),
+    ),
+)
+
+
+@register.inclusion_tag("console/partials/nav.html", takes_context=True)
+def console_nav(context):
+    """Menu lateral, avec les pastilles « a traiter ».
+
+    Les compteurs sont calcules une fois par page, meme si le menu est
+    rendu deux fois (bureau et telephone) : ils sont gardes dans le
+    contexte de rendu.
     """
-    from apps.claims.models import Claim, Status
+    from django.urls import reverse
 
-    count = Claim.objects.filter(status=Status.OPEN).count()
-    return f" ({count})" if count else ""
+    from apps.console import metrics
+
+    request = context.get("request")
+    match = getattr(request, "resolver_match", None)
+    current = match.url_name if match else ""
+    cache = context.render_context.get("console_nav_counts")
+    if cache is None:
+        cache = {"exceptions": metrics.exceptions_to_handle(), "claims": metrics.open_claims()}
+        context.render_context["console_nav_counts"] = cache
+    groups = []
+    for title, entries in NAV:
+        items = []
+        for name, label, icon, active, badge in entries:
+            items.append(
+                {
+                    "url": reverse(f"console:{name}"),
+                    "label": label,
+                    "icon": ICONS[icon],
+                    "active": current in active,
+                    # Pas de pastille « 0 » : elle attirerait l'oeil pour rien.
+                    "badge": cache.get(badge) or None,
+                    "badge_kind": badge,
+                }
+            )
+        groups.append({"title": title, "items": items})
+    return {"groups": groups}
 
 
 @register.inclusion_tag("console/partials/worker_alert.html", takes_context=True)
@@ -107,3 +165,15 @@ def payout_worker_alert(context):
     from apps.transactions.queue import payout_worker_status
 
     return {"worker": payout_worker_status()}
+
+
+@register.simple_tag
+def environment_name():
+    """Nom de l'environnement Railway (« production »...), vide en local.
+
+    Affiche en haut de la console pour qu'on ne confonde jamais un
+    environnement de test avec la production.
+    """
+    import os
+
+    return os.environ.get("RAILWAY_ENVIRONMENT_NAME", "")

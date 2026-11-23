@@ -1,5 +1,6 @@
 {% extends "console/base.html" %}
 {% block title %}Reclamation {{ claim.pk }} — Console Plip-Plip{% endblock %}
+{% block heading %}Réclamation n° {{ claim.pk }}{% endblock %}
 {% block content %}
 {% include "console/partials/claim_body.html" %}
 {% endblock %}

@@ -1,0 +1,23 @@
+{# Menu lateral de la console. Rendu par le tag console_nav. #}
+<nav class="space-y-5" aria-label="Console">
+  {% for group in groups %}
+  <div>
+    <div class="px-3 pb-1.5 text-[11px] font-medium uppercase tracking-wider text-white/45">{{ group.title }}</div>
+    <ul class="space-y-0.5">
+      {% for item in group.items %}
+      <li>
+        <a href="{{ item.url }}"
+           class="flex items-center gap-2.5 rounded-lg px-3 py-2 {% if item.active %}bg-white/10 font-medium text-white{% else %}text-white/75 hover:bg-white/5 hover:text-white{% endif %}"
+           {% if item.active %}aria-current="page"{% endif %}>
+          <svg viewBox="0 0 24 24" class="h-[18px] w-[18px] shrink-0 {% if item.active %}text-brand-lime{% endif %}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ item.icon }}"/></svg>
+          <span class="flex-1">{{ item.label }}</span>
+          {% if item.badge %}
+          <span data-nav-badge="{{ item.badge_kind }}" class="rounded-full px-1.5 py-px text-xs font-semibold {% if item.badge_kind == 'exceptions' %}bg-red-500 text-white{% else %}bg-brand-lime text-brand-deeper{% endif %}">{{ item.badge }}</span>
+          {% endif %}
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endfor %}
+</nav>

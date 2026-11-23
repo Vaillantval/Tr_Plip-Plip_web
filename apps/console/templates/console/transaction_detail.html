@@ -1,5 +1,6 @@
 {% extends "console/base.html" %}
 {% block title %}{{ txn.reference }} — Console Plip-Plip{% endblock %}
+{% block heading %}Transfert {{ txn.reference }}{% endblock %}
 {% block content %}
 {% include "console/partials/transaction_body.html" %}
 {% endblock %}
