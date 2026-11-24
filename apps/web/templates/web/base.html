@@ -6,11 +6,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Plip-Plip{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'web/app.css' %}">
+  <link rel="icon" href="{% static 'web/logo.svg' %}" type="image/svg+xml">
+  <meta name="theme-color" content="#14532d">
   <script src="{% static 'web/htmx-2.0.4.min.js' %}" defer></script>
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
   <header class="top">
-    <a class="brand" href="{% url 'web:home' %}">Plip<span>-</span>Plip</a>
+   <div class="top-in">
+    <a class="brand" href="{% url 'web:home' %}"><img src="{% static 'web/logo.svg' %}" alt="" width="32" height="32">Plip-Plip</a>
     <nav>
       {% if request.customer %}
         <a href="{% url 'web:transfers' %}">{% translate "Mes transferts" %}</a>
@@ -22,7 +25,10 @@
         <a href="{% url 'web:login' %}">{% translate "Se connecter" %}</a>
       {% endif %}
     </nav>
+   </div>
   </header>
+
+  {% block hero %}{% endblock %}
 
   <main class="wrap">
     {% if messages %}
@@ -34,6 +40,7 @@
   </main>
 
   <footer class="foot">
+   <div class="foot-in">
     <span>{% translate "Un portefeuille vers l'autre. Simplement." %}</span>
     <form method="post" action="{% url 'set_language' %}">
       {% csrf_token %}
@@ -50,6 +57,7 @@
         <button type="submit" class="secondary">{% translate "OK" %}</button>
       </noscript>
     </form>
+   </div>
   </footer>
 </body>
 </html>

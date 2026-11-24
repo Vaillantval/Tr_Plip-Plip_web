@@ -16,7 +16,7 @@
   {% include "web/partials/fees.html" with quote=quote %}
 </section>
 
-<form method="post" action="{% url 'web:confirm' %}" onsubmit="this.querySelector('button').disabled = true;">
+<form class="card" method="post" action="{% url 'web:confirm' %}" onsubmit="this.querySelector('button').disabled = true;">
   {% csrf_token %}
   <input type="hidden" name="idempotency_key" value="{{ idempotency_key }}">
   {# Valeur machine : sans unlocalize, le francais ecrit 1090,00 et le serveur ne la relit pas. #}
@@ -27,7 +27,7 @@
     {% blocktranslate trimmed with total=quote.total_charged|htg %}Payer {{ total }} HTG{% endblocktranslate %}
   </button>
 </form>
-<p class="muted" style="margin-top:.75rem">
+<p class="muted" style="margin-top:1rem; text-align:center">
   <a href="{% url 'web:home' %}">{% translate "Modifier l'envoi" %}</a>
 </p>
 {% endblock %}

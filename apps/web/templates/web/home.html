@@ -1,8 +1,15 @@
 {% extends "web/base.html" %}
 {% load i18n web_tags %}
+{% block hero %}
+<section class="hero">
+  <div class="hero-in">
+    <span class="hero-mark" aria-hidden="true"></span>
+    <h1>{% translate "Envoyer de l'argent d'un portefeuille à l'autre" %}</h1>
+    <p class="lead">{% translate "Le bénéficiaire reçoit exactement le montant annoncé. Les frais sont affichés avant de payer." %}</p>
+  </div>
+</section>
+{% endblock %}
 {% block content %}
-<h1>{% translate "Envoyer de l'argent d'un portefeuille à l'autre" %}</h1>
-<p class="lead">{% translate "Le bénéficiaire reçoit exactement le montant annoncé. Les frais sont affichés avant de payer." %}</p>
 
 {% if saturated %}
   <p class="alert warning" data-banner="saturated">{{ saturated }}</p>

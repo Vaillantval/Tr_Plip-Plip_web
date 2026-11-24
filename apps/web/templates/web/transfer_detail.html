@@ -2,13 +2,16 @@
 {% load i18n web_tags %}
 {% block title %}{{ txn.reference }} — Plip-Plip{% endblock %}
 {% block content %}
-<p class="muted">{% translate "Référence du transfert" %}</p>
-<h1 class="reference mono">{{ txn.reference }}</h1>
-<p class="muted">{% translate "Gardez cette référence : elle vous sera demandée en cas de réclamation." %}</p>
+<section class="card">
+  <p class="muted">{% translate "Référence du transfert" %}</p>
+  <h1 class="reference mono">{{ txn.reference }}</h1>
+  <p class="muted">{% translate "Gardez cette référence : elle vous sera demandée en cas de réclamation." %}</p>
+</section>
 
 {% include "web/partials/transfer_status.html" %}
 
 <section class="card">
+  <p class="amount-big">{{ txn.net_amount|htg }} <small>HTG</small></p>
   <p>
     {% blocktranslate trimmed with phone=txn.recipient_phone wallet=txn.destination_wallet|wallet %}
       Vers le {{ wallet }} du <strong class="mono">{{ phone }}</strong>
@@ -26,14 +29,14 @@
   <p class="muted">
     {{ claim.get_reason_display }} · {{ claim.get_status_display }} · {{ claim.created_at|date:"d/m/Y H:i" }}
   </p>
-  <ul class="list">
+  <ul class="thread">
     {% for message in claim_messages %}
-    <li>
-      <span class="muted" style="width:100%">
+    <li class="{% if message.author_kind != 'operator' %}mine{% endif %}">
+      <span class="who">
         {% if message.author_kind == "operator" %}Plip-Plip{% else %}{% translate "Vous" %}{% endif %}
         · {{ message.created_at|date:"d/m/Y H:i" }}
       </span>
-      <span style="width:100%">{{ message.body|linebreaksbr }}</span>
+      <span>{{ message.body|linebreaksbr }}</span>
     </li>
     {% endfor %}
   </ul>
