@@ -198,6 +198,8 @@ button[disabled] { opacity: .6; cursor: progress; }
 .list li a:hover .mono { color: var(--brand); text-decoration: underline; }
 .list .amount { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; }
 .list .meta { width: 100%; }
+.list li a.again { display: inline-flex; padding: 0 0 .8rem; color: var(--brand); font-weight: 600; font-size: .9rem; }
+.list li a.again:hover { text-decoration: underline; }
 
 /* Fil d'une reclamation */
 .thread { list-style: none; margin: 0 0 1rem; padding: 0; display: flex; flex-direction: column; gap: .6rem; }

@@ -19,6 +19,9 @@
           {{ txn.source_wallet|wallet }} → {{ txn.destination_wallet|wallet }} · <span class="mono">{{ txn.recipient_phone }}</span> · {{ txn.created_at|date:"d/m/Y H:i" }}
         </span>
       </a>
+      {% if status in again_statuses %}
+      <a class="again" href="{% url 'web:home' %}?refaire={{ txn.reference|urlencode }}">{% translate "Refaire cet envoi" %}</a>
+      {% endif %}
     </li>
     {% endwith %}
     {% endfor %}

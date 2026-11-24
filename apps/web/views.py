@@ -145,9 +145,42 @@ def _safe_next(request, default: str) -> str:
 # ----------------------------------------------------------------------
 # Envoi
 # ----------------------------------------------------------------------
+#: Parametre de l'accueil : reprendre un transfert passe du client.
+AGAIN_PARAM = "refaire"
+
+#: Etats ou « Refaire cet envoi » est propose. Pas pendant un transfert en
+#: attente ou en cours : le client croirait relancer le meme, et paierait
+#: deux fois.
+AGAIN_STATUSES = (PublicStatus.DELIVERED, PublicStatus.EXPIRED, PublicStatus.CANCELLED, PublicStatus.REFUNDED)
+
+
+def _again_initial(request) -> dict | None:
+    """Champs d'un ancien transfert du client, pour « Refaire cet envoi ».
+
+    Seulement le sien : une reference d'un autre client est ignoree en
+    silence, sans confirmer qu'elle existe. Rien n'est cree ici : le
+    client passe par le devis du moment et la confirmation habituelle,
+    ressaisie du numero comprise.
+    """
+    reference = request.GET.get(AGAIN_PARAM)
+    if not reference or not request.customer:
+        return None
+    txn = Transaction.objects.filter(customer=request.customer, reference=reference).first()
+    if txn is None:
+        return None
+    return {
+        "source_wallet": txn.source_wallet,
+        "destination_wallet": txn.destination_wallet,
+        "recipient_phone": txn.recipient_phone,
+        "net_amount": txn.net_amount,
+        "sender_phone": txn.sender_phone,
+    }
+
+
 def home(request):
     wallets = transactions.wallet_availability()
-    form = TransferForm(initial=request.session.get(DRAFT_KEY), wallets=wallets)
+    initial = _again_initial(request) or request.session.get(DRAFT_KEY)
+    form = TransferForm(initial=initial, wallets=wallets)
     # Prevenir des l'accueil plutot qu'apres la saisie complete du
     # formulaire : la lecture passe par la vue de file partagee.
     saturation = transactions.admission_state()
@@ -366,6 +399,7 @@ def transfers(request):
         {
             "page": page.get_page(request.GET.get("page")),
             "unread_claims": claims.unread_transaction_ids(request.customer),
+            "again_statuses": AGAIN_STATUSES,
         },
     )
 
@@ -386,6 +420,7 @@ def _transfer_context(txn: Transaction) -> dict:
         "poll_seconds": poll_interval(txn, status),
         "payment": payment_instructions(txn, status),
         "wait": public_wait(txn),
+        "again_statuses": AGAIN_STATUSES,
     }
 
 

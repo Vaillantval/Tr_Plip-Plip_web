@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Plip-Plip web\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-28 11:04-0400\n"
+"POT-Creation-Date: 2026-11-24 11:46-0500\n"
 "PO-Revision-Date: 2026-09-14 17:45-0400\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
@@ -65,7 +65,9 @@ msgid ""
 "En choisissant WhatsApp, vous acceptez d'y recevoir les avis de vos "
 "transferts. Si le message ne peut pas vous être livré, il vous est envoyé "
 "par SMS."
-msgstr "By choosing WhatsApp, you agree to receive notices about your transfers there. If the message cannot be delivered to you, it is sent to you by SMS."
+msgstr ""
+"By choosing WhatsApp, you agree to receive notices about your transfers "
+"there. If the message cannot be delivered to you, it is sent to you by SMS."
 
 #: .\apps\web\forms.py
 msgid ""
@@ -382,6 +384,11 @@ msgid "Gardez cette référence : elle vous sera demandée en cas de réclamatio
 msgstr "Keep this reference: you'll be asked for it if you make a claim."
 
 #: .\apps\web\templates\web\transfer_detail.html
+#: .\apps\web\templates\web\transfers.html
+msgid "Refaire cet envoi"
+msgstr "Send again"
+
+#: .\apps\web\templates\web\transfer_detail.html
 msgid "Votre réclamation"
 msgstr "Your claim"
 
@@ -582,6 +589,3 @@ msgid ""
 "minutes."
 msgstr ""
 "Verification isn't possible right now. Please try again in a few minutes."
-
-#~ msgid "Expliquez en quelques mots ce qui s'est passé."
-#~ msgstr "Tell us in a few words what happened."

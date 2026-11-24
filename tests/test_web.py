@@ -526,3 +526,63 @@ def test_creole_to_do_list_has_no_stale_entries():
     assert len(listed) == len(set(listed))
     stale = sorted(m for m in listed if m not in entries or entries[m]["msgstr"])
     assert stale == []
+
+
+# ----------------------------------------------------------------------
+# Refaire cet envoi
+# ----------------------------------------------------------------------
+def _again_url(txn):
+    return reverse("web:home") + f"?refaire={txn.reference}"
+
+
+@pytest.mark.django_db
+def test_a_finished_transfer_offers_to_send_again_with_the_same_fields(client):
+    txn = _create_for(PHONE)
+    txn.transition(State.PAYMENT_EXPIRED)
+    _login(client)
+
+    detail = client.get(reverse("web:transfer_detail", args=[txn.reference])).content.decode()
+    listing = client.get(reverse("web:transfers")).content.decode()
+    assert _again_url(txn) in detail and _again_url(txn) in listing
+    assert "Refaire cet envoi" in detail
+
+    home = client.get(_again_url(txn)).content.decode()
+    assert 'value="50932123456"' in home, "le beneficiaire est repris"
+    assert re.search(r'name="net_amount"[^>]*value="1000', home), "le montant est repris"
+    # Rien n'est cree : le client repasse par le devis et la confirmation.
+    assert Transaction.objects.count() == 1
+
+
+@pytest.mark.django_db
+def test_send_again_is_not_offered_while_the_transfer_is_still_running(client):
+    txn = _create_for(PHONE)  # attente de paiement
+    _login(client)
+    html = client.get(reverse("web:transfer_detail", args=[txn.reference])).content.decode()
+    assert _again_url(txn) not in html
+
+
+@pytest.mark.django_db
+def test_send_again_ignores_another_customers_transfer(client):
+    txn = _create_for(OTHER)
+    txn.transition(State.PAYMENT_EXPIRED)
+    _login(client)
+    home = client.get(_again_url(txn)).content.decode()
+    assert "50932123456" not in home
+
+
+@pytest.mark.django_db
+def test_send_again_ignores_the_reference_when_logged_out(client):
+    txn = _create_for(PHONE)
+    txn.transition(State.PAYMENT_EXPIRED)
+    home = client.get(_again_url(txn)).content.decode()
+    assert "50932123456" not in home
+
+
+@pytest.mark.django_db
+def test_send_again_is_in_creole_by_default(client):
+    txn = _create_for(PHONE)
+    txn.transition(State.PAYMENT_EXPIRED)
+    _login(client)
+    client.cookies.pop("django_language")
+    html = client.get(reverse("web:transfer_detail", args=[txn.reference])).content.decode()
+    assert "Revoye lajan an" in html

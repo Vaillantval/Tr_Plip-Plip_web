@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Plip-Plip web\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-28 11:04-0400\n"
+"POT-Creation-Date: 2026-11-24 11:46-0500\n"
 "PO-Revision-Date: 2026-09-14 17:45-0400\n"
 "Last-Translator: \n"
 "Language-Team: Kreyòl ayisyen\n"
@@ -381,6 +381,11 @@ msgstr "Referans transfè a"
 #: .\apps\web\templates\web\transfer_detail.html
 msgid "Gardez cette référence : elle vous sera demandée en cas de réclamation."
 msgstr "Kenbe referans sa a : y ap mande w li si w gen yon plent."
+
+#: .\apps\web\templates\web\transfer_detail.html
+#: .\apps\web\templates\web\transfers.html
+msgid "Refaire cet envoi"
+msgstr "Revoye lajan an"
 
 #: .\apps\web\templates\web\transfer_detail.html
 msgid "Votre réclamation"
