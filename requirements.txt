@@ -4,6 +4,10 @@ drf-spectacular>=0.28
 psycopg[binary]==3.2.10
 requests==2.32.3
 celery==5.4.0
+# kombu epingle : celery l'accepte jusqu'a <6.0, et kombu 5.7 exige
+# redis-py >= 6.1 au demarrage. Un rebuild sans epingle a arrete les
+# trois workers le 2026-11-24. Monter kombu et redis ENSEMBLE.
+kombu==5.6.2
 redis==5.2.1
 django-celery-beat>=2.8
 gunicorn==23.0.0
