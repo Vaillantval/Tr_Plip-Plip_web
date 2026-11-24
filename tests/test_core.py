@@ -272,6 +272,24 @@ def test_each_payout_attempt_uses_a_fresh_reference():
 
 
 @pytest.mark.django_db
+@pytest.mark.parametrize("wallet", [Wallet.MONCASH, Wallet.NATCASH])
+def test_a_transfer_to_the_same_wallet_is_refused_before_anything_is_created(wallet):
+    """MonCash vers MonCash n'a pas de sens : le client le fait dans son
+    application, sans nos frais. Refuse au coeur, donc pour le site, l'API
+    et la console a la fois."""
+    with pytest.raises(services.UnsupportedRoute):
+        services.quote_transfer(source_wallet=wallet, destination_wallet=wallet, net_amount=Decimal("1000"))
+    with pytest.raises(services.UnsupportedRoute):
+        services.create_transaction(
+            source_wallet=wallet,
+            destination_wallet=wallet,
+            recipient_phone="50932345678",
+            net_amount=Decimal("1000"),
+        )
+    assert not Transaction.objects.exists()
+
+
+@pytest.mark.django_db
 def test_payout_to_non_capable_wallet_is_refused():
     with pytest.raises(services.UnsupportedRoute):
         services.create_transaction(

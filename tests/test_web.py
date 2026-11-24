@@ -586,3 +586,27 @@ def test_send_again_is_in_creole_by_default(client):
     client.cookies.pop("django_language")
     html = client.get(reverse("web:transfer_detail", args=[txn.reference])).content.decode()
     assert "Revoye lajan an" in html
+
+
+# ----------------------------------------------------------------------
+# Meme portefeuille des deux cotes
+# ----------------------------------------------------------------------
+def _selected(html, name):
+    select = re.search(rf'<select name="{name}".*?</select>', html, re.S).group(0)
+    return re.search(r'<option value="([^"]+)"[^>]*selected', select).group(1)
+
+
+@pytest.mark.django_db
+def test_the_send_form_refuses_the_same_wallet_on_both_sides(client):
+    response = client.post(reverse("web:send"), {**SEND, "destination_wallet": "moncash"})
+    assert response.status_code == 400
+    # L'apostrophe est echappee a l'affichage : on lit la phrase sans elle.
+    assert "Choisissez un portefeuille différent de celui" in response.content.decode()
+    assert "web:draft" not in client.session
+
+
+@pytest.mark.django_db
+def test_the_home_page_never_opens_on_the_same_wallet_twice(client):
+    html = client.get(reverse("web:home")).content.decode()
+    source, destination = _selected(html, "source_wallet"), _selected(html, "destination_wallet")
+    assert source != destination, (source, destination)

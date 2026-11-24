@@ -151,6 +151,25 @@ class TransferForm(forms.Form):
         self.fields["destination_wallet"].choices = [
             (w["wallet"], wallet_label(w["wallet"])) for w in wallets if w["payout_enabled"]
         ]
+        self._default_to_a_different_destination()
+
+    def _default_to_a_different_destination(self):
+        """A l'ouverture, ne jamais proposer la meme source et la meme
+        destination : les deux menus tomberaient sur MonCash et le client
+        verrait une erreur de combinaison avant d'avoir rien choisi.
+        """
+        if self.is_bound:
+            return
+        sources = [value for value, _label in self.fields["source_wallet"].choices]
+        destinations = [value for value, _label in self.fields["destination_wallet"].choices]
+        if not sources or not destinations:
+            return
+        source = self.initial.get("source_wallet") or sources[0]
+        if (self.initial.get("destination_wallet") or destinations[0]) != source:
+            return
+        other = next((value for value in destinations if value != source), None)
+        if other is not None:
+            self.initial = {**self.initial, "source_wallet": source, "destination_wallet": other}
 
     def clean(self):
         data = super().clean()

@@ -51,7 +51,22 @@
         el.hidden = source.value !== el.getAttribute("data-show-if-source");
       });
     }
+    // Jamais le meme portefeuille des deux cotes : si l'envoi rejoint la
+    // reception, la reception passe sur le premier autre portefeuille.
+    var destination = document.getElementById("id_destination_wallet");
+    function avoidSameWallet() {
+      if (!destination || destination.value !== source.value) return;
+      for (var i = 0; i < destination.options.length; i++) {
+        if (destination.options[i].value !== source.value) {
+          // Pas de nouvel evenement : le « change » de l'envoi remonte
+          // ensuite au formulaire, et le devis part avec la bonne paire.
+          destination.value = destination.options[i].value;
+          return;
+        }
+      }
+    }
     source.addEventListener("change", sync);
+    source.addEventListener("change", avoidSameWallet);
     sync();
   })();
 </script>
