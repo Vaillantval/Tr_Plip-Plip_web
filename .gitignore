@@ -17,3 +17,6 @@ apps/console/static/console/tailwind.css
 sauvegardes/
 plipplip-*.json
 plipplip-*.json.enc
+
+# Identifiants locaux (secret), jamais versionnes
+tests/cred
