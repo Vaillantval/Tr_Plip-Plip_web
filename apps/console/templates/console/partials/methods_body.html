@@ -4,37 +4,37 @@
   {% include "console/partials/pricing_banner.html" %}
 
   <div class="card">
-    <h1 class="card-title">Methodes de transfert</h1>
-    <p class="px-3 py-2 text-slate-600">
-      Un portefeuille ferme est refuse pour toute <strong>nouvelle</strong> transaction (devis et creation via l'API).
-      Les transactions deja creees continuent : une transaction encaissee est une dette, sa sortie n'est jamais bloquee.
-      {% if not request.user.is_superadmin %}<span class="text-slate-500">Lecture seule : reglage reserve au superadmin.</span>{% endif %}
+    <h1 class="card-title">Méthodes de transfert</h1>
+    <p class="px-4 py-3 text-slate-600">
+      Un portefeuille fermé est refusé pour toute <strong>nouvelle</strong> transaction (devis et création via l'API).
+      Les transactions déjà créées continuent : une transaction encaissée est une dette, sa sortie n'est jamais bloquee.
+      {% if not request.user.is_superadmin %}<span class="text-slate-500">Lecture seule : réglage réservé au superadmin.</span>{% endif %}
     </p>
     <div class="overflow-x-auto">
       <table class="w-full">
         <thead class="thead">
           <tr>
             <th class="px-4 py-2">Portefeuille</th>
-            <th class="px-4 py-2">Entree (encaissement)</th>
-            <th class="px-4 py-2">Sortie (decaissement)</th>
-            <th class="px-4 py-2">Derniere modification</th>
+            <th class="px-4 py-2">Entrée (encaissement)</th>
+            <th class="px-4 py-2">Sortie (décaissement)</th>
+            <th class="px-4 py-2">Dernière modification</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
           {% for row in rows %}
           <tr class="align-top">
-            <td class="px-3 py-2 font-medium">{{ row.label }} <span class="font-mono text-xs text-slate-500">{{ row.wallet }}</span></td>
-            <td class="px-3 py-2">
+            <td class="px-4 py-2.5 font-medium">{{ row.label }} <span class="font-mono text-xs text-slate-500">{{ row.wallet }}</span></td>
+            <td class="px-4 py-2.5">
               {% include "console/partials/method_toggle.html" with direction="payment" enabled=row.payment_enabled %}
             </td>
-            <td class="px-3 py-2">
+            <td class="px-4 py-2.5">
               {% if row.payout_capable %}
                 {% include "console/partials/method_toggle.html" with direction="payout" enabled=row.payout_enabled %}
               {% else %}
                 <span class="text-slate-500">Non disponible chez plopplop</span>
               {% endif %}
             </td>
-            <td class="px-3 py-2 text-slate-500">{% if row.updated_at %}{{ row.updated_at|date:"d/m/Y H:i" }} par {{ row.updated_by|default:"systeme" }}{% else %}—{% endif %}</td>
+            <td class="px-4 py-2.5 text-slate-500">{% if row.updated_at %}{{ row.updated_at|date:"d/m/Y H:i" }} par {{ row.updated_by|default:"système" }}{% else %}—{% endif %}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -46,23 +46,23 @@
     <h2 class="card-title">
       Tarification
       <span class="font-normal text-slate-500">
-        {% if pricing.unreviewed %}· jamais validee{% else %}· validee le {{ pricing.policy.reviewed_at|date:"d/m/Y H:i" }} par {{ pricing.policy.reviewed_by|default:"?" }}{% endif %}
+        {% if pricing.unreviewed %}· jamais validée{% else %}· validée le {{ pricing.policy.reviewed_at|date:"d/m/Y H:i" }} par {{ pricing.policy.reviewed_by|default:"?" }}{% endif %}
       </span>
     </h2>
-    <div class="space-y-1 px-3 py-2 text-slate-600">
-      <p><strong>Frais client</strong> : ce que Plip-Plip facture, en % du montant recu par le beneficiaire. Envoi = portefeuille source, reception = portefeuille destination.</p>
-      <p><strong>Couts plopplop</strong> : ce que plopplop retient. Servent au grand livre, a la couverture de la file et a la marge estimee ; le montant reel retourne par plopplop prime des qu'il est connu.</p>
-      <p>Toute modification s'applique aux <strong>nouveaux devis</strong> ; une transaction deja creee garde son devis et ses couts figes.</p>
+    <div class="space-y-1 px-4 py-3 text-slate-600">
+      <p><strong>Frais client</strong> : ce que Plip-Plip facture, en % du montant reçu par le bénéficiaire. Envoi = portefeuille source, reception = portefeuille destination.</p>
+      <p><strong>Coûts plopplop</strong> : ce que plopplop retient. Servent au grand livre, à la couverture de la file et à la marge estimée ; le montant réel retourné par plopplop prime des qu'il est connu.</p>
+      <p>Toute modification s'applique aux <strong>nouveaux devis</strong> ; une transaction déjà créée garde son devis et ses coûts figés.</p>
     </div>
 
     {% if request.user.is_superadmin %}
     <form data-console-action="pricing" method="post" action="{% url 'console:pricing_update' %}"
           hx-post="{% url 'console:pricing_update' %}" hx-target="#methods-body" hx-swap="outerHTML"
           hx-disabled-elt="find button"
-          hx-confirm="Enregistrer cette tarification ? Elle s'appliquera a tous les nouveaux devis.">
+          hx-confirm="Enregistrer cette tarification ? Elle s'appliquera à tous les nouveaux devis.">
       {% csrf_token %}
     {% endif %}
-      {% if pricing_form.non_field_errors %}<p class="px-3 text-red-700">{{ pricing_form.non_field_errors|join:" " }}</p>{% endif %}
+      {% if pricing_form.non_field_errors %}<p class="px-4 pt-2 text-red-700">{{ pricing_form.non_field_errors|join:" " }}</p>{% endif %}
       <div class="overflow-x-auto">
         <table class="w-full">
           <thead class="thead">
@@ -82,7 +82,7 @@
                 {% elif request.user.is_superadmin %}
                   <input name="{{ cell.bound.html_name }}" type="number" step="0.01" min="0" max="49.99" required
                          value="{{ cell.bound.value|default_if_none:'' }}"
-                         class="w-20 rounded-md border {% if cell.bound.errors %}border-red-500{% else %}border-slate-300{% endif %} px-1.5 py-0.5 text-right font-mono"> %
+                         class="field w-20 px-1.5 py-1 text-right font-mono {% if cell.bound.errors %}border-red-500{% endif %}"> %
                 {% else %}
                   <span class="font-mono">{{ cell.percent }} %</span>
                 {% endif %}
@@ -96,7 +96,7 @@
                 {% if request.user.is_superadmin %}
                   <input name="platform_fee_rate" type="number" step="0.01" min="0" max="49.99" required
                          value="{{ pricing_form.platform_fee_rate.value|default_if_none:'' }}"
-                         class="w-20 rounded-md border border-slate-300 px-1.5 py-0.5 text-right font-mono"> % du montant net, sur toutes les routes
+                         class="field w-20 px-1.5 py-1 text-right font-mono"> % du montant net, sur toutes les routes
                 {% else %}
                   <span class="font-mono">{{ pricing.policy.platform_fee_rate|percent_rate }}</span> du montant net
                 {% endif %}
@@ -106,7 +106,7 @@
         </table>
       </div>
     {% if request.user.is_superadmin %}
-      <div class="px-3 py-2">
+      <div class="border-t border-slate-100 px-4 py-3">
         <button type="submit" class="btn-primary">
           {% if pricing.unreviewed %}Valider cette tarification{% else %}Enregistrer la tarification{% endif %}
         </button>
@@ -114,7 +114,7 @@
     </form>
     {% endif %}
 
-    <h3 class="border-t px-3 py-2 font-medium">Apercu par route <span class="font-normal text-slate-500">pour {{ pricing.preview_net_amount|htg }} HTG recus, tarifs enregistres</span></h3>
+    <h3 class="border-t border-slate-100 px-4 py-3 font-semibold">Aperçu par route <span class="font-normal text-slate-500">pour {{ pricing.preview_net_amount|htg }} HTG reçus, tarifs enregistrés</span></h3>
     <div class="overflow-x-auto">
       <table class="w-full">
         <thead class="thead">
@@ -122,15 +122,15 @@
             <th class="px-4 py-2">Route</th>
             <th class="px-4 py-2 text-right">Frais client</th>
             <th class="px-4 py-2 text-right">Client paie</th>
-            <th class="px-4 py-2 text-right">Cout encaissement</th>
-            <th class="px-4 py-2 text-right">Cout retrait</th>
-            <th class="px-4 py-2 text-right">Marge estimee</th>
+            <th class="px-4 py-2 text-right">Coût encaissement</th>
+            <th class="px-4 py-2 text-right">Coût retrait</th>
+            <th class="px-4 py-2 text-right">Marge estimée</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
           {% for route in pricing.routes %}
           <tr class="{% if not route.open %}text-slate-500{% elif route.margin < 0 %}bg-red-50 text-red-900{% endif %}">
-            <td class="px-4 py-2">{{ route.source.label }} → {{ route.destination.label }}{% if not route.open %} <span class="text-xs">(fermee)</span>{% endif %}</td>
+            <td class="px-4 py-2">{{ route.source.label }} → {{ route.destination.label }}{% if not route.open %} <span class="text-xs">(fermée)</span>{% endif %}</td>
             <td class="px-4 py-2 text-right font-mono">{{ route.quote.total_fees|htg }}</td>
             <td class="px-4 py-2 text-right font-mono">{{ route.quote.total_charged|htg }}</td>
             <td class="px-4 py-2 text-right font-mono">{{ route.cost_in|htg }}</td>
@@ -144,30 +144,30 @@
   </section>
 
   <section class="card" data-section="limits">
-    <h2 class="card-title">Plafonds cumules</h2>
+    <h2 class="card-title">Plafonds cumulés</h2>
     {% if limits.narrow_ratios %}
-    <div class="border-b border-amber-200 bg-amber-50 px-3 py-2 text-amber-900" role="alert">
-      <p class="font-medium">Reglage a regarder de pres</p>
+    <div class="border-b border-amber-200 bg-amber-50 px-4 py-3 text-amber-900" role="alert">
+      <p class="font-medium">Réglage à regarder de près</p>
       <p>
         {% for row in limits.narrow_ratios %}
-        Sur {{ row.window }}, le plafond du beneficiaire ne vaut que {{ row.ratio }} fois celui de l'expediteur
+        Sur {{ row.window }}, le plafond du bénéficiaire ne vaut que {{ row.ratio }} fois celui de l'expéditeur
         ({{ row.recipient|htg }} contre {{ row.sender|htg }}){% if not forloop.last %} ;{% else %}.{% endif %}
         {% endfor %}
-        Quelques expediteurs au plafond suffiront alors a saturer un numero, et ce sont des expediteurs
-        innocents qui seront refuses pour l'activite d'un tiers. Ce n'est pas une erreur, mais mieux vaut
-        le decider que le subir.
+        Quelques expéditeurs au plafond suffiront alors à saturer un numéro, et ce sont des expéditeurs
+        innocents qui seront refusés pour l'activité d'un tiers. Ce n'est pas une erreur, mais mieux vaut
+        le décider que le subir.
       </p>
     </div>
     {% endif %}
-    <div class="space-y-1 px-3 py-2 text-slate-600">
+    <div class="space-y-1 px-4 py-3 text-slate-600">
       <p>
-        Fenetres <strong>glissantes</strong> : elles remontent depuis maintenant, elles ne se remettent pas a zero
-        a minuit ni le 1er du mois. Verifiees a la <strong>creation</strong> uniquement : une transaction encaissee
-        est une dette, aucun plafond ne bloque son decaissement.
+        Fenêtres <strong>glissantes</strong> : elles remontent depuis maintenant, elles ne se remettent pas à zéro
+        à minuit ni le 1er du mois. Vérifiées à la <strong>création</strong> uniquement : une transaction encaissée
+        est une dette, aucun plafond ne bloque son décaissement.
       </p>
       <p>
-        Comptent : les transferts encaisses et non rembourses, plus ceux en attente de paiement dont le delai court
-        encore. Un remboursement libere le plafond. Maximum par transfert : {{ limits.max_net_amount|htg }} HTG.
+        Comptent : les transferts encaissés et non remboursés, plus ceux en attente de paiement dont le délai court
+        encore. Un remboursement libère le plafond. Maximum par transfert : {{ limits.max_net_amount|htg }} HTG.
       </p>
     </div>
 
@@ -175,21 +175,21 @@
     <form data-console-action="limits" method="post" action="{% url 'console:limits_update' %}"
           hx-post="{% url 'console:limits_update' %}" hx-target="#methods-body" hx-swap="outerHTML"
           hx-disabled-elt="find button"
-          hx-confirm="Enregistrer ces plafonds ? Ils s'appliqueront aux nouvelles creations.">
+          hx-confirm="Enregistrer ces plafonds ? Ils s'appliqueront aux nouvelles créations.">
       {% csrf_token %}
     {% endif %}
-      {% if limits_form.non_field_errors %}<p class="px-3 text-red-700">{{ limits_form.non_field_errors|join:" " }}</p>{% endif %}
+      {% if limits_form.non_field_errors %}<p class="px-4 pt-2 text-red-700">{{ limits_form.non_field_errors|join:" " }}</p>{% endif %}
       <table class="w-full">
         <thead class="thead">
           <tr>
-            <th class="px-4 py-2">Fenetre</th>
-            <th class="px-4 py-2 text-right">Expediteur (HTG)</th>
-            <th class="px-4 py-2 text-right">Beneficiaire (HTG)</th>
+            <th class="px-4 py-2">Fenêtre</th>
+            <th class="px-4 py-2 text-right">Expéditeur (HTG)</th>
+            <th class="px-4 py-2 text-right">Bénéficiaire (HTG)</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
           <tr>
-            <td class="px-4 py-2">{{ limits.day_hours }} dernieres heures</td>
+            <td class="px-4 py-2">{{ limits.day_hours }} dernières heures</td>
             <td class="px-4 py-2 text-right">
               {% if request.user.is_superadmin %}
                 <input type="number" step="0.01" min="1" name="daily_cap" value="{{ limits_form.daily_cap.value|unlocalize }}"
@@ -220,18 +220,18 @@
           </tr>
         </tbody>
       </table>
-      <p class="px-3 pt-2 text-xs text-slate-500">
-        Le plafond du <strong>beneficiaire</strong> porte sur un NUMERO, pas sur un compte : il vise le schema
-        « beaucoup d'expediteurs vers un meme numero ». C'est une borne de surveillance, pas une limite promise
+      <p class="px-4 pt-3 text-xs text-slate-500">
+        Le plafond du <strong>bénéficiaire</strong> porte sur un NUMÉRO, pas sur un compte : il vise le schema
+        « beaucoup d'expéditeurs vers un même numéro ». C'est une borne de surveillance, pas une limite promise
         au client — sa valeur est surtout dans la trace que le refus laisse au journal d'audit. Il ne s'applique
-        jamais a un transfert cree depuis la console, mais ces transferts comptent dans son total.
+        jamais à un transfert créé depuis la console, mais ces transferts comptent dans son total.
       </p>
-      <p class="px-3 py-2 text-xs text-slate-500">
-        {% if limits.policy.updated_at %}Modifies le {{ limits.policy.updated_at|date:"d/m/Y H:i" }}{% if limits.policy.updated_by %} par {{ limits.policy.updated_by }}{% endif %}.{% else %}Valeurs de depart, jamais modifiees.{% endif %}
+      <p class="px-4 py-2 text-xs text-slate-500">
+        {% if limits.policy.updated_at %}Modifiés le {{ limits.policy.updated_at|date:"d/m/Y H:i" }}{% if limits.policy.updated_by %} par {{ limits.policy.updated_by }}{% endif %}.{% else %}Valeurs de départ, jamais modifiées.{% endif %}
       </p>
     {% if request.user.is_superadmin %}
-      <div class="border-t px-3 py-2">
-        <button class="rounded bg-slate-900 px-4 py-2 font-medium text-white">Enregistrer les plafonds</button>
+      <div class="border-t border-slate-100 px-4 py-3">
+        <button class="btn-primary">Enregistrer les plafonds</button>
       </div>
     </form>
     {% endif %}

@@ -1,61 +1,67 @@
 {% load console_tags %}
-<div id="exceptions-body" class="space-y-5">
+<div id="exceptions-body" class="space-y-4">
   {% include "console/partials/messages.html" %}
 
   {% if stale %}
-  <section class="rounded-xl border-2 border-red-500 bg-white">
-    <h2 class="border-b border-red-200 bg-red-50 px-3 py-2 font-semibold text-red-800">
-      Decaissements enlises : en attente operateur depuis plus de {{ stale_after|duration }}
-      <span class="font-normal">({{ stale|length }})</span>
-    </h2>
-    <p class="px-3 py-2 text-red-800">
-      L'argent est probablement parti sans confirmation. Appeler l'operateur avec la reference de retrait avant toute autre action.
-    </p>
+  <section class="card overflow-hidden border-2 border-red-500" data-group="stale">
+    <div class="border-b border-red-200 bg-red-50 px-4 py-3 text-red-800">
+      <h2 class="font-semibold">
+        Décaissements enlisés : en attente opérateur depuis plus de {{ stale_after|duration }}
+        <span class="font-normal">({{ stale|length }})</span>
+      </h2>
+      <p class="mt-0.5">L'argent est probablement parti sans confirmation. Appeler l'opérateur avec la référence de retrait avant toute autre action.</p>
+    </div>
     {% include "console/partials/exception_table.html" with rows=stale %}
   </section>
   {% endif %}
 
   {% if orphans %}
-  <section class="rounded-xl border-2 border-red-500 bg-white" data-group="orphans">
-    <h2 class="border-b border-red-200 bg-red-50 px-3 py-2 font-semibold text-red-800">
-      Decaissements sans processus : « en cours » depuis plus de {{ orphan_after|duration }}
-      <span class="font-normal">({{ orphans|length }})</span>
-    </h2>
-    <p class="px-3 py-2 text-red-800">
-      Le worker a ete tue pendant l'appel a plopplop. Le balayage automatique aurait deja du les passer
-      en « indetermine » : verifier que celery-beat et celery-worker tournent. Ne relancer aucun retrait
-      a la main, l'argent est peut-etre parti.
-    </p>
+  <section class="card overflow-hidden border-2 border-red-500" data-group="orphans">
+    <div class="border-b border-red-200 bg-red-50 px-4 py-3 text-red-800">
+      <h2 class="font-semibold">
+        Décaissements sans processus : « en cours » depuis plus de {{ orphan_after|duration }}
+        <span class="font-normal">({{ orphans|length }})</span>
+      </h2>
+      <p class="mt-0.5">
+        Le worker a été tué pendant l'appel à plopplop. Le balayage automatique aurait déjà dû les passer
+        en « indéterminé » : vérifier que celery-beat et celery-worker tournent. Ne relancer aucun retrait
+        à la main, l'argent est peut-être parti.
+      </p>
+    </div>
     {% include "console/partials/exception_table.html" with rows=orphans %}
   </section>
   {% endif %}
 
-  <section class="rounded-xl border {% if held %}border-2 border-red-500{% endif %} bg-white" data-group="held">
-    <h2 class="flex items-center gap-2 border-b px-3 py-2 font-medium">
-      <span class="rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-800">Montant non conforme</span>
-      <span class="font-normal text-slate-500">{{ held|length }}</span>
-    </h2>
-    {% if held %}
-      <p class="px-3 py-2 text-red-800">
-        Paiement confirme par plopplop mais montant different du devis, ou non communique. Rien n'a ete verse :
-        rembourser le montant reellement recu, ou debloquer apres verification du montant exact.
+  <section class="card overflow-hidden {% if held %}border-2 border-red-500{% endif %}" data-group="held">
+    <div class="border-b border-slate-100 px-4 py-3">
+      <h2 class="flex items-center gap-2 font-semibold">
+        <span class="tag bg-red-100 text-red-800">Montant non conforme</span>
+        <span class="font-normal text-slate-500">{{ held|length }}</span>
+      </h2>
+      {% if held %}
+      <p class="mt-1 text-red-800">
+        Paiement confirmé par plopplop mais montant différent du devis, ou non communiqué. Rien n'a été versé :
+        rembourser le montant réellement reçu, ou débloquer après vérification du montant exact.
       </p>
+      {% endif %}
+    </div>
+    {% if held %}
       {% include "console/partials/exception_table.html" with rows=held %}
     {% else %}
-      <p class="px-3 py-2 text-slate-500">Aucun.</p>
+      <p class="px-4 py-3 text-slate-500">Aucun.</p>
     {% endif %}
   </section>
 
   {% for group in groups %}
-  <section class="card">
-    <h2 class="flex items-center gap-2 border-b px-3 py-2 font-medium">
+  <section class="card overflow-hidden">
+    <h2 class="flex items-center gap-2 border-b border-slate-100 px-4 py-3 font-semibold">
       {% include "console/partials/state_badge.html" with state=group.state %}
       <span class="font-normal text-slate-500">{{ group.rows|length }}</span>
     </h2>
     {% if group.rows %}
       {% include "console/partials/exception_table.html" with rows=group.rows %}
     {% else %}
-      <p class="px-3 py-2 text-slate-500">Aucune.</p>
+      <p class="px-4 py-3 text-slate-500">Aucune.</p>
     {% endif %}
   </section>
   {% endfor %}

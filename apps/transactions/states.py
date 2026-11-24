@@ -10,18 +10,18 @@ from django.db import models
 
 
 class State(models.TextChoices):
-    CREATED = "created", "Cree"
+    CREATED = "created", "Créé"
     AWAITING_PAYMENT = "awaiting_payment", "Attente paiement"
-    PAYMENT_CONFIRMED = "payment_confirmed", "Paiement confirme"
-    PAYOUT_QUEUED = "payout_queued", "File de decaissement"
-    PAYOUT_IN_FLIGHT = "payout_in_flight", "Decaissement en cours"
-    PAYOUT_UNKNOWN = "payout_unknown", "Decaissement indetermine"
-    PAYOUT_PENDING = "payout_pending", "Decaissement en attente operateur"
-    COMPLETED = "completed", "Terminee"
-    PAYMENT_EXPIRED = "payment_expired", "Paiement expire"
-    PAYOUT_FAILED = "payout_failed", "Echec decaissement"
-    REFUNDED = "refunded", "Remboursee"
-    CANCELLED = "cancelled", "Annulee"
+    PAYMENT_CONFIRMED = "payment_confirmed", "Paiement confirmé"
+    PAYOUT_QUEUED = "payout_queued", "File de décaissement"
+    PAYOUT_IN_FLIGHT = "payout_in_flight", "Décaissement en cours"
+    PAYOUT_UNKNOWN = "payout_unknown", "Décaissement indéterminé"
+    PAYOUT_PENDING = "payout_pending", "Décaissement en attente opérateur"
+    COMPLETED = "completed", "Terminée"
+    PAYMENT_EXPIRED = "payment_expired", "Paiement expiré"
+    PAYOUT_FAILED = "payout_failed", "Échec décaissement"
+    REFUNDED = "refunded", "Remboursée"
+    CANCELLED = "cancelled", "Annulée"
 
 
 #: Etats ou l'argent du client est chez nous et n'est pas encore arrive

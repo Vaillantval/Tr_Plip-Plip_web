@@ -2,5 +2,9 @@
 {% block title %}Reclamation {{ claim.pk }} — Console Plip-Plip{% endblock %}
 {% block heading %}Réclamation n° {{ claim.pk }}{% endblock %}
 {% block content %}
-{% include "console/partials/claim_body.html" %}
+{# Liste a gauche (cachee sur telephone), fiche a droite. #}
+<div class="grid items-start gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+  <div class="hidden lg:block">{% include "console/partials/claim_list.html" with current=claim %}</div>
+  {% include "console/partials/claim_body.html" %}
+</div>
 {% endblock %}

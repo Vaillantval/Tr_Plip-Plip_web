@@ -518,10 +518,10 @@ def test_the_console_shows_the_recipient_consumption_and_flags_an_overshoot(clie
 
     html = client.get(reverse("console:transaction_detail", args=[txn.reference])).content.decode()
 
-    assert "Plafonds du beneficiaire" in html
+    assert "Plafonds du bénéficiaire" in html
     assert RECIPIENT in html
-    assert "DEPASSE" in html, "un depassement invisible est un capteur en panne"
-    assert "expediteur" in html
+    assert "DÉPASSÉ" in html, "un depassement invisible est un capteur en panne"
+    assert "expéditeur" in html
 
 
 # ----------------------------------------------------------------------
@@ -606,5 +606,5 @@ def test_a_ratio_under_two_warns_without_blocking(client, django_user_model):
     html = response.content.decode()
 
     assert TransferLimitPolicy.objects.get(pk=1).recipient_daily_cap == Decimal("60000"), "enregistre quand meme"
-    assert "Reglage a regarder de pres" in html
+    assert "Réglage à regarder de près" in html
     assert "1,2" in html, "le rapport doit etre affiche, pas seulement l'alerte"

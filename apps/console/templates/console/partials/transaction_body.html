@@ -1,241 +1,235 @@
 {% load console_tags %}
+{# Fiche transfert : l'essentiel en tete, a droite ce qui demande une #}
+{# action (alertes, boutons, devis), a gauche l'historique et le detail. #}
 <div id="txn-detail" class="space-y-4">
   {% include "console/partials/messages.html" %}
 
-  <header class="flex flex-wrap items-center gap-x-3 gap-y-1">
-    <h1 class="font-mono text-lg font-semibold">{{ txn.reference }}</h1>
-    {% include "console/partials/state_badge.html" with state=txn.state %}
-    <span class="text-slate-700">{{ txn.get_source_wallet_display }} → {{ txn.get_destination_wallet_display }}</span>
-    <span class="text-slate-500">beneficiaire <span class="font-mono text-slate-700">{{ txn.recipient_phone }}</span>{% if txn.sender_phone %} · payeur <span class="font-mono text-slate-700">{{ txn.sender_phone }}</span>{% endif %}{% if txn.customer %} · client <a class="font-mono text-slate-700 underline decoration-slate-300 hover:decoration-slate-700" href="{% url 'console:transactions' %}?customer={{ txn.customer.phone }}" title="Tous les transferts de ce client">{{ txn.customer.phone }}</a>{% endif %}</span>
-    <span class="ml-auto text-slate-500">creee le {{ txn.created_at|date:"d/m/Y H:i:s" }}{% if txn.created_by %} par {{ txn.created_by }}{% endif %}</span>
+  <header class="card p-5" data-txn-header>
+    <div class="flex flex-wrap items-start gap-x-6 gap-y-4">
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-2">
+          <h1 class="font-mono text-lg font-semibold">{{ txn.reference }}</h1>
+          {% include "console/partials/state_badge.html" with state=txn.state %}
+        </div>
+        <div class="mt-1 text-slate-600">{{ txn.get_source_wallet_display }} → {{ txn.get_destination_wallet_display }}</div>
+      </div>
+      <div class="sm:ml-auto sm:text-right">
+        <div class="kpi-label">Montant net au bénéficiaire</div>
+        <div class="text-3xl font-semibold tracking-tight tabular-nums">{{ txn.net_amount|htg }} <span class="text-base font-medium text-slate-400">HTG</span></div>
+        <div class="text-slate-500">débité au payeur : <span class="font-mono">{{ txn.total_charged|htg }}</span> HTG</div>
+      </div>
+    </div>
+    <dl class="mt-5 grid gap-4 border-t border-slate-100 pt-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div>
+        <dt class="kpi-label">Bénéficiaire</dt>
+        <dd class="font-mono">{{ txn.recipient_phone }}</dd>
+      </div>
+      <div>
+        <dt class="kpi-label">Payeur</dt>
+        <dd class="font-mono">{{ txn.sender_phone|default:"—" }}</dd>
+      </div>
+      <div>
+        <dt class="kpi-label">Client</dt>
+        <dd class="font-mono">{% if txn.customer %}<a class="text-brand-dark underline decoration-brand-dark/30 underline-offset-2 hover:decoration-brand-dark" href="{% url 'console:transactions' %}?customer={{ txn.customer.phone }}" title="Tous les transferts de ce client">{{ txn.customer.phone }}</a>{% else %}—{% endif %}</dd>
+      </div>
+      <div>
+        <dt class="kpi-label">Créé le</dt>
+        <dd>{{ txn.created_at|date:"d/m/Y H:i:s" }}{% if txn.created_by %} <span class="text-slate-500">par {{ txn.created_by }}</span>{% endif %}</dd>
+      </div>
+    </dl>
   </header>
 
-  {% if claims %}
-  <section class="rounded-xl border-2 border-amber-400 bg-white">
-    <h2 class="border-b border-amber-200 bg-amber-50 px-3 py-2 font-medium text-amber-900">
-      Le client a signale un probleme sur ce transfert
-    </h2>
-    <ul class="divide-y divide-slate-100">
-      {% for row in claims %}
-      <li class="px-3 py-2">
-        <a class="underline underline-offset-2" href="{% url 'console:claim_detail' row.pk %}">{{ row.get_reason_display }}</a>
-        <span class="text-slate-500">· {{ row.get_status_display }} · {{ row.created_at|date:"d/m/Y H:i" }}</span>
-      </li>
-      {% endfor %}
-    </ul>
-  </section>
-  {% endif %}
-
-  {% if consumption %}
-  <section class="card">
-    <h2 class="card-title">Plafonds du client</h2>
-    <table class="w-full">
-      <thead class="thead">
-        <tr>
-          <th class="px-4 py-2">Fenetre</th>
-          <th class="px-4 py-2 text-right">Encaisse</th>
-          <th class="px-4 py-2 text-right">Reserve</th>
-          <th class="px-4 py-2 text-right">Total</th>
-          <th class="px-4 py-2 text-right">Plafond</th>
-          <th class="px-4 py-2 text-right">Restant</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100">
-        {% for window in consumption %}
-        <tr class="{% if not window.remaining %}bg-red-50 text-red-900{% endif %}">
-          <td class="px-4 py-2">{{ window.label }}</td>
-          <td class="px-4 py-2 text-right font-mono">{{ window.collected|htg }}</td>
-          <td class="px-4 py-2 text-right font-mono {% if window.reserved %}text-amber-700{% else %}text-slate-500{% endif %}">{{ window.reserved|htg }}</td>
-          <td class="px-4 py-2 text-right font-mono">{{ window.used|htg }}</td>
-          <td class="px-4 py-2 text-right font-mono">{{ window.cap|htg }}</td>
-          <td class="px-4 py-2 text-right font-mono">{{ window.remaining|htg }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    <p class="px-3 py-2 text-xs text-slate-500">
-      Fenetres glissantes, a l'instant. Verifiees a la creation seulement : ce transfert n'est pas bloque par un plafond.
-      « Reserve » : des transferts crees mais pas encore payes, dont le delai de paiement court toujours.
-      Le client n'a rien envoye ; sa reservation se libere d'elle-meme a l'expiration du paiement.
-    </p>
-  </section>
-  {% endif %}
-
-  <section class="card">
-    <h2 class="card-title">
-      Plafonds du beneficiaire <span class="font-mono text-slate-600">{{ txn.recipient_phone }}</span>
-      <span class="font-normal text-slate-500">
-        — {{ recipient_senders }} expediteur{{ recipient_senders|pluralize }} distinct{{ recipient_senders|pluralize }} sur 30 jours
-      </span>
-    </h2>
-    <table class="w-full">
-      <thead class="thead">
-        <tr>
-          <th class="px-4 py-2">Fenetre</th>
-          <th class="px-4 py-2 text-right">Encaisse</th>
-          <th class="px-4 py-2 text-right">Reserve</th>
-          <th class="px-4 py-2 text-right">Total</th>
-          <th class="px-4 py-2 text-right">Plafond</th>
-          <th class="px-4 py-2 text-right">Restant</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100">
-        {% for window in recipient_consumption %}
-        <tr class="{% if window.over_cap %}bg-red-100 font-medium text-red-900{% elif not window.remaining %}bg-red-50 text-red-900{% endif %}">
-          <td class="px-4 py-2">{{ window.label }}{% if window.over_cap %} — DEPASSE{% endif %}</td>
-          <td class="px-4 py-2 text-right font-mono">{{ window.collected|htg }}</td>
-          <td class="px-4 py-2 text-right font-mono {% if window.reserved %}text-amber-700{% else %}text-slate-500{% endif %}">{{ window.reserved|htg }}</td>
-          <td class="px-4 py-2 text-right font-mono">{{ window.used|htg }}</td>
-          <td class="px-4 py-2 text-right font-mono">{{ window.cap|htg }}</td>
-          <td class="px-4 py-2 text-right font-mono">{{ window.remaining|htg }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    <p class="px-3 py-2 text-xs text-slate-500">
-      Borne de surveillance, pas une limite promise au client : elle vise le schema « beaucoup d'expediteurs vers un meme numero ».
-      Le nombre d'expediteurs distincts est le chiffre a regarder.
-      Un transfert cree depuis la console n'est jamais refuse par ce plafond, mais il compte dans ce total.
-      Un depassement signale soit deux creations simultanees, soit un reglage a revoir : il ne devrait pas durer.
-    </p>
-  </section>
-
-  {% if txn.failure_code %}
-  <div class="rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-red-800">
-    <span class="font-mono font-medium">{{ txn.failure_code }}</span> — {{ txn.failure_message }}
-  </div>
-  {% endif %}
-
-  {% if actions.release %}
-  <div class="rounded-xl border-2 border-red-500 bg-red-50 px-3 py-2 text-red-900">
-    <strong>Encaissement bloque avant decaissement.</strong>
-    Devis <span class="font-mono">{{ txn.total_charged|htg }}</span> HTG ·
-    recu {% if txn.payment_amount_received is not None %}<span class="font-mono">{{ txn.payment_amount_received|htg }}</span> HTG{% else %}<strong>non communique par plopplop</strong>{% endif %}.
-    Rien n'a ete verse au beneficiaire.
-  </div>
-  {% endif %}
-
-  {% if request.user.can_act %}{% if actions.retry or actions.verify or actions.refund or actions.release %}
-  <section class="card p-4">
-    <h2 class="mb-2 font-medium">Actions</h2>
-    <div class="flex flex-wrap items-start gap-3">
-      {% if actions.retry %}
-        {% url 'console:payout_retry' txn.reference as retry_url %}
-        {% include "console/partials/action_button.html" with name="retry" url=retry_url target="#txn-detail" label="Relancer le decaissement" confirm="Remettre cette transaction en file de decaissement ?" %}
-        {% if txn.failure_code == "INSUFFICIENT_BALANCE" or txn.failure_code == "METHOD_NOT_CONFIGURED" %}
-          <p class="self-center text-red-700">Cause systemique : corriger (float, configuration) avant de relancer.</p>
-        {% endif %}
-      {% endif %}
-      {% if actions.verify %}
-        {% url 'console:payout_verify' txn.reference as verify_url %}
-        {% include "console/partials/action_button.html" with name="verify" url=verify_url target="#txn-detail" label="Verifier aupres de l'operateur" %}
-      {% endif %}
-      {% if actions.refund %}
-        <div class="w-full max-w-xl">{% include "console/partials/refund_form.html" with form=refund_form target="#txn-detail" %}</div>
-      {% endif %}
-      {% if actions.release %}
-        <div class="w-full max-w-xl">{% include "console/partials/release_form.html" with form=release_form target="#txn-detail" %}</div>
-      {% endif %}
-    </div>
-  </section>
-  {% endif %}{% endif %}
-
-  <div class="grid gap-4 lg:grid-cols-2">
-    <section class="card">
-      <h2 class="card-title">Devis</h2>
-      <table class="w-full">
-        <tbody class="divide-y divide-slate-100">
-          <tr><td class="px-4 py-2 text-slate-600">Montant net au beneficiaire</td><td class="px-4 py-2 text-right font-mono">{{ txn.net_amount|htg }}</td></tr>
-          <tr><td class="px-4 py-2 text-slate-600">Frais entree</td><td class="px-4 py-2 text-right font-mono">{{ txn.fee_in|htg }}</td></tr>
-          <tr><td class="px-4 py-2 text-slate-600">Frais sortie</td><td class="px-4 py-2 text-right font-mono">{{ txn.fee_out|htg }}</td></tr>
-          <tr><td class="px-4 py-2 text-slate-600">Commission plateforme</td><td class="px-4 py-2 text-right font-mono">{{ txn.fee_platform|htg }}</td></tr>
-          <tr class="bg-slate-50 font-semibold"><td class="px-4 py-2">Total debite au payeur</td><td class="px-4 py-2 text-right font-mono">{{ txn.total_charged|htg }}</td></tr>
-          <tr><td class="px-4 py-2 text-slate-600">Cout encaissement plopplop (estime)</td><td class="px-4 py-2 text-right font-mono">{{ txn.provider_fee_in|htg }}</td></tr>
-          <tr><td class="px-4 py-2 text-slate-600">Cout retrait plopplop (estime)</td><td class="px-4 py-2 text-right font-mono">{{ txn.provider_fee_out_estimate|htg }}</td></tr>
-          <tr><td class="px-4 py-2 text-slate-600">Frais operateur reels</td><td class="px-4 py-2 text-right font-mono">{% if txn.payout_fee_actual is not None %}{{ txn.payout_fee_actual|htg }}{% else %}<span class="font-sans text-slate-500">non verse</span>{% endif %}</td></tr>
-          <tr><td class="px-4 py-2 text-slate-600">Marge estimee</td><td class="px-4 py-2 text-right font-mono {% if txn.margin_estimate < 0 %}font-semibold text-red-700{% endif %}">{{ txn.margin_estimate|htg }}</td></tr>
-        </tbody>
-      </table>
-      <p class="border-t px-4 py-2 text-xs text-slate-500">Montants en HTG. Devis fige a la creation.</p>
-    </section>
-
-    <section class="card">
-      <h2 class="card-title">Identifiants plopplop</h2>
-      <table class="w-full">
-        <tbody class="divide-y divide-slate-100">
-          <tr><th colspan="2" class="bg-slate-50 px-3 py-1 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Encaissement</th></tr>
-          <tr><td class="px-4 py-2 text-slate-600">ID transaction</td><td class="px-4 py-2 font-mono">{{ txn.payment_provider_id|default:"—" }}</td></tr>
-          <tr><td class="px-4 py-2 text-slate-600">Montant encaisse</td><td class="px-4 py-2 font-mono {% if actions.release %}font-semibold text-red-700{% endif %}">{% if txn.payment_amount_received is not None %}{{ txn.payment_amount_received|htg }}{% else %}—{% endif %}</td></tr>
-          <tr><td class="px-4 py-2 text-slate-600">Confirme le</td><td class="px-4 py-2">{{ txn.payment_confirmed_at|date:"d/m/Y H:i:s"|default:"—" }}</td></tr>
-          <tr><td class="px-4 py-2 text-slate-600">Expiration</td><td class="px-4 py-2">{{ txn.payment_expires_at|date:"d/m/Y H:i:s"|default:"—" }}</td></tr>
-          <tr><td class="px-4 py-2 text-slate-600">Verifications</td><td class="px-4 py-2">{{ txn.poll_count }}{% if txn.last_polled_at %} <span class="text-slate-500">(derniere {{ txn.last_polled_at|date:"d/m H:i:s" }})</span>{% endif %}</td></tr>
-          <tr><th colspan="2" class="bg-slate-50 px-3 py-1 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Decaissement</th></tr>
-          <tr><td class="px-4 py-2 text-slate-600">Reference de retrait</td><td class="px-4 py-2 font-mono">{{ txn.payout_reference|default:"—" }}</td></tr>
-          <tr><td class="px-4 py-2 text-slate-600">ID transaction</td><td class="px-4 py-2 font-mono">{{ txn.payout_provider_id|default:"—" }}</td></tr>
-          <tr><td class="px-4 py-2 text-slate-600">Reference API</td><td class="px-4 py-2 font-mono">{{ txn.payout_api_reference|default:"—" }}</td></tr>
-          <tr><td class="px-4 py-2 text-slate-600">Tentatives</td><td class="px-4 py-2">{{ txn.payout_attempts }} <span class="text-slate-500">/ {{ max_attempts }} automatiques</span></td></tr>
-          <tr><td class="px-4 py-2 text-slate-600">Verse le</td><td class="px-4 py-2">{{ txn.payout_completed_at|date:"d/m/Y H:i:s"|default:"—" }}</td></tr>
-        </tbody>
-      </table>
-    </section>
-  </div>
-
-  <section class="card">
-    <h2 class="card-title">Timeline <span class="font-normal text-slate-500">{{ events|length }}</span></h2>
-    <div class="overflow-x-auto">
-      <table class="w-full">
-        <thead class="thead">
-          <tr><th class="px-4 py-2">Date</th><th class="px-4 py-2">Transition</th><th class="px-4 py-2">Acteur</th><th class="px-4 py-2">Note</th><th class="px-4 py-2">Donnees</th></tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          {% for event in events %}
-          <tr class="align-top">
-            <td class="whitespace-nowrap px-4 py-2 font-mono">{{ event.created_at|date:"d/m H:i:s" }}</td>
-            <td class="whitespace-nowrap px-4 py-2">{% if event.from_state == event.to_state %}<span class="text-slate-500">constat en</span> {% elif event.from_state %}<span class="text-slate-500">{{ event.from_state|state_label }}</span> → {% endif %}{% include "console/partials/state_badge.html" with state=event.to_state %}</td>
-            <td class="px-4 py-2">{{ event.actor|default:"systeme" }}</td>
-            <td class="px-4 py-2">{{ event.note }}</td>
-            <td class="px-4 py-2 font-mono text-xs text-slate-500">{% if event.data %}{{ event.data }}{% endif %}</td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="5" class="px-3 py-2 text-slate-500">Aucun evenement.</td></tr>
+  <div class="grid items-start gap-4 xl:grid-cols-3">
+    {# Colonne de droite : ce qui demande un geste #}
+    <aside class="space-y-4 xl:order-2">
+      {% if claims %}
+      <section class="card overflow-hidden border-amber-300" data-panel="claims">
+        <h2 class="border-b border-amber-200 bg-amber-50 px-4 py-3 font-semibold text-amber-900">
+          Le client a signalé un problème sur ce transfert
+        </h2>
+        <ul class="divide-y divide-slate-100">
+          {% for row in claims %}
+          <li class="px-4 py-2.5">
+            <a class="font-medium text-brand-dark underline-offset-2 hover:underline" href="{% url 'console:claim_detail' row.pk %}">{{ row.get_reason_display }}</a>
+            <div class="text-slate-500">{{ row.get_status_display }} · {{ row.created_at|date:"d/m/Y H:i" }}</div>
+          </li>
           {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </section>
+        </ul>
+      </section>
+      {% endif %}
 
-  <section class="card">
-    <h2 class="card-title">Grand livre <span class="font-normal text-slate-500">{{ entries|length }} ecriture(s)</span></h2>
-    {% for item in entries %}
-    <div class="border-b last:border-b-0">
-      <div class="flex flex-wrap items-center gap-x-4 gap-y-1 bg-slate-50 px-4 py-2">
-        <span class="font-mono font-medium">{{ item.entry.reference }}</span>
-        <span>{{ item.entry.description }}</span>
-        {% if item.entry.reverses %}<span class="text-slate-500">extourne de <span class="font-mono">{{ item.entry.reverses.reference }}</span></span>{% endif %}
-        {% if item.total != 0 %}<span class="font-semibold text-red-700">DESEQUILIBREE : {{ item.total|htg }}</span>{% endif %}
-        <span class="ml-auto text-slate-500">{{ item.entry.created_at|date:"d/m/Y H:i:s" }} · {{ item.entry.posted_by|default:"systeme" }}</span>
+      {% if txn.failure_code %}
+      <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800">
+        <div class="font-mono font-semibold">{{ txn.failure_code }}</div>
+        <div>{{ txn.failure_message }}</div>
       </div>
-      <div class="overflow-x-auto">
+      {% endif %}
+
+      {% if actions.release %}
+      <div class="rounded-xl border-2 border-red-500 bg-red-50 px-4 py-3 text-red-900">
+        <strong>Encaissement bloqué avant décaissement.</strong>
+        Devis <span class="font-mono">{{ txn.total_charged|htg }}</span> HTG ·
+        reçu {% if txn.payment_amount_received is not None %}<span class="font-mono">{{ txn.payment_amount_received|htg }}</span> HTG{% else %}<strong>non communiqué par plopplop</strong>{% endif %}.
+        Rien n'a été versé au bénéficiaire.
+      </div>
+      {% endif %}
+
+      {% if request.user.can_act %}{% if actions.retry or actions.verify or actions.refund or actions.release %}
+      <section class="card" data-panel="actions">
+        <h2 class="card-title">Actions</h2>
+        <div class="space-y-3 p-4">
+          {% if actions.retry or actions.verify %}
+          <div class="flex flex-wrap gap-2">
+            {% if actions.retry %}
+              {% url 'console:payout_retry' txn.reference as retry_url %}
+              {% include "console/partials/action_button.html" with name="retry" url=retry_url target="#txn-detail" label="Relancer le décaissement" confirm="Remettre cette transaction en file de décaissement ?" %}
+            {% endif %}
+            {% if actions.verify %}
+              {% url 'console:payout_verify' txn.reference as verify_url %}
+              {% include "console/partials/action_button.html" with name="verify" url=verify_url target="#txn-detail" label="Vérifier auprès de l'opérateur" %}
+            {% endif %}
+          </div>
+          {% endif %}
+          {% if actions.retry %}{% if txn.failure_code == "INSUFFICIENT_BALANCE" or txn.failure_code == "METHOD_NOT_CONFIGURED" %}
+            <p class="text-red-700">Cause systémique : corriger (float, configuration) avant de relancer.</p>
+          {% endif %}{% endif %}
+          {% if actions.refund %}
+            {% include "console/partials/refund_form.html" with form=refund_form target="#txn-detail" %}
+          {% endif %}
+          {% if actions.release %}
+            {% include "console/partials/release_form.html" with form=release_form target="#txn-detail" %}
+          {% endif %}
+        </div>
+      </section>
+      {% endif %}{% endif %}
+
+      <section class="card" data-panel="quote">
+        <h2 class="card-title">Devis</h2>
         <table class="w-full">
-          <thead class="thead">
-            <tr><th class="px-3 py-1">Compte</th><th class="px-3 py-1">Libelle</th><th class="px-3 py-1 text-right">Debit</th><th class="px-3 py-1 text-right">Credit</th><th class="px-3 py-1">Memo</th></tr>
-          </thead>
-          <tbody>
-            {% for line in item.lines %}
-            <tr>
-              <td class="px-3 py-1 font-mono">{{ line.account.code }}</td>
-              <td class="px-3 py-1 text-slate-600">{{ line.account.label }}</td>
-              <td class="px-3 py-1 text-right font-mono">{% if line.amount > 0 %}{{ line.amount|htg }}{% endif %}</td>
-              <td class="px-3 py-1 text-right font-mono">{% if line.amount < 0 %}{{ line.amount|abs_htg }}{% endif %}</td>
-              <td class="px-3 py-1 text-slate-600">{{ line.memo }}</td>
-            </tr>
-            {% endfor %}
+          <tbody class="divide-y divide-slate-100">
+            <tr><td class="px-4 py-2 text-slate-600">Montant net au bénéficiaire</td><td class="px-4 py-2 text-right font-mono">{{ txn.net_amount|htg }}</td></tr>
+            <tr><td class="px-4 py-2 text-slate-600">Frais entrée</td><td class="px-4 py-2 text-right font-mono">{{ txn.fee_in|htg }}</td></tr>
+            <tr><td class="px-4 py-2 text-slate-600">Frais sortie</td><td class="px-4 py-2 text-right font-mono">{{ txn.fee_out|htg }}</td></tr>
+            <tr><td class="px-4 py-2 text-slate-600">Commission plateforme</td><td class="px-4 py-2 text-right font-mono">{{ txn.fee_platform|htg }}</td></tr>
+            <tr class="bg-slate-50 font-semibold"><td class="px-4 py-2">Total débité au payeur</td><td class="px-4 py-2 text-right font-mono">{{ txn.total_charged|htg }}</td></tr>
+            <tr><td class="px-4 py-2 text-slate-600">Coût encaissement plopplop (estimé)</td><td class="px-4 py-2 text-right font-mono">{{ txn.provider_fee_in|htg }}</td></tr>
+            <tr><td class="px-4 py-2 text-slate-600">Coût retrait plopplop (estimé)</td><td class="px-4 py-2 text-right font-mono">{{ txn.provider_fee_out_estimate|htg }}</td></tr>
+            <tr><td class="px-4 py-2 text-slate-600">Frais opérateur réels</td><td class="px-4 py-2 text-right font-mono">{% if txn.payout_fee_actual is not None %}{{ txn.payout_fee_actual|htg }}{% else %}<span class="font-sans text-slate-500">non versé</span>{% endif %}</td></tr>
+            <tr><td class="px-4 py-2 text-slate-600">Marge estimée</td><td class="px-4 py-2 text-right font-mono {% if txn.margin_estimate < 0 %}font-semibold text-red-700{% else %}text-brand-dark{% endif %}">{{ txn.margin_estimate|htg }}</td></tr>
           </tbody>
         </table>
-      </div>
+        <p class="border-t border-slate-100 px-4 py-2.5 text-xs text-slate-500">Montants en HTG. Devis figé à la création.</p>
+      </section>
+    </aside>
+
+    {# Colonne principale : historique et detail #}
+    <div class="min-w-0 space-y-4 xl:order-1 xl:col-span-2">
+      <section class="card" data-panel="timeline">
+        <h2 class="card-title">Historique <span class="font-normal text-slate-500">{{ events|length }}</span></h2>
+        <ol class="px-4 py-3">
+          {% for event in events %}
+          <li class="relative flex gap-3 pb-4 last:pb-0">
+            {% if not forloop.last %}<span class="absolute left-[5px] top-4 h-full w-px bg-slate-200" aria-hidden="true"></span>{% endif %}
+            <span class="relative mt-1.5 h-[11px] w-[11px] shrink-0 rounded-full border-2 border-white {% if forloop.last %}bg-brand-dark{% else %}bg-slate-300{% endif %} ring-1 ring-slate-200" aria-hidden="true"></span>
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                {% if event.from_state == event.to_state %}<span class="text-slate-500">constat en</span> {% elif event.from_state %}<span class="text-slate-500">{{ event.from_state|state_label }}</span> <span class="text-slate-400">→</span> {% endif %}{% include "console/partials/state_badge.html" with state=event.to_state %}
+                <span class="ml-auto whitespace-nowrap font-mono text-xs text-slate-500">{{ event.created_at|date:"d/m H:i:s" }}</span>
+              </div>
+              <div class="mt-0.5 text-slate-600">{{ event.actor|default:"système" }}{% if event.note %} · {{ event.note }}{% endif %}</div>
+              {% if event.data %}<div class="mt-0.5 break-all font-mono text-xs text-slate-500">{{ event.data }}</div>{% endif %}
+            </div>
+          </li>
+          {% empty %}
+          <li class="text-slate-500">Aucun événement.</li>
+          {% endfor %}
+        </ol>
+      </section>
+
+      <section class="card" data-panel="provider-ids">
+        <h2 class="card-title">Identifiants plopplop</h2>
+        <div class="grid divide-y divide-slate-100 md:grid-cols-2 md:divide-x md:divide-y-0">
+          <dl class="space-y-2 p-4">
+            <div class="text-[11px] font-medium uppercase tracking-wider text-slate-500">Encaissement</div>
+            <div class="flex justify-between gap-3"><dt class="text-slate-600">ID transaction</dt><dd class="truncate font-mono">{{ txn.payment_provider_id|default:"—" }}</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-slate-600">Montant encaissé</dt><dd class="font-mono {% if actions.release %}font-semibold text-red-700{% endif %}">{% if txn.payment_amount_received is not None %}{{ txn.payment_amount_received|htg }}{% else %}—{% endif %}</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-slate-600">Confirmé le</dt><dd>{{ txn.payment_confirmed_at|date:"d/m/Y H:i:s"|default:"—" }}</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-slate-600">Expiration</dt><dd>{{ txn.payment_expires_at|date:"d/m/Y H:i:s"|default:"—" }}</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-slate-600">Vérifications</dt><dd>{{ txn.poll_count }}{% if txn.last_polled_at %} <span class="text-slate-500">(dernière {{ txn.last_polled_at|date:"d/m H:i:s" }})</span>{% endif %}</dd></div>
+          </dl>
+          <dl class="space-y-2 p-4">
+            <div class="text-[11px] font-medium uppercase tracking-wider text-slate-500">Décaissement</div>
+            <div class="flex justify-between gap-3"><dt class="text-slate-600">Référence de retrait</dt><dd class="truncate font-mono">{{ txn.payout_reference|default:"—" }}</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-slate-600">ID transaction</dt><dd class="truncate font-mono">{{ txn.payout_provider_id|default:"—" }}</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-slate-600">Référence API</dt><dd class="truncate font-mono">{{ txn.payout_api_reference|default:"—" }}</dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-slate-600">Tentatives</dt><dd>{{ txn.payout_attempts }} <span class="text-slate-500">/ {{ max_attempts }} automatiques</span></dd></div>
+            <div class="flex justify-between gap-3"><dt class="text-slate-600">Versé le</dt><dd>{{ txn.payout_completed_at|date:"d/m/Y H:i:s"|default:"—" }}</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="card" data-panel="ledger">
+        <h2 class="card-title">Grand livre <span class="font-normal text-slate-500">{{ entries|length }} écriture(s)</span></h2>
+        {% for item in entries %}
+        <div class="border-b border-slate-100 last:border-b-0">
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-1 bg-slate-50/70 px-4 py-2">
+            <span class="font-mono font-medium">{{ item.entry.reference }}</span>
+            <span>{{ item.entry.description }}</span>
+            {% if item.entry.reverses %}<span class="text-slate-500">extourne de <span class="font-mono">{{ item.entry.reverses.reference }}</span></span>{% endif %}
+            {% if item.total != 0 %}<span class="font-semibold text-red-700">DÉSÉQUILIBRÉE : {{ item.total|htg }}</span>{% endif %}
+            <span class="ml-auto text-xs text-slate-500">{{ item.entry.created_at|date:"d/m/Y H:i:s" }} · {{ item.entry.posted_by|default:"système" }}</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="thead">
+                <tr><th class="px-4 py-1.5">Compte</th><th class="px-4 py-1.5">Libellé</th><th class="px-4 py-1.5 text-right">Débit</th><th class="px-4 py-1.5 text-right">Crédit</th><th class="px-4 py-1.5">Mémo</th></tr>
+              </thead>
+              <tbody>
+                {% for line in item.lines %}
+                <tr>
+                  <td class="px-4 py-1.5 font-mono">{{ line.account.code }}</td>
+                  <td class="px-4 py-1.5 text-slate-600">{{ line.account.label }}</td>
+                  <td class="px-4 py-1.5 text-right font-mono">{% if line.amount > 0 %}{{ line.amount|htg }}{% endif %}</td>
+                  <td class="px-4 py-1.5 text-right font-mono">{% if line.amount < 0 %}{{ line.amount|abs_htg }}{% endif %}</td>
+                  <td class="px-4 py-1.5 text-slate-600">{{ line.memo }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        {% empty %}
+        <p class="px-4 py-3 text-slate-500">Aucune écriture : rien n'a encore été encaissé.</p>
+        {% endfor %}
+      </section>
+
+      {% if consumption %}
+      <section class="card" data-panel="customer-limits">
+        <h2 class="card-title">Plafonds du client</h2>
+        {% include "console/partials/limit_windows.html" with windows=consumption %}
+        <p class="px-4 py-2.5 text-xs text-slate-500">
+          Fenêtres glissantes, à l'instant. Vérifiées à la création seulement : ce transfert n'est pas bloqué par un plafond.
+          « Réservé » : des transferts créés mais pas encore payés, dont le délai de paiement court toujours.
+          Le client n'a rien envoyé ; sa réservation se libère d'elle-même à l'expiration du paiement.
+        </p>
+      </section>
+      {% endif %}
+
+      <section class="card" data-panel="recipient-limits">
+        <h2 class="card-title">
+          Plafonds du bénéficiaire <span class="font-mono text-slate-600">{{ txn.recipient_phone }}</span>
+          <span class="font-normal text-slate-500">
+            — {{ recipient_senders }} expéditeur{{ recipient_senders|pluralize }} distinct{{ recipient_senders|pluralize }} sur 30 jours
+          </span>
+        </h2>
+        {% include "console/partials/limit_windows.html" with windows=recipient_consumption %}
+        <p class="px-4 py-2.5 text-xs text-slate-500">
+          Borne de surveillance, pas une limite promise au client : elle vise le schéma « beaucoup d'expéditeurs vers un même numéro ».
+          Le nombre d'expéditeurs distincts est le chiffre à regarder.
+          Un transfert créé depuis la console n'est jamais refusé par ce plafond, mais il compte dans ce total.
+          Un dépassement signale soit deux créations simultanées, soit un réglage à revoir : il ne devrait pas durer.
+        </p>
+      </section>
     </div>
-    {% empty %}
-    <p class="px-3 py-2 text-slate-500">Aucune ecriture : rien n'a encore ete encaisse.</p>
-    {% endfor %}
-  </section>
+  </div>
 </div>

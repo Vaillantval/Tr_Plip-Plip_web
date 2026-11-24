@@ -1,39 +1,10 @@
 {% load console_tags %}
 <div id="claims-body" class="space-y-4">
   {% include "console/partials/messages.html" %}
-
-  <h1 class="text-lg font-semibold">
-    Reclamations <span class="font-normal text-slate-500">({{ open_count }} a traiter)</span>
-  </h1>
-
-  {% if claims %}
-  <div class="overflow-x-auto card">
-    <table class="w-full text-left">
-      <thead class="border-b bg-slate-50 text-slate-600">
-        <tr>
-          <th class="px-3 py-2">Ouverte le</th>
-          <th class="px-3 py-2">Transfert</th>
-          <th class="px-3 py-2">Client</th>
-          <th class="px-3 py-2">Motif</th>
-          <th class="px-3 py-2">Etat</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in claims %}
-        <tr class="border-b last:border-0 {% if row.status == 'open' %}bg-amber-50{% endif %}">
-          <td class="px-3 py-2 whitespace-nowrap">{{ row.created_at|date:"d/m/Y H:i" }}</td>
-          <td class="px-3 py-2 font-mono">
-            <a class="underline underline-offset-2" href="{% url 'console:claim_detail' row.pk %}">{{ row.transaction.reference }}</a>
-          </td>
-          <td class="px-3 py-2 font-mono">{{ row.customer.phone }}</td>
-          <td class="px-3 py-2">{{ row.get_reason_display }}</td>
-          <td class="px-3 py-2">{{ row.get_status_display }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="grid items-start gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
+    {% include "console/partials/claim_list.html" %}
+    <div class="card hidden px-6 py-16 text-center text-slate-500 lg:block">
+      {% if claims %}Choisir une réclamation dans la liste pour lire l'échange et y répondre.{% else %}Rien à traiter : aucun client n'a signalé de problème.{% endif %}
+    </div>
   </div>
-  {% else %}
-  <p class="rounded-xl border bg-white px-3 py-4 text-slate-600">Aucune reclamation.</p>
-  {% endif %}
 </div>

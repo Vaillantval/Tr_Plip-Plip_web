@@ -163,7 +163,7 @@ def transaction_list(request):
     )
 
 
-WINDOW_LABELS = {txn_services.LIMIT_DAY: "24 dernieres heures", txn_services.LIMIT_MONTH: "30 derniers jours"}
+WINDOW_LABELS = {txn_services.LIMIT_DAY: "24 dernières heures", txn_services.LIMIT_MONTH: "30 derniers jours"}
 
 
 def _rows(windows) -> list[dict]:

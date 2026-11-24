@@ -2,26 +2,26 @@
 <form data-console-action="refund" method="post" action="{% url 'console:transaction_refund' txn.reference %}"
       hx-post="{% url 'console:transaction_refund' txn.reference %}" hx-target="{{ target }}" hx-swap="outerHTML"
       hx-disabled-elt="find button"
-      hx-confirm="Le transfert manuel vers le payeur a-t-il DEJA ete effectue ?"
+      hx-confirm="Le transfert manuel vers le payeur a-t-il DÉJÀ été effectué ?"
       class="space-y-2 rounded-xl border border-amber-300 bg-amber-50 p-3">
   {% csrf_token %}
   <p class="text-amber-900">
     <strong>Aucun argent ne part d'ici.</strong>
     Effectuer d'abord le transfert manuel de
     {% if txn.failure_code == "AMOUNT_UNVERIFIED" %}
-      <strong>la somme reellement encaissee</strong> (non communiquee par plopplop : la verifier aupres de plopplop)
+      <strong>la somme réellement encaissée</strong> (non communiquée par plopplop : la vérifier auprès de plopplop)
     {% elif txn.failure_code == "AMOUNT_MISMATCH" %}
-      <span class="font-mono">{{ txn.payment_amount_received|htg }}</span> HTG, <strong>le montant reellement recu</strong> (et non le devis de {{ txn.total_charged|htg }})
+      <span class="font-mono">{{ txn.payment_amount_received|htg }}</span> HTG, <strong>le montant réellement reçu</strong> (et non le devis de {{ txn.total_charged|htg }})
     {% else %}
       <span class="font-mono">{{ txn.total_charged|htg }}</span> HTG
     {% endif %}
     vers le payeur{% if txn.sender_phone %} (<span class="font-mono">{{ txn.sender_phone }}</span>){% endif %},
-    puis enregistrer sa reference.
+    puis enregistrer sa référence.
   </p>
   {% if form.non_field_errors %}<p class="text-red-700">{{ form.non_field_errors|join:" " }}</p>{% endif %}
   {% if txn.failure_code == "AMOUNT_UNVERIFIED" %}
   <label class="block">
-    <span class="text-slate-700">Montant verifie et rendu (HTG)</span>
+    <span class="text-slate-700">Montant vérifié et rendu (HTG)</span>
     <input name="refunded_amount" type="number" step="0.01" min="0.01" required value="{{ form.refunded_amount.value|default:'' }}"
            class="field mt-0.5 w-full font-mono">
   </label>
@@ -34,10 +34,10 @@
   </label>
   {% if form.reason.errors %}<p class="text-red-700">{{ form.reason.errors|join:" " }}</p>{% endif %}
   <label class="block">
-    <span class="text-slate-700">Reference du transfert manuel deja effectue</span>
+    <span class="text-slate-700">Référence du transfert manuel déjà effectué</span>
     <input name="transfer_reference" required maxlength="{{ form.fields.transfer_reference.max_length }}" value="{{ form.transfer_reference.value|default:'' }}"
            class="field mt-0.5 w-full font-mono">
   </label>
   {% if form.transfer_reference.errors %}<p class="text-red-700">{{ form.transfer_reference.errors|join:" " }}</p>{% endif %}
-  <button type="submit" class="rounded bg-amber-700 px-3 py-1 font-medium text-white hover:bg-amber-800 disabled:opacity-50">Enregistrer un remboursement</button>
+  <button type="submit" class="inline-flex items-center rounded-lg bg-amber-700 px-3 py-1.5 font-medium text-white hover:bg-amber-800 disabled:opacity-50">Enregistrer un remboursement</button>
 </form>

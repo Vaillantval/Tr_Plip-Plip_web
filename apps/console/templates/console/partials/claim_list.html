@@ -1,0 +1,32 @@
+{% load console_tags %}
+{# Liste des reclamations, colonne de gauche des deux ecrans Reclamations. #}
+{# current : la reclamation ouverte a droite, mise en avant dans la liste. #}
+<section class="card overflow-hidden" data-panel="claim-list">
+  <div class="flex items-baseline gap-2 border-b border-slate-100 px-4 py-3">
+    <h2 class="font-semibold">Réclamations</h2>
+    <span class="text-slate-500">{{ open_count }} à traiter</span>
+  </div>
+  {% if claims %}
+  <ul class="max-h-[70vh] divide-y divide-slate-100 overflow-y-auto">
+    {% for row in claims %}
+    <li>
+      <a href="{% url 'console:claim_detail' row.pk %}"
+         class="block border-l-[3px] px-4 py-3 {% if current and row.pk == current.pk %}border-brand-dark bg-brand-soft/60{% elif row.status == 'open' %}border-amber-400 hover:bg-slate-50{% else %}border-transparent hover:bg-slate-50{% endif %}"
+         {% if current and row.pk == current.pk %}aria-current="true"{% endif %}>
+        <div class="flex items-center gap-2">
+          <span class="font-mono font-medium text-slate-900">{{ row.transaction.reference }}</span>
+          <span class="tag ml-auto {% if row.status == 'open' %}bg-amber-100 text-amber-800{% elif row.status == 'answered' %}bg-sky-100 text-sky-800{% else %}bg-slate-100 text-slate-600{% endif %}">{{ row.get_status_display }}</span>
+        </div>
+        <div class="mt-0.5 truncate text-slate-700">{{ row.get_reason_display }}</div>
+        <div class="mt-0.5 flex gap-2 text-xs text-slate-500">
+          <span class="font-mono">{{ row.customer.phone }}</span>
+          <span class="ml-auto whitespace-nowrap">{{ row.created_at|date:"d/m/Y H:i" }}</span>
+        </div>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="px-4 py-8 text-center text-slate-500">Aucune réclamation.</p>
+  {% endif %}
+</section>

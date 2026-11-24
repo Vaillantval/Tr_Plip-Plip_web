@@ -1,0 +1,28 @@
+{% load console_tags %}
+{# Fenetres de plafond (client ou beneficiaire) : une ligne par fenetre. #}
+<div class="overflow-x-auto">
+  <table class="w-full">
+    <thead class="thead">
+      <tr>
+        <th class="px-4 py-2">Fenêtre glissante</th>
+        <th class="px-4 py-2 text-right">Encaissé</th>
+        <th class="px-4 py-2 text-right">Réservé</th>
+        <th class="px-4 py-2 text-right">Total</th>
+        <th class="px-4 py-2 text-right">Plafond</th>
+        <th class="px-4 py-2 text-right">Restant</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for window in windows %}
+      <tr class="{% if window.over_cap %}bg-red-100 font-medium text-red-900{% elif not window.remaining %}bg-red-50 text-red-900{% endif %}">
+        <td class="px-4 py-2">{{ window.label }}{% if window.over_cap %} — DÉPASSÉ{% endif %}</td>
+        <td class="px-4 py-2 text-right font-mono">{{ window.collected|htg }}</td>
+        <td class="px-4 py-2 text-right font-mono {% if window.reserved %}text-amber-700{% else %}text-slate-500{% endif %}">{{ window.reserved|htg }}</td>
+        <td class="px-4 py-2 text-right font-mono">{{ window.used|htg }}</td>
+        <td class="px-4 py-2 text-right font-mono">{{ window.cap|htg }}</td>
+        <td class="px-4 py-2 text-right font-mono">{{ window.remaining|htg }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

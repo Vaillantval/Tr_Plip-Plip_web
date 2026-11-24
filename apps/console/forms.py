@@ -17,8 +17,8 @@ class ClaimAnswerForm(forms.Form):
     """
 
     body = forms.CharField(
-        label="Reponse au client",
-        widget=forms.Textarea(attrs={"rows": 4}),
+        label="Réponse au client",
+        widget=forms.Textarea(attrs={"rows": 4, "class": "field mt-1 block w-full"}),
         min_length=claims.BODY_MIN_LENGTH,
         max_length=claims.BODY_MAX_LENGTH,
     )
@@ -28,7 +28,7 @@ class ClaimCloseForm(forms.Form):
     note = forms.CharField(
         label="Dernier mot (facultatif)",
         required=False,
-        widget=forms.Textarea(attrs={"rows": 2}),
+        widget=forms.Textarea(attrs={"rows": 2, "class": "field mt-1 block w-full"}),
         max_length=claims.BODY_MAX_LENGTH,
     )
 

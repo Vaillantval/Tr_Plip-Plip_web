@@ -457,7 +457,7 @@ def test_the_console_shows_the_claim_on_the_transfer(client, claim, operator):
     html = client.get(
         reverse("console:transaction_detail", args=[claim.transaction.reference])
     ).content.decode()
-    assert "signale un probleme" in html
+    assert "signalé un problème" in html
     assert reverse("console:claim_detail", args=[claim.pk]) in html
 
 
