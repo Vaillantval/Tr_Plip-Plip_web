@@ -30,7 +30,7 @@ from apps.accounts import services as accounts
 from apps.api import services as api_services
 from apps.claims import services as claims
 from apps.accounts.models import NotificationChannel
-from apps.notifications.whatsapp import whatsapp_configured
+from apps.notifications.services import whatsapp_available
 from apps.api.status import MAPPING as STATUS_MAPPING
 from apps.api.status import PublicStatus, payment_instructions, public_status, public_wait
 from apps.transactions import services as transactions
@@ -276,7 +276,7 @@ def _render_confirm(request, draft: dict, q, *, status: int = 200, check: Recipi
                 expected=draft["recipient_phone"],
                 initial={"notify_by": request.customer.notification_channel},
             ),
-            "offer_whatsapp": whatsapp_configured(),
+            "offer_whatsapp": whatsapp_available(),
         },
         status=status,
     )
@@ -288,7 +288,7 @@ def _remember_channel(customer, channel: str) -> None:
     Rien sans choix explicite, ni quand WhatsApp n'est pas propose : un
     choix que la page n'a pas montre n'est pas un accord.
     """
-    if not channel or channel == customer.notification_channel or not whatsapp_configured():
+    if not channel or channel == customer.notification_channel or not whatsapp_available():
         return
     customer.notification_channel = channel
     customer.whatsapp_opt_in_at = timezone.now() if channel == NotificationChannel.WHATSAPP else None

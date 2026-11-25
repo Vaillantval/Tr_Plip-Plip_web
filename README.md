@@ -45,6 +45,7 @@ En cas de panne, [`RESTAURATION.md`](RESTAURATION.md).
 | `apps/console` | Console d'exploitation (`/console/`, Django templates + HTMX). |
 | `apps/api` | API publique v1 (DRF) pour le front web et l'app Flutter. |
 | `apps/providers/twilio` | Seul module qui parle à Twilio Verify (codes SMS). |
+| `apps/providers/sent` | Seul module qui parle à Sent (codes et avis, WhatsApp ou SMS). |
 | `apps/backup` | Export, vérification d'intégrité et restauration. Voir [RESTAURATION.md](RESTAURATION.md). |
 
 ## Site client — `/`
@@ -156,7 +157,10 @@ Désactivée par défaut en production (`API_DOCS_ENABLED=1` pour l'ouvrir).
 - **Création de paiement indéterminée.** Jamais recréée : la transaction
   passe en attente de paiement et le polling la retrouve par référence.
 - **Codes SMS.** `OTP_BACKEND=console` en dev (code écrit dans les logs),
-  `twilio` imposé en production ; `check --deploy` refuse le backend console.
+  `live` imposé en production ; `check --deploy` refuse le backend console.
+- **Messagerie.** Le superadmin choisit Twilio (par défaut) ou Sent, séparément
+  pour les codes de connexion et pour les avis (console → Méthodes, carte
+  « Messagerie »). La bascule vers un fournisseur non configuré est refusée.
 - **Méthodes.** Le superadmin ouvre ou ferme chaque portefeuille en entrée
   et en sortie (console → Méthodes). Seules les nouvelles transactions sont
   concernées.
@@ -245,6 +249,7 @@ journal d'audit, sans le mot de passe.
 | `REDIS_URL` | tous | `${{Redis.REDIS_URL}}` |
 | `PLOPPLOP_CLIENT_ID` · `PLOPPLOP_CLIENT_SECRET` | tous | Identifiants marchand plopplop |
 | `TWILIO_ACCOUNT_SID` · `TWILIO_AUTH_TOKEN` · `TWILIO_VERIFY_SERVICE_SID` | tous | Compte et service Twilio Verify |
+| `SENT_API_KEY` · `SENT_TEMPLATE_*` | tous | Clé API Sent et identifiants des gabarits d'avis (si Sent est choisi dans la console) |
 | `DJANGO_ALLOWED_HOSTS` | web | Domaines personnalisés, séparés par des virgules (le domaine `*.up.railway.app` est ajouté automatiquement) |
 | `CSRF_TRUSTED_ORIGINS` | web | Facultatif : origines `https://…` supplémentaires |
 | `SUPERADMIN_USERNAME` · `SUPERADMIN_EMAIL` · `SUPERADMIN_PASSWORD` | web | Compte superadmin créé ou mis à jour au déploiement (voir ci-dessus) |

@@ -1,6 +1,6 @@
 """Envoi asynchrone des notifications.
 
-File Celery par defaut, jamais 'payouts' : un appel HTTP a Twilio sur le
+File Celery par defaut, jamais 'payouts' : un appel HTTP a Twilio ou Sent sur le
 worker des retraits bloquerait la file des decaissements, qui n'a qu'un
 seul processus.
 """
@@ -15,6 +15,7 @@ from celery import shared_task
 from django.conf import settings
 from django.utils import timezone
 
+from apps.providers.sent import exceptions as st
 from apps.providers.twilio import exceptions as tw
 
 logger = logging.getLogger(__name__)
@@ -39,7 +40,7 @@ def send_notification(self, notification_id: int) -> str:
 
     try:
         return services.deliver(note)
-    except (tw.TwilioRateLimited, tw.TwilioUnavailable) as exc:
+    except (tw.TwilioRateLimited, tw.TwilioUnavailable, st.SentRateLimited, st.SentUnavailable) as exc:
         if self.request.retries >= self.max_retries:
             # Pas d'autoretry_for : il laisserait la ligne « a envoyer »
             # pour toujours une fois les reprises epuisees.

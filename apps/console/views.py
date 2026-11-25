@@ -25,6 +25,7 @@ from apps.claims import services as claims
 from apps.claims.models import Claim
 from apps.claims.models import Status as ClaimStatus
 from apps.ledger import services as ledger
+from apps.notifications import routing as messaging
 from apps.transactions import queue
 from apps.transactions import services as txn_services
 from apps.accounts.models import Customer
@@ -38,6 +39,7 @@ from .forms import (
     ClaimAnswerForm,
     ClaimCloseForm,
     LimitsForm,
+    MessagingForm,
     PricingForm,
     RefundForm,
     ReleaseForm,
@@ -347,7 +349,21 @@ def _limits_context(*, limits_form=None) -> dict:
     }
 
 
-def _methods_context(*, pricing_form=None, limits_form=None) -> dict:
+def _messaging_context(*, messaging_form=None) -> dict:
+    status = messaging.status()
+    return {
+        "messaging": status,
+        "messaging_form": messaging_form
+        or MessagingForm(
+            initial={
+                "otp_provider": status["otp_provider"],
+                "notification_provider": status["notification_provider"],
+            }
+        ),
+    }
+
+
+def _methods_context(*, pricing_form=None, limits_form=None, messaging_form=None) -> dict:
     overview = txn_services.pricing_overview()
     if pricing_form is None:
         initial = {"platform_fee_rate": _percent(overview["policy"].platform_fee_rate)}
@@ -380,6 +396,7 @@ def _methods_context(*, pricing_form=None, limits_form=None) -> dict:
         "rate_rows": rate_rows,
         "rate_labels": [label for _, label, _ in RATE_INPUTS],
         **_limits_context(limits_form=limits_form),
+        **_messaging_context(messaging_form=messaging_form),
     }
 
 
@@ -388,14 +405,39 @@ def payment_methods(request):
     return render(request, "console/methods.html", _methods_context())
 
 
-def _after_methods_action(request, *, pricing_form=None, limits_form=None):
+def _after_methods_action(request, *, pricing_form=None, limits_form=None, messaging_form=None):
     if not _is_htmx(request):
         return redirect("console:methods")
     return render(
         request,
         "console/partials/methods_body.html",
-        _methods_context(pricing_form=pricing_form, limits_form=limits_form),
+        _methods_context(pricing_form=pricing_form, limits_form=limits_form, messaging_form=messaging_form),
     )
+
+
+@login_required
+@require_POST
+@require_superadmin("messaging.update", audit_fields=("otp_provider", "notification_provider"))
+def messaging_update(request):
+    """Fournisseur des codes et des avis (Twilio ou Sent). Superadmin uniquement."""
+    form = MessagingForm(request.POST)
+    if form.is_valid():
+        try:
+            messaging.choose(**form.cleaned_data, actor=request.user)
+        except (messaging.ProviderNotReady, ValueError) as exc:
+            form.add_error(None, str(exc))
+
+    if form.errors:
+        audit_failure(request, "messaging.update", error=_form_errors(form))
+        messages.error(request, f"Messagerie NON modifiée : {_form_errors(form)}")
+        return _after_methods_action(request, messaging_form=form)
+
+    messages.success(
+        request,
+        "Messagerie enregistrée. Les nouveaux codes et avis partent chez le fournisseur choisi ; "
+        "un code déjà envoyé reste vérifié par celui qui l'a envoyé.",
+    )
+    return _after_methods_action(request)
 
 
 PRICING_AUDIT_FIELDS = ("platform_fee_rate",) + tuple(

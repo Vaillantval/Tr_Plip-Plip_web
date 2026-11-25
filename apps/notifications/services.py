@@ -20,12 +20,14 @@ from django.conf import settings
 from django.db import transaction as db_transaction
 from django.utils import timezone, translation
 
+from apps.providers.sent import exceptions as st
 from apps.providers.twilio import exceptions as tw
 
 from apps.accounts.models import NotificationChannel
 
-from . import messages, sms, whatsapp
-from .models import Channel, Notification, Status, Template
+from . import messages, routing, sms, whatsapp
+from . import sent as sent_adapter
+from .models import Channel, Notification, Provider, Status, Template
 
 logger = logging.getLogger(__name__)
 
@@ -62,12 +64,24 @@ def render_body(template: str, txn, *, language: str) -> str:
         return messages.RENDERERS[template](txn)
 
 
-def channel_for(customer) -> str:
+def whatsapp_available(provider: str | None = None) -> bool:
+    """Le choix WhatsApp peut-il etre propose au client ?
+
+    Avec Sent, le canal est choisi par Sent : WhatsApp est disponible des
+    que les gabarits des avis le sont.
+    """
+    provider = provider or routing.notification_provider()
+    if provider == Provider.SENT:
+        return not routing.notifications_missing(Provider.SENT)
+    return whatsapp.whatsapp_configured()
+
+
+def channel_for(customer, provider: str | None = None) -> str:
     """WhatsApp si le client l'a choisi ET que le canal est pret, sinon SMS."""
     if (
         customer is not None
         and customer.notification_channel == NotificationChannel.WHATSAPP
-        and whatsapp.whatsapp_configured()
+        and whatsapp_available(provider)
     ):
         return Channel.WHATSAPP
     return Channel.SMS
@@ -85,8 +99,14 @@ def _enqueue(txn, *, template: str, channel: str | None = None) -> None:
         # code, il est verifie. sender_phone n'est rempli qu'en USSD.
         customer = txn.customer if txn.customer_id else None
         recipient = customer.phone if customer else ""
-        channel = channel or channel_for(customer)
-        if channel == Channel.WHATSAPP:
+        # Le repli SMS d'un WhatsApp Twilio (channel impose) reste chez Twilio.
+        provider = Provider.TWILIO if channel else routing.notification_provider()
+        channel = channel or channel_for(customer, provider)
+        if provider == Provider.SENT:
+            # Meme texte sur tous les canaux : celui du gabarit Sent.
+            language = sent_adapter.LANGUAGE
+            body = sent_adapter.render_body(template, txn)
+        elif channel == Channel.WHATSAPP:
             language = whatsapp.LANGUAGE
             body = whatsapp.render_body(template, txn)
         else:
@@ -99,6 +119,7 @@ def _enqueue(txn, *, template: str, channel: str | None = None) -> None:
                 channel=channel,
                 defaults={
                     "customer": customer,
+                    "provider": provider,
                     "recipient": recipient,
                     "language": language,
                     "body": body if recipient else "",
@@ -164,6 +185,8 @@ def deliver(note: Notification) -> str:
     Leve TwilioRateLimited / TwilioUnavailable pour que la tache decide
     d'une reprise : ce sont les seuls cas ou l'issue est indeterminee.
     """
+    if note.provider == Provider.SENT:
+        return _deliver_sent(note)
     if note.channel == Channel.WHATSAPP:
         return _deliver_whatsapp(note)
     try:
@@ -185,6 +208,33 @@ def deliver(note: Notification) -> str:
     note.sent_at = timezone.now()
     logger.info(
         "SMS %s envoye a %s (%s) : %s",
+        note.template,
+        _masked(note.recipient),
+        provider_status,
+        note.transaction_id,
+    )
+    return _finish(note, status=Status.SENT)
+
+
+def _deliver_sent(note: Notification) -> str:
+    """Envoi par Sent. Pas de repli de notre cote : Sent fait le sien."""
+    try:
+        message_id, provider_status = sent_adapter.send(
+            phone=note.recipient, template=note.template, txn=note.transaction, idempotency_key=note.idempotency_key
+        )
+    except sent_adapter.SentNotConfigured as exc:
+        return _finish(note, status=Status.SKIPPED, error_code="SENT_NOT_CONFIGURED", error=str(exc))
+    except (st.SentRateLimited, st.SentUnavailable):
+        _release(note)
+        raise
+    except st.SentError as exc:
+        logger.error("Avis %s refuse par Sent pour %s : %s", note.template, note.transaction_id, exc)
+        return _finish(note, status=Status.FAILED, error_code=str(exc.code or exc.status or "SENT"), error=str(exc))
+
+    note.provider_message_id = message_id[:64]
+    note.sent_at = timezone.now()
+    logger.info(
+        "Avis %s accepte par Sent pour %s (%s) : %s",
         note.template,
         _masked(note.recipient),
         provider_status,

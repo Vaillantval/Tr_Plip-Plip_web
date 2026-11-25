@@ -27,7 +27,7 @@ SQLite en développement, Celery + Redis pour les décaissements.
 
 Tout l'argent passe par l'API **plopplop**. `apps/providers/plopplop` est le
 seul module autorisé à lui parler ; `apps/providers/twilio` le seul autorisé
-à parler à Twilio.
+à parler à Twilio, `apps/providers/sent` le seul autorisé à parler à Sent.
 
 La moitié de l'architecture s'explique par **une seule contrainte** : plopplop
 impose **120 secondes entre deux retraits, par IP** (`PAYOUT_COOLDOWN_SECONDS`,

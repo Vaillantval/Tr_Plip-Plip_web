@@ -287,6 +287,25 @@ TWILIO = {
     "STATUS_CALLBACK_URL": env("TWILIO_STATUS_CALLBACK_URL", ""),
 }
 
+# Sent (sent.dm) : second fournisseur de messagerie. Le fournisseur actif,
+# pour les codes et pour les avis, se choisit dans la console
+# (notifications.MessagingSetting) ; Twilio par defaut.
+SENT = {
+    "API_KEY": env("SENT_API_KEY", ""),
+    "TIMEOUT": float(env("SENT_TIMEOUT", "10")),
+    # Bac a sable Sent : requete validee, rien n'est expedie.
+    "SANDBOX": env("SENT_SANDBOX", "0") == "1",
+    # Identifiants des gabarits approuves chez Sent. Celui des codes est le
+    # gabarit d'authentification fourni par Sent (variable var_1).
+    "TEMPLATES": {
+        "otp": env("SENT_TEMPLATE_OTP", "fd22a201-c595-4c42-87f8-2e03c930a8c6"),
+        "transfer_completed": env("SENT_TEMPLATE_TRANSFER_COMPLETED", ""),
+        "transfer_refunded": env("SENT_TEMPLATE_TRANSFER_REFUNDED", ""),
+        "claim_answered": env("SENT_TEMPLATE_CLAIM_ANSWERED", ""),
+    },
+    "OTP_VARIABLE": env("SENT_OTP_VARIABLE", "var_1"),
+}
+
 # ----------------------------------------------------------------------
 # Celery / cache
 # ----------------------------------------------------------------------

@@ -63,7 +63,7 @@ def test_prod_settings_read_railway_database_redis_and_domains():
     assert (conf["engine"], conf["host"], conf["name"]) == ("django.db.backends.postgresql", "postgres.railway.internal", "railway")
     assert conf["conn_max_age"] == 600
     assert conf["broker"] == PROD_ENV["REDIS_URL"]
-    assert conf["otp"] == "twilio" and conf["debug"] is False
+    assert conf["otp"] == "live" and conf["debug"] is False
     for host in ("plipplip.ht", "www.plipplip.ht", "plip-plip-web.up.railway.app", "healthcheck.railway.app"):
         assert host in conf["allowed_hosts"], host
     assert set(conf["csrf"]) >= {

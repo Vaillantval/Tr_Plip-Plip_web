@@ -6,6 +6,7 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm, UsernameField
 
 from apps.claims import services as claims
+from apps.notifications.models import Provider
 from apps.transactions.services import REFUND_REASON_MAX_LENGTH, TRANSFER_REFERENCE_MAX_LENGTH
 
 
@@ -166,3 +167,10 @@ class ConsoleLoginForm(AuthenticationForm):
         strip=False,
         widget=forms.PasswordInput(attrs={"class": INPUT_CLASS, "autocomplete": "current-password"}),
     )
+
+
+class MessagingForm(forms.Form):
+    """Fournisseur actif pour les codes de connexion et pour les avis."""
+
+    otp_provider = forms.ChoiceField(label="Codes de connexion", choices=Provider.choices, widget=forms.RadioSelect)
+    notification_provider = forms.ChoiceField(label="Avis de transfert", choices=Provider.choices, widget=forms.RadioSelect)

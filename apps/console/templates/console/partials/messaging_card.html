@@ -1,0 +1,78 @@
+<section id="messagerie" class="card" data-section="messaging">
+  <h2 class="card-title">
+    Messagerie
+    <span class="font-normal text-slate-500">
+      {% if messaging.setting %}· modifiée le {{ messaging.setting.updated_at|date:"d/m/Y H:i" }} par {{ messaging.setting.updated_by|default:"?" }}{% else %}· réglage par défaut (Twilio){% endif %}
+    </span>
+  </h2>
+  <div class="space-y-1 px-4 py-3 text-slate-600">
+    <p>Fournisseur qui envoie les <strong>codes de connexion</strong> des clients et les <strong>avis de transfert</strong> (livré, remboursé, réponse à une réclamation).</p>
+    <p>Avec Sent, le canal (WhatsApp ou SMS) est choisi par Sent, qui fait lui-même le repli. Un code déjà envoyé reste vérifié par le fournisseur qui l'a envoyé.</p>
+    {% if not request.user.is_superadmin %}<p class="text-slate-500">Lecture seule : réglage réservé au superadmin.</p>{% endif %}
+  </div>
+
+  {% if request.user.is_superadmin %}
+  <form data-console-action="messaging" method="post" action="{% url 'console:messaging_update' %}"
+        hx-post="{% url 'console:messaging_update' %}" hx-target="#methods-body" hx-swap="outerHTML"
+        hx-disabled-elt="find button"
+        hx-confirm="Changer le fournisseur de messagerie ? Les prochains codes et avis partiront chez le fournisseur choisi.">
+    {% csrf_token %}
+  {% endif %}
+    {% if messaging_form.non_field_errors %}<p class="px-4 pt-2 text-red-700">{{ messaging_form.non_field_errors|join:" " }}</p>{% endif %}
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="thead">
+          <tr>
+            <th class="px-4 py-2">Fournisseur</th>
+            <th class="px-4 py-2">Codes de connexion</th>
+            <th class="px-4 py-2">Avis de transfert</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for provider in messaging.providers %}
+          <tr class="align-top" data-provider="{{ provider.value }}">
+            <td class="px-4 py-2.5 font-medium">{{ provider.label }}{% if provider.value == "twilio" %} <span class="text-xs font-normal text-slate-500">par défaut</span>{% endif %}</td>
+            <td class="px-4 py-2.5">
+              <label class="flex items-start gap-2">
+                {% if request.user.is_superadmin %}
+                <input type="radio" name="otp_provider" value="{{ provider.value }}" class="mt-1"
+                       {% if messaging_form.otp_provider.value == provider.value %}checked{% endif %}>
+                {% endif %}
+                <span>
+                  {% if messaging.otp_provider == provider.value %}<span class="tag bg-brand-soft text-brand-dark">Actif</span>{% endif %}
+                  {% if provider.otp_missing %}
+                    <span class="block text-xs text-amber-800">Manque : {{ provider.otp_missing|join:", " }}</span>
+                  {% else %}
+                    <span class="block text-xs text-slate-500">Prêt</span>
+                  {% endif %}
+                </span>
+              </label>
+            </td>
+            <td class="px-4 py-2.5">
+              <label class="flex items-start gap-2">
+                {% if request.user.is_superadmin %}
+                <input type="radio" name="notification_provider" value="{{ provider.value }}" class="mt-1"
+                       {% if messaging_form.notification_provider.value == provider.value %}checked{% endif %}>
+                {% endif %}
+                <span>
+                  {% if messaging.notification_provider == provider.value %}<span class="tag bg-brand-soft text-brand-dark">Actif</span>{% endif %}
+                  {% if provider.notifications_missing %}
+                    <span class="block text-xs text-amber-800">Manque : {{ provider.notifications_missing|join:", " }}</span>
+                  {% else %}
+                    <span class="block text-xs text-slate-500">Prêt</span>
+                  {% endif %}
+                </span>
+              </label>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% if request.user.is_superadmin %}
+    <div class="border-t border-slate-100 px-4 py-3">
+      <button class="btn-primary">Enregistrer la messagerie</button>
+    </div>
+  </form>
+  {% endif %}
+</section>

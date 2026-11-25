@@ -25,6 +25,53 @@ class Status(models.TextChoices):
     SKIPPED = "skipped", "Non envoye"
 
 
+class Provider(models.TextChoices):
+    TWILIO = "twilio", "Twilio"
+    SENT = "sent", "Sent"
+
+
+class MessagingSetting(models.Model):
+    """Fournisseur actif, choisi par le superadmin. Une seule ligne (pk=1).
+
+    Deux choix independants : les codes de connexion et les avis. On peut
+    ainsi passer les codes sur un fournisseur dont le gabarit est approuve
+    sans attendre ceux des avis.
+
+    Pas de ligne = Twilio pour les deux. Lire par current(), jamais
+    directement : la valeur est mise en cache, chaque envoi la consulte.
+    """
+
+    otp_provider = models.CharField(max_length=16, choices=Provider.choices, default=Provider.TWILIO)
+    notification_provider = models.CharField(max_length=16, choices=Provider.choices, default=Provider.TWILIO)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    CACHE_KEY = "plipplip:messaging-setting"
+    CACHE_SECONDS = 30
+
+    def __str__(self) -> str:
+        return f"Codes : {self.otp_provider}, avis : {self.notification_provider}"
+
+    @classmethod
+    def current(cls) -> "MessagingSetting":
+        from django.core.cache import cache
+
+        values = cache.get(cls.CACHE_KEY)
+        if values is None:
+            row = cls.objects.filter(pk=1).first() or cls(pk=1)
+            values = {"otp_provider": row.otp_provider, "notification_provider": row.notification_provider}
+            cache.set(cls.CACHE_KEY, values, cls.CACHE_SECONDS)
+        return cls(pk=1, **values)
+
+    @classmethod
+    def clear_cache(cls) -> None:
+        from django.core.cache import cache
+
+        cache.delete(cls.CACHE_KEY)
+
+
 class Notification(models.Model):
     """Un envoi, et un seul, par (transaction, modele, canal).
 
@@ -50,6 +97,9 @@ class Notification(models.Model):
         "accounts.Customer", null=True, blank=True, on_delete=models.PROTECT, related_name="notifications"
     )
     channel = models.CharField(max_length=16, choices=Channel.choices, default=Channel.SMS)
+    #: Fige a la mise en file : une reprise part chez le meme fournisseur,
+    #: meme si le superadmin a bascule entre-temps (cle d'idempotence).
+    provider = models.CharField(max_length=16, choices=Provider.choices, default=Provider.TWILIO)
     template = models.CharField(max_length=32, choices=Template.choices)
     #: Forme canonique 509XXXXXXXX ; l'E.164 est construit a l'envoi.
     recipient = models.CharField(max_length=16, blank=True)

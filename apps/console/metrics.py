@@ -222,6 +222,26 @@ def health(*, float_level: str, now=None) -> list[dict]:
         }
     )
 
+    from apps.notifications import routing
+    from apps.notifications.models import Provider
+
+    otp_provider, notification_provider = routing.otp_provider(), routing.notification_provider()
+    labels = dict(Provider.choices)
+    otp_missing = routing.otp_missing(otp_provider)
+    notes_missing = routing.notifications_missing(notification_provider)
+    rows.append(
+        {
+            "label": "Messagerie",
+            # Sans codes, aucun client ne se connecte : incident. Sans avis,
+            # les transferts passent : a surveiller.
+            "status": "bad" if otp_missing else ("warn" if notes_missing else "ok"),
+            "detail": (
+                f"codes : {labels[otp_provider]}{' (non configuré)' if otp_missing else ''}"
+                f" · avis : {labels[notification_provider]}{' (non configuré)' if notes_missing else ''}"
+            ),
+        }
+    )
+
     level = float_level
     rows.append(
         {
