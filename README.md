@@ -249,7 +249,7 @@ journal d'audit, sans le mot de passe.
 | `REDIS_URL` | tous | `${{Redis.REDIS_URL}}` |
 | `PLOPPLOP_CLIENT_ID` · `PLOPPLOP_CLIENT_SECRET` | tous | Identifiants marchand plopplop |
 | `TWILIO_ACCOUNT_SID` · `TWILIO_AUTH_TOKEN` · `TWILIO_VERIFY_SERVICE_SID` | tous | Compte et service Twilio Verify |
-| `SENT_API_KEY` · `SENT_TEMPLATE_*` | tous | Clé API Sent et identifiants des gabarits d'avis (si Sent est choisi dans la console) |
+| `SENT_API_KEY` | tous | Clé API Sent (si Sent est choisi dans la console ; les gabarits ont leurs identifiants par défaut) |
 | `DJANGO_ALLOWED_HOSTS` | web | Domaines personnalisés, séparés par des virgules (le domaine `*.up.railway.app` est ajouté automatiquement) |
 | `CSRF_TRUSTED_ORIGINS` | web | Facultatif : origines `https://…` supplémentaires |
 | `SUPERADMIN_USERNAME` · `SUPERADMIN_EMAIL` · `SUPERADMIN_PASSWORD` | web | Compte superadmin créé ou mis à jour au déploiement (voir ci-dessus) |

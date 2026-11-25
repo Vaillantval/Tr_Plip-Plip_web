@@ -216,10 +216,12 @@ def test_a_notice_through_sent_is_sent_once_with_its_variables(
     body = json.loads(request.body)
     assert body["to"] == ["+50937123456"]
     assert body["template"]["id"] == "tpl-completed"
-    assert body["template"]["parameters"]["var_3"] == txn.reference
+    assert body["template"]["parameters"] == {
+        "amount": "1 000,00", "phone": RECIPIENT, "reference": txn.reference
+    }
     assert request.headers["Idempotency-Key"] == note.idempotency_key
     assert (note.provider, note.status, note.provider_message_id) == ("sent", Status.SENT, "msg-42")
-    assert note.body.startswith("Plip-Plip :")
+    assert note.body == f"Plip-Plip : 1 000,00 HTG ont ete envoyes au {RECIPIENT}. Reference {txn.reference}. Merci de votre confiance."
 
 
 def test_a_sent_refusal_is_final_and_never_falls_back(
@@ -269,6 +271,20 @@ def test_the_provider_is_fixed_when_the_notice_is_queued(customer, sent_key):
         _accepted(rsps)
         assert notifications.deliver(note) == Status.SENT
         assert rsps.calls[0].request.url == SENT_URL
+
+
+def test_sent_templates_fit_one_gsm7_sms():
+    """Le gabarit part aussi par SMS : sans accent, un seul segment."""
+    from apps.notifications import sent as sent_adapter
+
+    gsm7 = set(" !\"#%&'()*+,-./0123456789:;<=>?@$ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{}_")
+    longest = {"amount": "50 000,00", "phone": RECIPIENT, "reference": "PP-ABCDEFGHIJKL"}
+    for text in sent_adapter.TEMPLATES.values():
+        assert set(text) <= gsm7
+        rendered = text
+        for key, value in longest.items():
+            rendered = rendered.replace("{{%s}}" % key, value)
+        assert len(rendered) <= 160, rendered
 
 
 # ----------------------------------------------------------------------

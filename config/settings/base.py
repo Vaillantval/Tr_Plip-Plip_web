@@ -295,13 +295,17 @@ SENT = {
     "TIMEOUT": float(env("SENT_TIMEOUT", "10")),
     # Bac a sable Sent : requete validee, rien n'est expedie.
     "SANDBOX": env("SENT_SANDBOX", "0") == "1",
-    # Identifiants des gabarits approuves chez Sent. Celui des codes est le
-    # gabarit d'authentification fourni par Sent (variable var_1).
+    # Identifiants des gabarits chez Sent. Celui des codes est le gabarit
+    # d'authentification fourni par Sent (variable var_1). Ceux des avis
+    # (plip_transfer_completed, plip_transfer_refunded, plip_claim_answered)
+    # portent mot pour mot les textes de apps/notifications/sent.py. Un
+    # gabarit n'envoie qu'une fois APPROUVE chez Sent : ne pas basculer les
+    # avis sur Sent avant.
     "TEMPLATES": {
         "otp": env("SENT_TEMPLATE_OTP", "fd22a201-c595-4c42-87f8-2e03c930a8c6"),
-        "transfer_completed": env("SENT_TEMPLATE_TRANSFER_COMPLETED", ""),
-        "transfer_refunded": env("SENT_TEMPLATE_TRANSFER_REFUNDED", ""),
-        "claim_answered": env("SENT_TEMPLATE_CLAIM_ANSWERED", ""),
+        "transfer_completed": env("SENT_TEMPLATE_TRANSFER_COMPLETED", "c8a78589-dfc9-46af-8aac-53877f6b797a"),
+        "transfer_refunded": env("SENT_TEMPLATE_TRANSFER_REFUNDED", "77604e52-1169-47b6-9b9d-224dafdc447c"),
+        "claim_answered": env("SENT_TEMPLATE_CLAIM_ANSWERED", "91f9603f-710c-4aa5-91eb-c686659d28af"),
     },
     "OTP_VARIABLE": env("SENT_OTP_VARIABLE", "var_1"),
 }
