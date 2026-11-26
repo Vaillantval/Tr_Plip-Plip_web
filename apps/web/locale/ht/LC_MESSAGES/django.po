@@ -445,7 +445,7 @@ msgstr "Ou bliye modpas ou?"
 msgid ""
 "Nous envoyons un code par SMS à votre numéro. Il vous permettra de choisir "
 "un nouveau mot de passe."
-msgstr "nou pral voye yon kòd pa SMS pou ou kap pèmèt ou chwazi yon lot modpas."
+msgstr "Nou pral voye yon kòd pa SMS pou ou kap pèmèt ou chwazi yon lot modpas."
 
 #: .\apps\web\templates\web\password_forgot.html
 msgid "Retour à la connexion"
@@ -453,15 +453,15 @@ msgstr "Retounen nan koneksyon an"
 
 #: .\apps\web\templates\web\password_reset.html
 msgid "Toutes vos autres connexions seront fermées."
-msgstr "tout lò koneksyon w yo ap fèmen."
+msgstr "Tout lòt koneksyon w yo ap fèmen."
 
 #: .\apps\web\templates\web\password_reset.html
 msgid "Enregistrer et me connecter"
-msgstr "banm anrejistre epi konekte"
+msgstr "Banm anrejistre epi konekte"
 
 #: .\apps\web\templates\web\password_reset.html
 msgid "Recevoir un nouveau code"
-msgstr "resevwa yon lòt kòd"
+msgstr "Resevwa yon lòt kòd"
 
 #: .\apps\web\templates\web\transfer_detail.html
 msgid "Référence du transfert"
