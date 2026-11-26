@@ -1,6 +1,7 @@
 {% extends "web/base.html" %}
 {% load i18n %}
 {% block title %}{% translate "Connexion" %} — Plip-Plip{% endblock %}
+{% block main_class %} wrap-mid{% endblock %}
 {% block content %}
 <div class="login-head">
   <svg class="login-mark" viewBox="0 0 48 48" aria-hidden="true">
@@ -14,6 +15,7 @@
 <p class="lead">{% translate "Recevez un code par SMS, ou utilisez votre mot de passe si vous en avez créé un." %}</p>
 
 {# Les deux choix d'emblee, sans consulter le numero : n'afficher le mot de passe qu'aux numeros qui en ont un revelerait la liste des clients. #}
+<div class="login-grid">
 <form class="card login-card" method="post" action="{% url 'web:login' %}" onsubmit="this.querySelector('button[type=submit]').disabled = true;">
   {% csrf_token %}
   <h2 class="method"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5 H20 V15 H10 L5 19 V15 H4 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8 10 H16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>{% translate "Avec un code SMS" %}</h2>
@@ -45,5 +47,6 @@
   <button type="submit" class="block">{% translate "Se connecter" %}</button>
   <p class="muted"><a href="{% url 'web:password_forgot' %}?next={{ next|urlencode }}">{% translate "Mot de passe oublié ?" %}</a></p>
 </form>
+</div>
 <p class="muted center">{% translate "Pas encore de compte ? Recevez un code : votre compte est créé dès que votre numéro est vérifié." %}</p>
 {% endblock %}

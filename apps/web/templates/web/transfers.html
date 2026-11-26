@@ -1,7 +1,10 @@
 {% extends "web/base.html" %}
 {% load i18n web_tags %}
 {% block title %}{% translate "Mes transferts" %} — Plip-Plip{% endblock %}
+{% block main_class %} wrap-wide{% endblock %}
 {% block content %}
+<div class="dash">
+<aside class="dash-side">
 <div class="dash-head">
   <div>
     <h1>{% translate "Mes transferts" %}</h1>
@@ -17,7 +20,9 @@
   <li><strong>{{ overview.delivered_amount|htg }}</strong><span>{% translate "HTG reçus par vos proches" %}</span></li>
 </ul>
 {% endif %}
+</aside>
 
+<div class="dash-main">
 {% if offer_password %}
 <section class="card offer" data-offer="password">
   <p><strong>{% translate "Connectez-vous sans attendre de code." %}</strong>
@@ -74,4 +79,6 @@
 {% if request.customer.has_password %}
 <p class="muted"><a href="{% url 'web:account_password' %}">{% translate "Changer de mot de passe" %}</a></p>
 {% endif %}
+</div>
+</div>
 {% endblock %}

@@ -1,9 +1,11 @@
 {% extends "web/base.html" %}
 {% load i18n l10n web_tags %}
 {% block title %}{% translate "Vérifiez votre envoi" %} — Plip-Plip{% endblock %}
+{% block main_class %} wrap-mid{% endblock %}
 {% block content %}
 <h1>{% translate "Vérifiez votre envoi" %}</h1>
 
+<div class="pair">
 <section class="card">
   <p>
     {% blocktranslate trimmed with phone=draft.recipient_phone|masked_phone wallet=draft.destination_wallet|wallet %}
@@ -27,6 +29,7 @@
     {% blocktranslate trimmed with total=quote.total_charged|htg %}Payer {{ total }} HTG{% endblocktranslate %}
   </button>
 </form>
+</div>
 <p class="muted" style="margin-top:1rem; text-align:center">
   <a href="{% url 'web:home' %}">{% translate "Modifier l'envoi" %}</a>
 </p>

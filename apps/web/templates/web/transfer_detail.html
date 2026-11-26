@@ -1,7 +1,10 @@
 {% extends "web/base.html" %}
 {% load i18n web_tags %}
 {% block title %}{{ txn.reference }} — Plip-Plip{% endblock %}
+{% block main_class %} wrap-mid{% endblock %}
 {% block content %}
+<div class="detail">
+<div class="detail-main">
 <section class="card">
   <p class="muted">{% translate "Référence du transfert" %}</p>
   <h1 class="reference mono">{{ txn.reference }}</h1>
@@ -9,7 +12,9 @@
 </section>
 
 {% include "web/partials/transfer_status.html" %}
+</div>
 
+<div class="detail-side">
 <section class="card">
   <p class="amount-big">{{ txn.net_amount|htg }} <small>HTG</small></p>
   <p>
@@ -58,4 +63,6 @@
 {% endif %}
 
 <p><a href="{% url 'web:transfers' %}">{% translate "Tous mes transferts" %}</a></p>
+</div>
+</div>
 {% endblock %}

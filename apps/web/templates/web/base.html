@@ -30,12 +30,9 @@
 
   {% block hero %}{% endblock %}
 
-  <main class="wrap">
-    {% if messages %}
-      {% for message in messages %}
-        <p class="alert {{ message.level_tag }}" role="status">{{ message }}</p>
-      {% endfor %}
-    {% endif %}
+  {# wrap-wide : pages qui s'elargissent sur tablette et ordinateur. #}
+  <main class="wrap{% block main_class %}{% endblock %}">
+    {% block messages %}{% include "web/partials/messages.html" %}{% endblock %}
     {% block content %}{% endblock %}
   </main>
 
