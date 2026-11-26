@@ -80,7 +80,7 @@ def public_wait(txn, cache: dict | None = None) -> dict | None:
 def payment_instructions(txn, status: str | None = None) -> dict:
     """Comment payer, pour l'API comme pour le site web.
 
-    mode : redirect (ouvrir redirect_url), ussd (valider sur le telephone),
+    mode : redirect (ouvrir redirect_url), ussd (plus emis, garde pour l'API),
     unavailable (lien non obtenu : ne pas recreer de transfert tout de
     suite), none (plus de paiement attendu).
     """
@@ -90,12 +90,13 @@ def payment_instructions(txn, status: str | None = None) -> dict:
     redirect_url = txn.payment_redirect_url or ""
     if not redirect_url.startswith(("https://", "http://")):
         redirect_url = ""
-    if txn.state == State.CREATED or not txn.payment_provider_id:
-        mode = "unavailable"
-    elif redirect_url:
+    # Plus de demande USSD : sans lien de paiement, le client n'a rien a
+    # valider sur son telephone. Lui dire le contraire le ferait attendre
+    # une demande qui ne viendra jamais.
+    if txn.state != State.CREATED and txn.payment_provider_id and redirect_url:
         mode = "redirect"
     else:
-        mode = "ussd"
+        mode = "unavailable"
     return {
         "mode": mode,
         "redirect_url": redirect_url or None,

@@ -121,7 +121,7 @@ class PaymentInstructionsSerializer(serializers.Serializer):
     mode = serializers.ChoiceField(
         choices=["redirect", "ussd", "unavailable", "none"],
         help_text=(
-            "redirect : ouvrir redirect_url. ussd : valider la demande recue sur le telephone. "
+            "redirect : ouvrir redirect_url. ussd : n'est plus emis. "
             "unavailable : lien de paiement non obtenu, ne pas recreer le transfert tout de suite, "
             "consulter le statut. none : plus de paiement attendu."
         ),

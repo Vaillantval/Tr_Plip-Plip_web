@@ -529,6 +529,15 @@ def test_moncash_always_uses_the_payment_button_never_ussd(api):
 
 
 @pytest.mark.django_db
+def test_payment_without_link_is_unavailable_never_ussd(api):
+    _, raw = _login()
+
+    response, _create_call = _create(_as(api, raw), intent=_intent(url=None))
+
+    assert response.json()["payment"]["mode"] == "unavailable"
+
+
+@pytest.mark.django_db
 def test_customer_never_sees_another_customers_transfers(api):
     _, raw_a = _login(PHONE)
     _, raw_b = _login(OTHER_PHONE)
