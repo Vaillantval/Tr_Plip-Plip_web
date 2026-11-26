@@ -204,7 +204,10 @@ class Transaction(models.Model):
 
     # Cote encaissement
     payment_provider_id = models.CharField(max_length=64, blank=True)
-    payment_redirect_url = models.URLField(blank=True, max_length=500)
+    # TextField, pas URLField(500) : le lien NatCash porte un jeton de plus
+    # de 1 000 caracteres. Tronque, il faisait echouer la sauvegarde APRES
+    # la creation du paiement chez plopplop (erreur 500 a la confirmation).
+    payment_redirect_url = models.TextField(blank=True)
     payment_confirmed_at = models.DateTimeField(null=True, blank=True)
     # Montant que plopplop declare avoir encaisse. Vide s'il ne l'a pas
     # communique : la transaction est alors bloquee (AMOUNT_UNVERIFIED).

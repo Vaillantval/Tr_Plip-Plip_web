@@ -608,3 +608,23 @@ def test_api_views_do_not_import_models_for_writing():
     source = (APPS_DIR / "api" / "views.py").read_text(encoding="utf-8")
     for forbidden in (".save(", ".create(", ".update(", ".delete(", "transition("):
         assert forbidden not in source, forbidden
+
+
+@pytest.mark.django_db
+def test_natcash_long_payment_link_is_kept_whole(api):
+    """Le lien NatCash porte un jeton de plus de 1 000 caracteres : il
+    faisait echouer la sauvegarde (varchar 500) apres la creation du
+    paiement chez plopplop."""
+    _, raw = _login()
+    url = "https://merchantpay.natcom.com.ht/?token=" + "A" * 1200
+
+    response, _create_call = _create(
+        _as(api, raw), body={**TRANSFER, "source_wallet": "natcash", "destination_wallet": "moncash"}, intent=_intent(url=url)
+    )
+
+    assert response.status_code == 201, response.content
+    assert response.json()["payment"] == {**response.json()["payment"], "mode": "redirect", "redirect_url": url}
+    assert Transaction.objects.get().payment_redirect_url == url
+    # SQLite n'impose pas la longueur des varchar : Postgres, si. Le
+    # champ lui-meme ne doit donc pas avoir de limite.
+    assert Transaction._meta.get_field("payment_redirect_url").max_length is None
