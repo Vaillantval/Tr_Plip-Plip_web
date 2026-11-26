@@ -1,6 +1,21 @@
 /* Plip-Plip — site client. Mobile d'abord, sans dependance externe.
    Identite visuelle (logo A, meme palette que la console) : tout
-   l'habillage passe par les variables ci-dessous. */
+   l'habillage passe par les variables ci-dessous.
+
+   Ordre du fichier (chercher le titre de section) :
+     1. Variables, base, en-tete, formulaires, boutons, messages, frais,
+        etats, etapes, listes, reclamation, pied de page, mot de passe
+     2. Animations (survol, appui, roue d'attente, arrivee des cartes)
+     3. Accueil : portefeuilles, etapes, exemple, garanties, questions
+     4. Tableau de bord client (« Mes transferts »)
+     5. Connexion
+     6. Mise en page par largeur : tablette des 48rem, ordinateur des
+        64rem. Tout ce qui precede est le mobile, qui sert de base.
+     7. Mouvement reduit (prefers-reduced-motion), toujours en dernier
+
+   Regles du site client : aucun style ecrit dans les gabarits (CSP, voir
+   apps/web/middleware.py) ; aucune animation decorative sans fin
+   (tests/test_motion.py). */
 
 :root {
   /* Marque */
