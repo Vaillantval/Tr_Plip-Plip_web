@@ -11,7 +11,7 @@
     {% endblocktranslate %}
   </p>
   <p class="muted">
-    {% blocktranslate trimmed with wallet=draft.source_wallet|wallet %}Payé avec {{ wallet }}{% endblocktranslate %}{% if draft.sender_phone and draft.source_wallet == "moncash" %} · <span class="mono">{{ draft.sender_phone }}</span>{% endif %}
+    {% blocktranslate trimmed with wallet=draft.source_wallet|wallet %}Payé avec {{ wallet }}{% endblocktranslate %}
   </p>
   {% include "web/partials/fees.html" with quote=quote %}
 </section>

@@ -96,7 +96,7 @@ def _enqueue(txn, *, template: str, channel: str | None = None) -> None:
     """
     try:
         # L'expediteur, c'est le titulaire du compte : son numero a recu un
-        # code, il est verifie. sender_phone n'est rempli qu'en USSD.
+        # code, il est verifie. sender_phone est facultatif.
         customer = txn.customer if txn.customer_id else None
         recipient = customer.phone if customer else ""
         # Le repli SMS d'un WhatsApp Twilio (channel impose) reste chez Twilio.

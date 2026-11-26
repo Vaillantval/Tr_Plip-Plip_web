@@ -471,9 +471,11 @@ def start_payment(txn: Transaction) -> Transaction:
     if txn.state != State.CREATED:
         raise ValueError(f"start_payment appele sur une transaction en etat {txn.state}")
 
+    # Toujours le bouton de paiement (page de l'operateur), jamais la
+    # demande USSD moncash_ussd : choix produit. sender_phone, s'il est
+    # fourni par l'API, est garde pour le support mais ne change plus
+    # la methode.
     method = txn.source_wallet
-    if method == Wallet.MONCASH and txn.sender_phone:
-        method = "moncash_ussd"
 
     txn.payment_expires_at = timezone.now() + timedelta(seconds=settings.PAYMENT_EXPIRY_SECONDS)
     try:
@@ -481,7 +483,7 @@ def start_payment(txn: Transaction) -> Transaction:
             reference=txn.reference,
             amount=txn.total_charged,
             method=method,
-            phone_number=txn.sender_phone or None,
+            phone_number=None,
         )
     except pp.PlopPlopIndeterminate as exc:
         logger.warning("Creation du paiement indeterminee sur %s : %s", txn.reference, exc)

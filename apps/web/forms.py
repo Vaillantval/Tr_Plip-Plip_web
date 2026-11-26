@@ -137,11 +137,6 @@ class TransferForm(forms.Form):
         decimal_places=2,
         min_value=Decimal("0.01"),
     )
-    sender_phone = PhoneField(
-        label=_("Numéro MonCash qui paie (facultatif)"),
-        required=False,
-        help_text=_("Renseigné, vous recevez la demande de paiement directement sur ce téléphone."),
-    )
 
     def __init__(self, *args, wallets, **kwargs):
         super().__init__(*args, **kwargs)

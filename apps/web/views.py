@@ -173,7 +173,6 @@ def _again_initial(request) -> dict | None:
         "destination_wallet": txn.destination_wallet,
         "recipient_phone": txn.recipient_phone,
         "net_amount": txn.net_amount,
-        "sender_phone": txn.sender_phone,
     }
 
 

@@ -517,16 +517,15 @@ def test_explicit_payment_refusal_cancels_the_transfer(api):
 
 
 @pytest.mark.django_db
-def test_sender_phone_on_moncash_uses_ussd(api):
+def test_moncash_always_uses_the_payment_button_never_ussd(api):
     _, raw = _login()
 
-    response, create = _create(
-        _as(api, raw), body={**TRANSFER, "sender_phone": "3712-3456"}, intent=_intent(url=None)
-    )
+    response, create = _create(_as(api, raw), body={**TRANSFER, "sender_phone": "3712-3456"})
 
-    assert create.call_args.kwargs["method"] == "moncash_ussd"
-    assert create.call_args.kwargs["phone_number"] == PHONE
-    assert response.json()["payment"]["mode"] == "ussd"
+    assert create.call_args.kwargs["method"] == "moncash"
+    assert create.call_args.kwargs["phone_number"] is None
+    assert response.json()["payment"]["mode"] == "redirect"
+    assert Transaction.objects.get().sender_phone == PHONE
 
 
 @pytest.mark.django_db

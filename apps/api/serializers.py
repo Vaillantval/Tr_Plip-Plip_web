@@ -109,7 +109,7 @@ class TransferCreateSerializer(QuoteRequestSerializer):
     sender_phone = PhoneField(
         required=False,
         allow_blank=True,
-        help_text="Numero MonCash du payeur : declenche une demande USSD au lieu d'une redirection",
+        help_text="Numero du payeur, garde pour le support. Le paiement passe toujours par redirect_url.",
     )
     expected_total = serializers.DecimalField(
         **MONEY,
