@@ -14,7 +14,7 @@
   {% if status == "awaiting_payment" %}
     {% if payment.mode == "redirect" %}
       <p>{% translate "Payez pour lancer le transfert. La page de paiement s'ouvre dans un nouvel onglet ; revenez ici ensuite, cette page se met à jour toute seule." %}</p>
-      <a class="button block cta" href="{{ payment.redirect_url }}" target="_blank" rel="noopener noreferrer">{% translate "Payer maintenant" %}</a>
+      <a class="button block{% if not polled %} cta{% endif %}" href="{{ payment.redirect_url }}" target="_blank" rel="noopener noreferrer">{% translate "Payer maintenant" %}</a>
     {% elif payment.mode == "ussd" %}
       <p>{% translate "Une demande de paiement a été envoyée sur votre téléphone MonCash. Validez-la pour lancer le transfert." %}</p>
     {% else %}

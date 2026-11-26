@@ -458,7 +458,10 @@ def transfer_detail(request, reference: str):
 @customer_required
 def transfer_status(request, reference: str):
     """Fragment HTMX rafraichi tant que le transfert n'est pas termine."""
-    return render(request, "web/partials/transfer_status.html", _transfer_context(_own_transfer(request, reference)))
+    # polled : pas de halo sur « Payer maintenant » a chaque rafraichissement,
+    # sinon l'animation limitee a trois passages repartirait sans fin.
+    context = {**_transfer_context(_own_transfer(request, reference)), "polled": True}
+    return render(request, "web/partials/transfer_status.html", context)
 
 
 # ----------------------------------------------------------------------

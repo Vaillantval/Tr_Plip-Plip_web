@@ -250,7 +250,7 @@ button.block:not(.secondary):hover::after, .button.block:not(.secondary):hover::
 }
 
 /* Paiement en attente : le bouton « Payer maintenant » respire. */
-.button.cta { animation: cta-pulse 2.2s ease-out infinite; }
+.button.cta { animation: cta-pulse 2.2s ease-out 3; }
 @keyframes cta-pulse {
   0% { box-shadow: 0 0 0 0 rgba(163, 230, 53, .55); }
   70% { box-shadow: 0 0 0 12px rgba(163, 230, 53, 0); }
@@ -280,7 +280,7 @@ button.is-loading::before {
 .works-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .09em; color: rgba(255, 255, 255, .65); margin: 1rem 0 .45rem; }
 .wallets { display: flex; flex-wrap: wrap; gap: .6rem; list-style: none; margin: 0; padding: 0; }
 .wallets li { display: flex; flex-direction: column; align-items: center; gap: .25rem; }
-.wallets .chip { animation: float 3.2s ease-in-out infinite; }
+.wallets .chip { animation: float 3.2s ease-in-out 3; }
 .wallets li:nth-child(2) .chip { animation-delay: -.8s; }
 .wallets li:nth-child(3) .chip { animation-delay: -1.6s; }
 .wallets li:nth-child(4) .chip { animation-delay: -2.4s; }
@@ -315,7 +315,7 @@ button.is-loading::before {
   display: inline-grid; place-items: center; width: 1.3rem; height: 1.3rem; border-radius: 50%;
   background: var(--brand); color: var(--accent); font-size: .72rem; font-weight: 700; margin-right: .35rem; vertical-align: .05rem;
 }
-.flow { stroke-dasharray: 4 5; animation: flow 1.2s linear infinite; }
+.flow { stroke-dasharray: 4 5; animation: flow 1.2s linear 8; }
 @keyframes flow { to { stroke-dashoffset: -18; } }
 
 .example { background: var(--brand); color: #fff; border-radius: var(--radius-md); padding: 1rem 1.1rem; margin: 1.4rem 0 0; position: relative; overflow: hidden; }
@@ -342,9 +342,12 @@ button.is-loading::before {
 .faq details[open] summary::after { transform: rotate(45deg); }
 .faq details p { margin: 0; padding: 0 1rem .9rem; color: var(--muted); font-size: .9rem; }
 
-/* Animations continues, legeres : « Mes transferts » vibre toutes les
-   4 s, le bouton principal respire et un reflet le traverse. */
-.top nav a.nav-transfers { display: inline-block; animation: nudge 4s ease-in-out infinite; transform-origin: 50% 60%; }
+/* Animations d'accroche : « Mes transferts » vibre, le bouton principal
+   respire et un reflet le traverse. Trois passages au plus (environ 12 s),
+   jamais en boucle : WCAG 2.2.2 demande de pouvoir arreter tout mouvement
+   automatique de plus de 5 s. Seule la roue d'attente (.is-loading) tourne
+   sans fin, le temps d'un envoi. Garde par tests/test_motion.py. */
+.top nav a.nav-transfers { display: inline-block; animation: nudge 4s ease-in-out 3; transform-origin: 50% 60%; }
 @keyframes nudge {
   0%, 84%, 100% { transform: none; }
   87% { transform: rotate(-4deg); }
@@ -352,7 +355,7 @@ button.is-loading::before {
   93% { transform: rotate(-3deg); }
   96% { transform: rotate(2deg); }
 }
-.breathe { animation: breathe 2.8s ease-in-out infinite; }
+.breathe { animation: breathe 2.8s ease-in-out 3; }
 @keyframes breathe {
   0%, 100% { box-shadow: 0 0 0 0 rgba(163, 230, 53, 0); }
   50% { box-shadow: 0 0 0 5px rgba(163, 230, 53, .35); }
@@ -362,7 +365,7 @@ button.is-loading::before {
   content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background: linear-gradient(110deg, transparent 30%, rgba(163, 230, 53, .28) 50%, transparent 70%);
 }
-button.breathe::after, .button.breathe::after { animation: sheen 4.5s ease-in-out infinite; }
+button.breathe::after, .button.breathe::after { animation: sheen 4.5s ease-in-out 3; }
 @keyframes sheen { 0%, 70% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 
 /* ------------------------------------------------------------------
@@ -397,7 +400,7 @@ button.breathe::after, .button.breathe::after { animation: sheen 4.5s ease-in-ou
 .tx-meta { grid-column: 1 / -1; overflow-wrap: anywhere; }
 .tx .again { display: inline-flex; padding: 0 .9rem .75rem; color: var(--brand); font-weight: 600; font-size: .9rem; text-decoration: none; }
 .tx .again:hover { text-decoration: underline; }
-.tx.status-awaiting_payment .pill.awaiting_payment::before { animation: blink 1.4s ease-in-out infinite; }
+.tx.status-awaiting_payment .pill.awaiting_payment::before { animation: blink 1.4s ease-in-out 3; }
 @keyframes blink { 50% { opacity: .2; } }
 
 /* ------------------------------------------------------------------
@@ -405,7 +408,7 @@ button.breathe::after, .button.breathe::after { animation: sheen 4.5s ease-in-ou
    ------------------------------------------------------------------ */
 .login-head { display: flex; align-items: center; gap: .75rem; }
 .login-head h1 { margin: 0; }
-.login-mark { width: 3rem; height: 3rem; flex: none; animation: float 3.2s ease-in-out infinite; }
+.login-mark { width: 3rem; height: 3rem; flex: none; animation: float 3.2s ease-in-out 3; }
 .login-card h2.method { display: flex; align-items: center; gap: .5rem; color: var(--brand); }
 .login-card h2.method svg { width: 1.35rem; height: 1.35rem; flex: none; padding: .2rem; box-sizing: content-box; border-radius: 8px; background: var(--brand-soft); }
 .or { display: flex; align-items: center; gap: .75rem; margin: -.25rem 0 .75rem; color: var(--muted); font-size: .85rem; }
