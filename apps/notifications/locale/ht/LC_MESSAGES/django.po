@@ -31,12 +31,11 @@ msgstr "Plip-Plip : %(amount)s HTG voye bay %(phone)s. Referans %(reference)s."
 msgid ""
 "Plip-Plip : votre transfert %(reference)s a ete rembourse. %(amount)s HTG "
 "vous ont ete rendus."
-msgstr ""
-"Plip-Plip : transfe %(reference)s ou a remet. Yo remet ou %(amount)s HTG."
+msgstr "Plip-Plip : nou ranbouse transfe %(reference)s ou a. Nou remet ou %(amount)s HTG."
 
 #: .\apps\notifications\messages.py
 #, python-format
 msgid ""
 "Plip-Plip : nous avons repondu a votre reclamation sur le transfert "
 "%(reference)s. Ouvrez plip.ht pour la lire."
-msgstr "Plip-Plip : nou reponn reklamasyon ou sou transfe %(reference)s. Ouve plip.ht pou li l."
+msgstr "Plip-Plip : nou reponn reklamasyon ou sou transfe %(reference)s. Ale sou plip.ht pou li l."

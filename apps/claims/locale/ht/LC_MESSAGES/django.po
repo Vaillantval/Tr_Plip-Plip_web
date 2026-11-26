@@ -28,23 +28,23 @@ msgstr "Moun nan pa resevwa anyen"
 
 #: .\apps\claims\models.py
 msgid "Le bénéficiaire a reçu un autre montant"
-msgstr "Moun nan resevwa yon lot kantite"
+msgstr "Moun nan resevwa yon lòt kantite kòb"
 
 #: .\apps\claims\models.py
 msgid "L'argent est parti sur un autre numéro"
-msgstr "Lajan an ale sou yon lot nimewo"
+msgstr "Lajan an ale sou yon lòt nimewo"
 
 #: .\apps\claims\models.py
 msgid "J'ai payé deux fois le même envoi"
-msgstr "Mwen peye de fwa pou menm voye a"
+msgstr "Mwen peye de fwa pou menm transfè a"
 
 #: .\apps\claims\models.py
 msgid "Autre chose"
-msgstr "Yon lot bagay"
+msgstr "Yon lòt bagay"
 
 #: .\apps\claims\models.py
 msgid "Ouverte"
-msgstr "Ouve"
+msgstr "Ouvè"
 
 #: .\apps\claims\models.py
 msgid "Répondue"
@@ -52,7 +52,7 @@ msgstr "Gen repons"
 
 #: .\apps\claims\models.py
 msgid "Close"
-msgstr "Femen"
+msgstr "Fèmen"
 
 #: .\apps\claims\services.py
 msgid "Votre demande n'a pas pu être enregistrée."
@@ -60,19 +60,17 @@ msgstr "Nou pa t kapab anrejistre demann ou an."
 
 #: .\apps\claims\services.py
 msgid "Ce transfert ne peut pas faire l'objet d'une réclamation."
-msgstr "Transfe sa a pa ka gen yon reklamasyon."
+msgstr "Ou pa ka fè reklamasyon pou transfè sa a."
 
 #: .\apps\claims\services.py
 msgid ""
 "Une réclamation est déjà ouverte pour ce transfert. Vous pouvez la compléter."
-msgstr ""
-"Gen deja yon reklamasyon ouve pou transfe sa a. Ou ka ajoute yon mesaj ladan "
-"l."
+msgstr "Gen deja yon reklamasyon ouvè pou transfè sa a. Ou ka ajoute yon mesaj ladan l."
 
 #: .\apps\claims\services.py
 msgid ""
 "Cette réclamation est close. Ouvrez-en une nouvelle si le problème persiste."
-msgstr "Reklamasyon sa a femen. Ouve yon lot si pwoblem nan poko regle."
+msgstr "Reklamasyon sa a fèmen. Louvri yon lòt si pwoblèm nan poko regle."
 
 #: .\apps\claims\services.py
 msgid "Expliquez en quelques mots ce qui s'est passé."
@@ -85,4 +83,4 @@ msgstr "Chwazi yon rezon nan lis la."
 #: .\apps\claims\services.py
 #, python-format
 msgid "Votre message est trop long : %(max)s caractères au maximum."
-msgstr "Mesaj ou an two long : %(max)s karakte maksimòm."
+msgstr "Mesaj ou a twò long : %(max)s karaktè pou pi plis."

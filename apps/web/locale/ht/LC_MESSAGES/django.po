@@ -25,9 +25,7 @@ msgstr ""
 msgid ""
 "Ce numéro ne peut pas recevoir d'argent : MonCash et NatCash fonctionnent "
 "uniquement sur des lignes mobiles."
-msgstr ""
-"Nimewo sa paka resevwa lajan: moncash ak Natcash fonksyone selman sou rezo "
-"lokal yo"
+msgstr "Nimewo sa a pa ka resevwa lajan : MonCash ak NatCash mache sèlman sou liy telefòn selilè."
 
 #: .\apps\web\forms.py
 msgid "Votre numéro de téléphone"
@@ -67,28 +65,24 @@ msgstr "Ajoute yon mesaj"
 
 #: .\apps\web\forms.py
 msgid "Retapez le numéro du bénéficiaire"
-msgstr "Retape Nimewo moun wap voye kob ba li a"
+msgstr "Retape nimewo moun k ap resevwa a"
 
 #: .\apps\web\forms.py
 msgid "Recevoir les avis de ce transfert par"
-msgstr "Resevwa konfimasyon an pa"
+msgstr "Resevwa mesaj sou transfè sa a pa"
 
 #: .\apps\web\forms.py
 msgid ""
 "En choisissant WhatsApp, vous acceptez d'y recevoir les avis de vos "
 "transferts. Si le message ne peut pas vous être livré, il vous est envoyé "
 "par SMS."
-msgstr ""
-"Siw chwazi whatsapp, ou aksepte resevwa konfimasyon transfè ou yo. Si mesaj "
-"lan paka al jwenn ou pa whatsapp li prale par sms."
+msgstr "Si w chwazi WhatsApp, ou aksepte resevwa mesaj sou transfè w yo sou WhatsApp. Si mesaj la pa ka rive jwenn ou, n ap voye l pa SMS."
 
 #: .\apps\web\forms.py
 msgid ""
 "Les deux numéros ne correspondent pas. Retapez-le, ou modifiez l'envoi si le "
 "premier était faux."
-msgstr ""
-"2 nimewo yo pa koresponn, retape l oubyen modifye enfomasyon yo si saw te "
-"ekri yo pa te bon."
+msgstr "De nimewo yo pa menm. Retape l, oswa chanje transfè a si premye a pa t bon."
 
 #: .\apps\web\forms.py
 msgid "J'envoie depuis"
@@ -200,7 +194,7 @@ msgstr "OK"
 
 #: .\apps\web\templates\web\claim_open.html
 msgid "Signaler un problème"
-msgstr "Siyale yon pwoblem"
+msgstr "Siyale yon pwoblèm"
 
 #: .\apps\web\templates\web\claim_open.html
 #: .\apps\web\templates\web\partials\transfer_status.html
@@ -220,7 +214,7 @@ msgstr ""
 
 #: .\apps\web\templates\web\claim_open.html
 msgid "Retour au transfert"
-msgstr "Retounen nan transfe a"
+msgstr "Retounen nan transfè a"
 
 #: .\apps\web\templates\web\confirm.html
 msgid "Vérifiez votre envoi"
@@ -296,7 +290,7 @@ msgstr "Ak modpas mwen"
 
 #: .\apps\web\templates\web\login.html
 msgid "Mot de passe oublié ?"
-msgstr "Ou bliye modpas ou?"
+msgstr "Ou bliye modpas ou ?"
 
 #: .\apps\web\templates\web\login_code.html
 msgid "Saisissez le code"
@@ -361,9 +355,7 @@ msgstr "Resevwa"
 msgid ""
 "Payez pour lancer le transfert. La page de paiement s'ouvre dans un nouvel "
 "onglet ; revenez ici ensuite, cette page se met à jour toute seule."
-msgstr ""
-"Peye pou transfè a kòmanse. Paj pèman an ap louvri nan yon lòt onglè ; "
-"tounen isit la apre, paj sa a ap mete tèt li ajou poukont li."
+msgstr "Peye pou transfè a kòmanse. Paj pèman an ap louvri nan yon lòt onglè ; tounen isit la apre, paj sa a ap mete tèt li ajou pou kont li."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
 msgid "Payer maintenant"
@@ -393,7 +385,7 @@ msgstr "Peye anvan %(time)s."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
 msgid "Paiement reçu. Le transfert vers le bénéficiaire est en cours."
-msgstr "Nou resevwa peman an. N ap voye lajan an bay moun ki dwe resevwa l la."
+msgstr "Nou resevwa pèman an. N ap voye lajan an bay moun ki dwe resevwa l la."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
 #, python-format
@@ -414,7 +406,7 @@ msgstr "N ap trete l pi vit ke posib."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
 msgid "Inutile de refaire l'envoi : cette page se met à jour toute seule."
-msgstr "Ou pa bezwen voye lajan an anko : paj sa a ap mete l ajou pou kont li."
+msgstr "Ou pa bezwen voye lajan an ankò : paj sa a ap mete tèt li ajou pou kont li."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
 #, python-format
@@ -445,7 +437,7 @@ msgstr "Ou bliye modpas ou?"
 msgid ""
 "Nous envoyons un code par SMS à votre numéro. Il vous permettra de choisir "
 "un nouveau mot de passe."
-msgstr "Nou pral voye yon kòd pa SMS pou ou kap pèmèt ou chwazi yon lot modpas."
+msgstr "N ap voye yon kòd pa SMS sou nimewo ou. L ap pèmèt ou chwazi yon nouvo modpas."
 
 #: .\apps\web\templates\web\password_forgot.html
 msgid "Retour à la connexion"
@@ -457,7 +449,7 @@ msgstr "Tout lòt koneksyon w yo ap fèmen."
 
 #: .\apps\web\templates\web\password_reset.html
 msgid "Enregistrer et me connecter"
-msgstr "Banm anrejistre epi konekte"
+msgstr "Anrejistre epi konekte m"
 
 #: .\apps\web\templates\web\password_reset.html
 msgid "Recevoir un nouveau code"
@@ -469,7 +461,7 @@ msgstr "Referans transfè a"
 
 #: .\apps\web\templates\web\transfer_detail.html
 msgid "Gardez cette référence : elle vous sera demandée en cas de réclamation."
-msgstr "Kenbe referans sa a : y ap mande w li si w gen yon plent."
+msgstr "Kenbe referans sa a : y ap mande w li si w fè yon reklamasyon."
 
 #: .\apps\web\templates\web\transfer_detail.html
 #: .\apps\web\templates\web\transfers.html
@@ -490,7 +482,7 @@ msgstr "Voye"
 
 #: .\apps\web\templates\web\transfer_detail.html
 msgid "Un problème avec ce transfert ?"
-msgstr "Yon pwoblem ak transfe sa a ?"
+msgstr "Yon pwoblèm ak transfè sa a ?"
 
 #: .\apps\web\templates\web\transfer_detail.html
 msgid "Tous mes transferts"
@@ -502,7 +494,7 @@ msgstr "Konekte san ou pa tann kòd."
 
 #: .\apps\web\templates\web\transfers.html
 msgid "Créez un mot de passe : la prochaine fois, vous entrerez tout de suite."
-msgstr "Kreye yon modpas: pwochen fwa, w ap antre touswit."
+msgstr "Kreye yon modpas : pwochen fwa, w ap konekte touswit."
 
 #: .\apps\web\templates\web\transfers.html
 msgid "Réponse à lire"
@@ -547,23 +539,20 @@ msgstr "Nou pa ofri konbinezon pòtfèy sa a."
 msgid ""
 "Les transferts sont momentanément suspendus. Rien n'a été débité. Réessayez "
 "plus tard."
-msgstr ""
-"Transfè yo fè yon ti kanpe, okenn lajan pa sòti sou Kont ou, eseye pita ankò"
+msgstr "Transfè yo kanpe pou kounye a. Yo pa retire okenn kòb sou kont ou. Eseye ankò pita."
 
 #: .\apps\web\views.py
 msgid ""
 "Nous recevons beaucoup de transferts en ce moment. Plutôt que de prendre "
 "votre argent sans pouvoir le livrer rapidement, nous préférons attendre. "
 "Réessayez dans quelques minutes."
-msgstr ""
-"Nou gen anpil Transfè nap trete pou moman an, fè yon ti tann epi re eseye "
-"nan kèk minit svp!"
+msgstr "Nou gen anpil transfè kounye a. Pito nou tann pase nou pran kòb ou san nou pa ka voye l byen vit. Eseye ankò nan kèk minit."
 
 #: .\apps\web\views.py
 msgid ""
 "Ce numéro ne peut pas recevoir ce montant pour le moment. Réessayez plus "
 "tard."
-msgstr "Nimewo sa a pa ka resevwa kantite sa a kounye a. Eseye pita."
+msgstr "Nimewo sa a pa ka resevwa kantite sa a kounye a. Eseye ankò pita."
 
 #: .\apps\web\views.py
 #, python-format
@@ -577,17 +566,17 @@ msgstr ""
 #: .\apps\web\views.py
 #, python-format
 msgid "Vous pourrez envoyer a nouveau a partir de %(hour)s:00."
-msgstr "Ou ka voye anko apati %(hour)s:00."
+msgstr "Ou ka voye ankò apati %(hour)s:00."
 
 #: .\apps\web\views.py
 #, python-format
 msgid "Vous pourrez envoyer a nouveau demain a partir de %(hour)s:00."
-msgstr "Ou ka voye anko demen apati %(hour)s:00."
+msgstr "Ou ka voye ankò demen apati %(hour)s:00."
 
 #: .\apps\web\views.py
 #, python-format
 msgid "Vous pourrez envoyer a nouveau a partir du %(date)s a %(hour)s:00."
-msgstr "Ou ka voye anko apati %(date)s a %(hour)s:00."
+msgstr "Ou ka voye ankò apati %(date)s a %(hour)s:00."
 
 #: .\apps\web\views.py
 #, python-format
@@ -630,7 +619,7 @@ msgstr "Nou pa t ka kreye pèman an. Yo pa retire okenn kòb. Ou ka eseye ankò.
 
 #: .\apps\web\views.py
 msgid "Trop de réclamations en peu de temps. Réessayez plus tard."
-msgstr "Twop reklamasyon nan yon ti tan. Eseye pita."
+msgstr "Twòp reklamasyon nan yon ti tan. Eseye ankò pita."
 
 #: .\apps\web\views.py
 msgid ""
@@ -640,7 +629,7 @@ msgstr "Reklamasyon ou anrejistre. N ap reponn ou sou paj sa a, ak pa SMS."
 
 #: .\apps\web\views.py
 msgid "Trop de messages en peu de temps. Réessayez plus tard."
-msgstr "Twop mesaj nan yon ti tan. Eseye pita."
+msgstr "Twòp mesaj nan yon ti tan. Eseye ankò pita."
 
 #: .\apps\web\views.py
 msgid "Message ajouté à votre réclamation."
@@ -699,7 +688,7 @@ msgstr "%(count)s karaktè pou pi plis."
 msgid ""
 "Ajoutez au moins une lettre : un mot de passe fait uniquement de chiffres "
 "est refusé."
-msgstr "Mete omwen yon lèt: yon modpas ki gen chif sèlman pa aksepte."
+msgstr "Mete omwen yon lèt : yon modpas ki gen chif sèlman pa aksepte."
 
 #: .\apps\web\views.py
 msgid "Ce mot de passe est trop courant. Choisissez-en un autre."
