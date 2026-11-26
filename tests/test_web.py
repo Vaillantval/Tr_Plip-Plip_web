@@ -438,7 +438,8 @@ def test_the_language_menu_applies_on_change_without_an_ok_button(client):
     html = client.get(reverse("web:home")).content.decode()
     menu = html[html.index('id="language"') :]
     menu = menu[: menu.index("</select>")]
-    assert "this.form.requestSubmit()" in menu
+    # Le changement est gere par static/web/app.js (aucun script dans la page, CSP).
+    assert "data-autosubmit" in menu
     # Sans JavaScript, le bouton reste le seul moyen : il est dans <noscript>.
     assert re.search(r"<noscript>\s*<button", html)
 

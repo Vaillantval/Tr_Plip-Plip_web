@@ -277,6 +277,7 @@ button.is-loading::before {
    Accueil : portefeuilles, etapes, exemple, garanties, questions.
    ------------------------------------------------------------------ */
 .center { text-align: center; }
+.spaced { margin-top: 1rem; }
 .works-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .09em; color: rgba(255, 255, 255, .65); margin: 1rem 0 .45rem; }
 .wallets { display: flex; flex-wrap: wrap; gap: .6rem; list-style: none; margin: 0; padding: 0; }
 .wallets li { display: flex; flex-direction: column; align-items: center; gap: .25rem; }

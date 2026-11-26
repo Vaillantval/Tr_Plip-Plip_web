@@ -8,7 +8,10 @@
   <link rel="stylesheet" href="{% static 'web/app.css' %}">
   <link rel="icon" href="{% static 'web/logo.svg' %}" type="image/svg+xml">
   <meta name="theme-color" content="#14532d">
+  {# htmx sans eval ni styles injectes : compatible avec la CSP stricte. #}
+  <meta name="htmx-config" content='{"includeIndicatorStyles": false, "allowEval": false, "allowScriptTags": false}'>
   <script src="{% static 'web/htmx-2.0.4.min.js' %}" defer></script>
+  <script src="{% static 'web/app.js' %}" defer></script>
 </head>
 <body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
   <header class="top">
@@ -43,7 +46,7 @@
       {% csrf_token %}
       <input type="hidden" name="next" value="{{ request.get_full_path }}">
       <label for="language" class="muted">{% translate "Langue" %}</label>
-      <select id="language" name="language" onchange="this.form.requestSubmit()">
+      <select id="language" name="language" data-autosubmit>
         {% get_available_languages as LANGUAGES %}
         {% for code, name in LANGUAGES %}
           <option value="{{ code }}"{% if code == LANGUAGE_CODE %} selected{% endif %}>{{ name }}</option>
@@ -56,33 +59,5 @@
     </form>
    </div>
   </footer>
-  <script>
-    // Bouton « Afficher » des champs mot de passe (partials/password_field.html).
-    document.addEventListener("click", function (event) {
-      var button = event.target.closest("[data-reveal]");
-      if (!button) return;
-      var input = document.getElementById(button.getAttribute("data-reveal"));
-      if (!input) return;
-      var show = input.type === "password";
-      input.type = show ? "text" : "password";
-      button.textContent = button.getAttribute(show ? "data-hide" : "data-show");
-      button.setAttribute("aria-pressed", show ? "true" : "false");
-    });
-
-    // Bouton principal d'un formulaire envoye : roue d'attente (app.css).
-    document.addEventListener("submit", function (event) {
-      if (event.defaultPrevented) return;
-      var button = event.submitter || event.target.querySelector("button[type=submit].block");
-      if (button && button.classList.contains("block")) button.classList.add("is-loading");
-    });
-    // Retour arriere : la page revient du cache, on rend le bouton.
-    window.addEventListener("pageshow", function (event) {
-      if (!event.persisted) return;
-      document.querySelectorAll("button.is-loading").forEach(function (button) {
-        button.classList.remove("is-loading");
-        button.disabled = false;
-      });
-    });
-  </script>
 </body>
 </html>

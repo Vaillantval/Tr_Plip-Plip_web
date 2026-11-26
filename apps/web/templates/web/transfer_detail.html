@@ -25,7 +25,7 @@
   <p class="muted">{{ txn.created_at|date:"d/m/Y H:i" }}</p>
   {% include "web/partials/fees.html" with quote=txn %}
   {% if status in again_statuses %}
-  <a class="button secondary block" style="margin-top:1rem" href="{% url 'web:home' %}?refaire={{ txn.reference|urlencode }}" data-again>{% translate "Refaire cet envoi" %}</a>
+  <a class="button secondary block spaced" href="{% url 'web:home' %}?refaire={{ txn.reference|urlencode }}" data-again>{% translate "Refaire cet envoi" %}</a>
   {% endif %}
 </section>
 

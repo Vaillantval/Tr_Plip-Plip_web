@@ -7,7 +7,7 @@
   {% blocktranslate trimmed %}Code envoyé par SMS au <strong class="mono">+{{ phone }}</strong>.{% endblocktranslate %}
 </p>
 
-<form class="card" method="post" action="{% url 'web:login_code' %}" onsubmit="this.querySelector('button').disabled = true;">
+<form class="card" method="post" action="{% url 'web:login_code' %}" data-once>
   {% csrf_token %}
   <input type="hidden" name="next" value="{{ next }}">
   {% for error in form.non_field_errors %}<p class="alert error">{{ error }}</p>{% endfor %}

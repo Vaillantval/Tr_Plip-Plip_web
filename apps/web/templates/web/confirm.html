@@ -18,7 +18,7 @@
   {% include "web/partials/fees.html" with quote=quote %}
 </section>
 
-<form class="card" method="post" action="{% url 'web:confirm' %}" onsubmit="this.querySelector('button').disabled = true;">
+<form class="card" method="post" action="{% url 'web:confirm' %}" data-once>
   {% csrf_token %}
   <input type="hidden" name="idempotency_key" value="{{ idempotency_key }}">
   {# Valeur machine : sans unlocalize, le francais ecrit 1090,00 et le serveur ne la relit pas. #}
@@ -30,7 +30,7 @@
   </button>
 </form>
 </div>
-<p class="muted" style="margin-top:1rem; text-align:center">
+<p class="muted center spaced">
   <a href="{% url 'web:home' %}">{% translate "Modifier l'envoi" %}</a>
 </p>
 {% endblock %}
