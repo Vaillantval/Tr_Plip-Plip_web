@@ -6,8 +6,9 @@ operations quand elles passent par le site.
 
 from __future__ import annotations
 
-from django.conf import settings
 from django.core.cache import cache
+
+from apps.accounts.ip import client_ip as _client_ip
 
 #: (nombre, fenetre en secondes)
 LIMITS = {
@@ -37,12 +38,5 @@ def allow(scope: str, ident) -> bool:
     return count <= limit
 
 
-def client_ip(request) -> str:
-    """Meme regle que l'API : X-Forwarded-For seulement derriere des proxies declares."""
-    num_proxies = settings.REST_FRAMEWORK.get("NUM_PROXIES") or 0
-    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
-    if num_proxies and forwarded:
-        hops = [h.strip() for h in forwarded.split(",") if h.strip()]
-        if len(hops) >= num_proxies:
-            return hops[-num_proxies]
-    return request.META.get("REMOTE_ADDR", "")
+#: Meme regle que l'API : voir apps.accounts.ip.
+client_ip = _client_ip

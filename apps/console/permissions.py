@@ -11,6 +11,7 @@ from functools import wraps
 
 from django.core.exceptions import PermissionDenied
 
+from apps.accounts.ip import client_ip as _client_ip
 from apps.accounts.models import AuditLog
 
 #: Longueur maximale d'une valeur de formulaire recopiee dans l'audit.
@@ -18,10 +19,10 @@ AUDIT_VALUE_MAX_LENGTH = 255
 
 
 def client_ip(request):
-    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.META.get("REMOTE_ADDR")
+    """IP retenue dans l'audit. Jamais le premier saut de X-Forwarded-For :
+    il est ecrit par le client, et une IP falsifiable dans un journal
+    d'audit est pire qu'une IP absente, parce qu'on la croit."""
+    return _client_ip(request) or None
 
 
 def audit(request, action: str, *, target: str = "", allowed: bool = True, **detail) -> None:
