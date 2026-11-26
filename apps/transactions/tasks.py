@@ -121,7 +121,13 @@ def poll_pending_payments(limit: int = 200) -> dict:
             errors += 1
             logger.exception("Echec du polling sur %s", txn.reference)
 
-    return {"polled": len(pending), "confirmed": confirmed, "expired": expired, "errors": errors}
+    try:
+        abandoned = services.cancel_abandoned_created()
+    except Exception:
+        abandoned = 0
+        logger.exception("Echec de l'annulation des transferts abandonnes")
+
+    return {"polled": len(pending), "confirmed": confirmed, "expired": expired, "errors": errors, "abandoned": abandoned}
 
 
 @shared_task(name="transactions.drain_payout_queue", expires=settings.PAYOUT_DRAIN_INTERVAL_SECONDS)

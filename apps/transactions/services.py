@@ -551,6 +551,32 @@ def poll_payment(txn: Transaction) -> Transaction:
     return txn
 
 
+def cancel_abandoned_created(*, limit: int = 100, now=None) -> int:
+    """Annule les transferts restes a l'etat Cree au-dela du delai de paiement.
+
+    En temps normal, Cree ne dure que le temps d'appeler plopplop. Une
+    transaction qui y reste a vu son demarrage interrompu (erreur a la
+    sauvegarde, processus coupe) : le client n'a jamais recu de lien,
+    rien ne la fera avancer, et elle bloque pour toujours son montant
+    dans les plafonds de l'expediteur et du beneficiaire.
+
+    Le delai est celui du paiement (PAYMENT_EXPIRY_SECONDS) : passe ce
+    delai, un paiement serait de toute facon expire.
+    """
+    now = now or timezone.now()
+    before = now - timedelta(seconds=settings.PAYMENT_EXPIRY_SECONDS)
+    cancelled = 0
+    for txn in Transaction.objects.filter(state=State.CREATED, created_at__lt=before).order_by("created_at")[:limit]:
+        txn.failure_code = txn.failure_code or "PAYMENT_NOT_STARTED"
+        txn.failure_message = txn.failure_message or "Paiement jamais demarre"
+        txn.save(update_fields=["failure_code", "failure_message", "updated_at"])
+        txn.transition(State.CANCELLED, note="Abandonnee a l'etat Cree : paiement jamais demarre")
+        cancelled += 1
+    if cancelled:
+        logger.warning("%s transfert(s) abandonne(s) a l'etat Cree annule(s)", cancelled)
+    return cancelled
+
+
 @db_transaction.atomic
 def confirm_payment(txn: Transaction, *, provider_amount: Decimal | None = None) -> Transaction:
     """Encaissement confirme : ecriture comptable puis mise en file.
