@@ -4,6 +4,20 @@
 {% block content %}
 <h1>{% translate "Mes transferts" %}</h1>
 
+{% if offer_password %}
+<section class="card offer" data-offer="password">
+  <p><strong>{% translate "Connectez-vous sans attendre de code." %}</strong>
+  {% translate "Créez un mot de passe : la prochaine fois, vous entrerez tout de suite." %}</p>
+  <div class="offer-actions">
+    <a class="button" href="{% url 'web:account_password' %}">{% translate "Créer un mot de passe" %}</a>
+    <form method="post" action="{% url 'web:password_offer_dismiss' %}">
+      {% csrf_token %}
+      <button type="submit" class="link">{% translate "Plus tard" %}</button>
+    </form>
+  </div>
+</section>
+{% endif %}
+
 {% if page.object_list %}
 <section class="card">
   <ul class="list">
@@ -38,5 +52,8 @@
   <p>{% translate "Vous n'avez encore envoyé aucun transfert." %}</p>
   <a class="button block" href="{% url 'web:home' %}">{% translate "Faire un envoi" %}</a>
 </section>
+{% endif %}
+{% if request.customer.has_password %}
+<p class="muted"><a href="{% url 'web:account_password' %}">{% translate "Changer de mot de passe" %}</a></p>
 {% endif %}
 {% endblock %}

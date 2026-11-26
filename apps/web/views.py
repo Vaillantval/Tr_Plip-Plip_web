@@ -25,11 +25,11 @@ from django.utils.translation import get_language
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_http_methods, require_POST
 
-from apps.accounts import otp
+from apps.accounts import otp, passwords
 from apps.accounts import services as accounts
 from apps.api import services as api_services
 from apps.claims import services as claims
-from apps.accounts.models import NotificationChannel
+from apps.accounts.models import AuthMethod, NotificationChannel
 from apps.notifications.services import whatsapp_available
 from apps.api.status import MAPPING as STATUS_MAPPING
 from apps.api.status import PublicStatus, payment_instructions, public_status, public_wait
@@ -38,16 +38,30 @@ from apps.transactions.models import Transaction
 from apps.transactions.pricing import MIN_NET, AmountTooLarge, AmountTooSmall
 
 from . import ratelimit
-from .forms import ClaimForm, ClaimMessageForm, CodeForm, PhoneForm, RecipientCheckForm, TransferForm
+from .forms import (
+    ClaimForm,
+    ClaimMessageForm,
+    CodeForm,
+    PasswordLoginForm,
+    PasswordResetForm,
+    PasswordSetForm,
+    PhoneForm,
+    RecipientCheckForm,
+    TransferForm,
+)
 from .labels import format_htg
 from .polling import poll_interval
-from .session import customer_required, get_customer, login_customer, logout_customer
+from .session import customer_required, get_customer, login_customer, logout_customer, refresh_epoch
 
 logger = logging.getLogger(__name__)
 
 DRAFT_KEY = "web:draft"
 PENDING_KEY = "web:pending"
 LOGIN_PHONE_KEY = "web:login_phone"
+RESET_PHONE_KEY = "web:reset_phone"
+#: Le client a ferme l'encadre « creez un mot de passe » : pas avant la
+#: prochaine session.
+PASSWORD_OFFER_DISMISSED_KEY = "web:password_offer_dismissed"
 #: Demandes de confirmation gardees en session (une par cle d'idempotence).
 MAX_PENDING = 5
 
@@ -399,6 +413,8 @@ def transfers(request):
             "page": page.get_page(request.GET.get("page")),
             "unread_claims": claims.unread_transaction_ids(request.customer),
             "again_statuses": AGAIN_STATUSES,
+            "offer_password": not request.customer.has_password
+            and not request.session.get(PASSWORD_OFFER_DISMISSED_KEY),
         },
     )
 
@@ -586,7 +602,7 @@ def login(request):
             else:
                 request.session[LOGIN_PHONE_KEY] = phone
                 return redirect(f"{reverse('web:login_code')}?{urlencode({'next': next_url})}")
-    return render(request, "web/login.html", {"form": form, "next": next_url})
+    return render(request, "web/login.html", {"form": form, "password_form": PasswordLoginForm(), "next": next_url})
 
 
 @require_http_methods(["GET", "POST"])
@@ -617,10 +633,176 @@ def login_code(request):
                 form.add_error(None, _("La vérification est momentanément impossible. Réessayez dans quelques minutes."))
             else:
                 # cycle_key() conserve la session : le brouillon d'envoi survit.
-                login_customer(request, customer)
+                login_customer(request, customer, method=AuthMethod.CODE)
                 request.session.pop(LOGIN_PHONE_KEY, None)
                 return redirect(next_url)
     return render(request, "web/login_code.html", {"form": form, "phone": phone, "next": next_url})
+
+
+#: UN message, quelle que soit la cause : numero inconnu, sans mot de
+#: passe, mot de passe faux, compte ou adresse verrouilles. Jamais « ce
+#: numero n'a pas de mot de passe » : ce serait la liste des clients.
+def _auth_failed_message() -> str:
+    return _("Numéro ou mot de passe incorrect.")
+
+
+def _password_problem_messages(codes: list[str]) -> list[str]:
+    """Dire QUOI faire, pas seulement « refuse » : le premier essai de
+    presque tout le monde est une suite de chiffres."""
+    texts = {
+        passwords.TOO_SHORT: _("Au moins %(count)s caractères.") % {"count": settings.CUSTOMER_PASSWORD_MIN_LENGTH},
+        passwords.TOO_LONG: _("%(count)s caractères au maximum.") % {"count": passwords.MAX_LENGTH},
+        passwords.NUMERIC: _("Ajoutez au moins une lettre : un mot de passe fait uniquement de chiffres est refusé."),
+        passwords.TOO_COMMON: _("Ce mot de passe est trop courant. Choisissez-en un autre."),
+        passwords.SIMILAR_PHONE: _("Ce mot de passe ressemble trop à votre numéro de téléphone."),
+    }
+    return [texts[code] for code in codes if code in texts]
+
+
+def _otp_request_allowed(request, phone: str) -> bool:
+    ip = ratelimit.client_ip(request)
+    return (
+        ratelimit.allow("otp_request_phone_burst", phone)
+        and ratelimit.allow("otp_request_phone", phone)
+        and ratelimit.allow("otp_request_ip", ip)
+    )
+
+
+@require_POST
+def login_password(request):
+    next_url = _safe_next(request, reverse("web:transfers"))
+    if get_customer(request) is not None:
+        return redirect(next_url)
+    form = PasswordLoginForm(request.POST)
+    if form.is_valid():
+        try:
+            customer = accounts.authenticate_password(
+                form.cleaned_data["phone"],
+                form.cleaned_data["password"],
+                ip=ratelimit.client_ip(request),
+                language=get_language(),
+            )
+        except accounts.AuthFailed:
+            form.add_error(None, _auth_failed_message())
+        except accounts.CustomerDisabled:
+            form.add_error(None, _("Ce compte est désactivé. Contactez le support."))
+        else:
+            login_customer(request, customer, method=AuthMethod.PASSWORD)
+            return redirect(next_url)
+    return render(
+        request,
+        "web/login.html",
+        {"form": PhoneForm(), "password_form": form, "use_password": True, "next": next_url},
+        status=400,
+    )
+
+
+@require_http_methods(["GET", "POST"])
+def password_forgot(request):
+    """Mot de passe oublie, etape 1 : un code par SMS. Meme reponse que le
+    numero ait un compte ou non."""
+    next_url = _safe_next(request, reverse("web:transfers"))
+    form = PhoneForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        phone = form.cleaned_data["phone"]
+        if not _otp_request_allowed(request, phone):
+            form.add_error(None, _("Trop de demandes de code pour ce numéro. Patientez avant de réessayer."))
+        else:
+            try:
+                accounts.request_code(phone)
+            except otp.OTPRateLimited:
+                form.add_error(None, _("Trop de demandes de code pour ce numéro. Patientez avant de réessayer."))
+            except otp.OTPInvalidPhone:
+                form.add_error("phone", _("Ce numéro ne peut pas recevoir de SMS."))
+            except otp.OTPUnavailable:
+                form.add_error(None, _("L'envoi du SMS est momentanément impossible. Réessayez dans quelques minutes."))
+            else:
+                request.session[RESET_PHONE_KEY] = phone
+                return redirect(f"{reverse('web:password_reset')}?{urlencode({'next': next_url})}")
+    return render(request, "web/password_forgot.html", {"form": form, "next": next_url})
+
+
+@require_http_methods(["GET", "POST"])
+def password_reset(request):
+    """Etape 2 : le code et le nouveau mot de passe. Coupe toutes les
+    sessions et tous les jetons existants, puis connecte."""
+    next_url = _safe_next(request, reverse("web:transfers"))
+    phone = request.session.get(RESET_PHONE_KEY)
+    if not phone:
+        return redirect("web:password_forgot")
+    form = PasswordResetForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        if not ratelimit.allow("otp_verify_phone", phone):
+            form.add_error(None, _("Trop de tentatives. Demandez un nouveau code plus tard."))
+        else:
+            try:
+                customer = accounts.reset_password(
+                    phone,
+                    form.cleaned_data["code"],
+                    form.cleaned_data["password"],
+                    ip=ratelimit.client_ip(request),
+                    language=get_language(),
+                )
+            except accounts.PasswordRejected as exc:
+                for message in _password_problem_messages(exc.codes):
+                    form.add_error("password", message)
+            except accounts.InvalidCode:
+                form.add_error("code", _("Code invalide ou expiré."))
+            except accounts.CustomerDisabled:
+                form.add_error(None, _("Ce compte est désactivé. Contactez le support."))
+            except otp.OTPRateLimited:
+                form.add_error(None, _("Trop de tentatives. Demandez un nouveau code."))
+            except otp.OTPUnavailable:
+                form.add_error(None, _("La vérification est momentanément impossible. Réessayez dans quelques minutes."))
+            else:
+                login_customer(request, customer, method=AuthMethod.CODE)
+                request.session.pop(RESET_PHONE_KEY, None)
+                messages.success(request, _("Mot de passe enregistré. Vous êtes connecté."))
+                return redirect(next_url)
+    return render(
+        request,
+        "web/password_reset.html",
+        {"form": form, "phone": phone, "next": next_url, "min_length": settings.CUSTOMER_PASSWORD_MIN_LENGTH},
+    )
+
+
+@customer_required
+@require_http_methods(["GET", "POST"])
+def account_password(request):
+    """Creer (propose apres la premiere connexion) ou changer son mot de passe."""
+    customer = request.customer
+    changing = customer.has_password
+    form = PasswordSetForm(request.POST or None, changing=changing)
+    if request.method == "POST" and form.is_valid():
+        try:
+            customer = accounts.set_password(
+                customer,
+                form.cleaned_data["password"],
+                current=form.cleaned_data.get("current_password"),
+                ip=ratelimit.client_ip(request),
+            )
+        except accounts.PasswordRejected as exc:
+            for message in _password_problem_messages(exc.codes):
+                form.add_error("password", message)
+        except accounts.WrongCurrentPassword:
+            form.add_error("current_password", _("Mot de passe actuel incorrect."))
+        else:
+            # Un changement a coupe les autres sessions : celle-ci survit.
+            refresh_epoch(request, customer)
+            messages.success(request, _("Mot de passe enregistré. La prochaine fois, connectez-vous sans attendre de code."))
+            return redirect("web:transfers")
+    return render(
+        request,
+        "web/account_password.html",
+        {"form": form, "changing": changing, "min_length": settings.CUSTOMER_PASSWORD_MIN_LENGTH},
+    )
+
+
+@customer_required
+@require_POST
+def password_offer_dismiss(request):
+    request.session[PASSWORD_OFFER_DISMISSED_KEY] = True
+    return redirect("web:transfers")
 
 
 @require_POST

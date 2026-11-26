@@ -18,6 +18,7 @@ FORMAT_VERSION = 1
 #: peut entrer que si ce qu'elle reference est deja la.
 TABLES = (
     "accounts.customer",
+    "accounts.customerauthevent",
     "ledger.ledgeraccount",
     "transactions.walletsetting",
     "transactions.pricingpolicy",
@@ -59,9 +60,18 @@ EXCLUDED = {
     "contenttypes.contenttype": "Recree par migrate.",
 }
 
+#: Champs VIDES a l'export. Le fichier principal peut sortir en clair : un
+#: hache de mot de passe client s'y casserait hors ligne, tranquillement.
+#: Apres restauration, le client se reconnecte par code SMS et recree son
+#: mot de passe (un SMS, une fois). Valeur ecrite a la place.
+STRIPPED_FIELDS = {
+    "accounts.customer": {"password": "", "password_set_at": None},
+}
+
 #: Cles etrangeres INTERNES au fichier principal, verifiees sans base de
 #: donnees : {table: {champ: table_cible}}.
 FOREIGN_KEYS = {
+    "accounts.customerauthevent": {"customer": "accounts.customer"},
     "transactions.transaction": {"customer": "accounts.customer"},
     "transactions.transactionevent": {"transaction": "transactions.transaction"},
     "claims.claim": {

@@ -39,7 +39,10 @@ def _rows(label: str) -> list[dict]:
     model = schema.get_model(label)
     # order_by("pk") : un export rejoue deux fois donne le meme fichier,
     # ce qui rend un `diff` entre deux sauvegardes lisible.
-    return json.loads(serializers.serialize("json", model.objects.order_by("pk").iterator()))
+    rows = json.loads(serializers.serialize("json", model.objects.order_by("pk").iterator()))
+    for row in rows:
+        row["fields"].update(schema.STRIPPED_FIELDS.get(label, {}))
+    return rows
 
 
 def build(labels, *, taken_at=None) -> dict:

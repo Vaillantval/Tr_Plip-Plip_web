@@ -18,5 +18,10 @@ urlpatterns = [
     path("paiement/retour/", views.payment_return, name="payment_return"),
     path("connexion/", views.login, name="login"),
     path("connexion/code/", views.login_code, name="login_code"),
+    path("connexion/mot-de-passe/", views.login_password, name="login_password"),
+    path("connexion/oubli/", views.password_forgot, name="password_forgot"),
+    path("connexion/oubli/code/", views.password_reset, name="password_reset"),
+    path("compte/mot-de-passe/", views.account_password, name="account_password"),
+    path("compte/mot-de-passe/plus-tard/", views.password_offer_dismiss, name="password_offer_dismiss"),
     path("deconnexion/", views.logout, name="logout"),
 ]

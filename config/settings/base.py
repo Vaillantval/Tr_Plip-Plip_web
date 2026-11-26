@@ -113,6 +113,27 @@ LOGOUT_REDIRECT_URL = "console:login"
 # Session client du site web : deconnexion apres 30 min d'inactivite.
 WEB_SESSION_IDLE_SECONDS = int(env("WEB_SESSION_IDLE_SECONDS", "1800"))
 
+# Mot de passe client (facultatif, en plus du code SMS). Les validateurs
+# de Django s'appliquent tous ; seule la longueur minimale descend a 6.
+CUSTOMER_PASSWORD_MIN_LENGTH = int(env("CUSTOMER_PASSWORD_MIN_LENGTH", "6"))
+
+# Verrouillage apres echecs de mot de passe.
+#  - PAR COMPTE : la vraie protection. En base. A partir du seuil, chaque
+#    echec double le verrou : 1, 2, 4, 8, 16, 32 min, plafonne a 1 h. Ne
+#    bloque QUE le mot de passe : le code SMS reste ouvert.
+#  - PAR IP : detection d'abus, pas protection individuelle. En cache. Le
+#    NAT operateur et le WiFi partage mettent des dizaines de clients
+#    derriere une adresse : seuil haut, sinon on bloque un quartier.
+PASSWORD_LOCKOUT = {
+    "ACCOUNT_THRESHOLD": int(env("PASSWORD_LOCK_ACCOUNT_THRESHOLD", "5")),
+    "ACCOUNT_BASE_SECONDS": int(env("PASSWORD_LOCK_ACCOUNT_BASE_SECONDS", "60")),
+    "ACCOUNT_MAX_SECONDS": int(env("PASSWORD_LOCK_ACCOUNT_MAX_SECONDS", "3600")),
+    "IP_THRESHOLD": int(env("PASSWORD_LOCK_IP_THRESHOLD", "100")),
+    "IP_WINDOW_SECONDS": int(env("PASSWORD_LOCK_IP_WINDOW_SECONDS", "3600")),
+    "IP_BASE_SECONDS": int(env("PASSWORD_LOCK_IP_BASE_SECONDS", "300")),
+    "IP_MAX_SECONDS": int(env("PASSWORD_LOCK_IP_MAX_SECONDS", "3600")),
+}
+
 # ----------------------------------------------------------------------
 # plopplop
 # ----------------------------------------------------------------------

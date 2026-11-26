@@ -3,10 +3,12 @@
 {% block title %}{% translate "Connexion" %} — Plip-Plip{% endblock %}
 {% block content %}
 <h1>{% translate "Connexion" %}</h1>
-<p class="lead">{% translate "Nous vous envoyons un code par SMS. Aucun mot de passe à retenir." %}</p>
+<p class="lead">{% translate "Recevez un code par SMS, ou utilisez votre mot de passe si vous en avez créé un." %}</p>
 
-<form class="card" method="post" action="{% url 'web:login' %}" onsubmit="this.querySelector('button').disabled = true;">
+{# Les deux choix d'emblee, sans consulter le numero : n'afficher le mot de passe qu'aux numeros qui en ont un revelerait la liste des clients. #}
+<form class="card" method="post" action="{% url 'web:login' %}" onsubmit="this.querySelector('button[type=submit]').disabled = true;">
   {% csrf_token %}
+  <h2>{% translate "Avec un code SMS" %}</h2>
   <input type="hidden" name="next" value="{{ next }}">
   {% for error in form.non_field_errors %}<p class="alert error">{{ error }}</p>{% endfor %}
   <div class="field">
@@ -16,5 +18,21 @@
     {% for error in form.phone.errors %}<p class="error">{{ error }}</p>{% endfor %}
   </div>
   <button type="submit" class="block">{% translate "Recevoir un code" %}</button>
+</form>
+
+<form class="card" id="mot-de-passe" method="post" action="{% url 'web:login_password' %}">
+  {% csrf_token %}
+  <h2>{% translate "Avec mon mot de passe" %}</h2>
+  <input type="hidden" name="next" value="{{ next }}">
+  {% for error in password_form.non_field_errors %}<p class="alert error">{{ error }}</p>{% endfor %}
+  <div class="field">
+    <label for="id_pw_phone">{{ password_form.phone.label }}</label>
+    <input id="id_pw_phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+509 3712 3456"
+           value="{{ password_form.phone.value|default:'' }}" required>
+    {% for error in password_form.phone.errors %}<p class="error">{{ error }}</p>{% endfor %}
+  </div>
+  {% include "web/partials/password_field.html" with field=password_form.password %}
+  <button type="submit" class="block">{% translate "Se connecter" %}</button>
+  <p class="muted"><a href="{% url 'web:password_forgot' %}?next={{ next|urlencode }}">{% translate "Mot de passe oublié ?" %}</a></p>
 </form>
 {% endblock %}

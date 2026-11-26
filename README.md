@@ -93,6 +93,13 @@ services que l'API : aucune règle métier n'y est dupliquée.
   accents, dans la langue de la dernière connexion du client
   (`Customer.language`) — un accent ferait passer le SMS en UCS-2, donc à
   70 caractères par segment et au double du prix.
+- **Identification client** : code SMS, ou mot de passe facultatif proposé
+  après la première connexion (6 caractères minimum, validateurs Django).
+  Le numéro est toujours vérifié par code, une fois ; ensuite un SMS par
+  compte à vie au lieu d'un par connexion. Mot de passe oublié :
+  réinitialisation par code, qui coupe sessions et jetons. Verrouillage
+  progressif par compte (en base, `PASSWORD_LOCKOUT`) et blocage par IP
+  (en cache, lisible dans la console, page « Connexions clients »).
 - **Session client** en cookie `HttpOnly`, distincte de la console : une
   session client n'ouvre pas la console et inversement. Identifiant de
   session renouvelé à la connexion, déconnexion après 30 min d'inactivité

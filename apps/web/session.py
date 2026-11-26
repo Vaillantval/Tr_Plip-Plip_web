@@ -19,14 +19,28 @@ from apps.accounts.models import Customer
 
 CUSTOMER_KEY = "web:customer_id"
 LAST_SEEN_KEY = "web:last_seen"
+#: Methode de la connexion (AuthMethod) : retenue, jamais interpretee.
+AUTH_METHOD_KEY = "web:auth_method"
+#: Customer.auth_epoch au moment de la connexion. S'il a change depuis
+#: (reinitialisation, changement de mot de passe), la session est morte.
+AUTH_EPOCH_KEY = "web:auth_epoch"
 
 
-def login_customer(request, customer: Customer) -> None:
+def login_customer(request, customer: Customer, *, method: str) -> None:
     # Nouvel identifiant de session : empeche la fixation de session.
     request.session.cycle_key()
     request.session[CUSTOMER_KEY] = customer.pk
     request.session[LAST_SEEN_KEY] = int(time.time())
+    request.session[AUTH_METHOD_KEY] = method
+    request.session[AUTH_EPOCH_KEY] = customer.auth_epoch
     request._web_customer = customer
+
+
+def refresh_epoch(request, customer: Customer) -> None:
+    """Apres un changement de mot de passe : la session en cours survit,
+    les autres non."""
+    request.session.cycle_key()
+    request.session[AUTH_EPOCH_KEY] = customer.auth_epoch
 
 
 def logout_customer(request) -> None:
@@ -55,7 +69,9 @@ def current_customer(request) -> Customer | None:
         logout_customer(request)
         return None
     customer = Customer.objects.filter(pk=pk, is_active=True).first()
-    if customer is None:
+    # Session ouverte avant une reinitialisation ou un changement de mot
+    # de passe : refusee. (Absente = session anterieure a ce champ : 0.)
+    if customer is None or customer.auth_epoch != request.session.get(AUTH_EPOCH_KEY, 0):
         logout_customer(request)
         return None
     request.session[LAST_SEEN_KEY] = now

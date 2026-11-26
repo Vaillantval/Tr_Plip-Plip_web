@@ -31,6 +31,7 @@ urlpatterns = [
     path("reclamations/<int:claim_id>/repondre/", views.claim_answer, name="claim_answer"),
     path("reclamations/<int:claim_id>/clore/", views.claim_close, name="claim_close"),
     path("queue/", views.payout_queue, name="queue"),
+    path("connexions/", views.auth_events, name="auth_events"),
     path("exceptions/", views.exceptions, name="exceptions"),
     path("treasury/", views.treasury_view, name="treasury"),
     path("treasury/topup/", views.float_topup, name="float_topup"),

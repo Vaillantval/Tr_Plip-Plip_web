@@ -89,6 +89,7 @@ ICONS = {
     "alert": "M12 9v4M12 17h.01M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z",
     "chat": "M21 12a8 8 0 0 1-11.6 7.1L4 20l1.1-4.4A8 8 0 1 1 21 12z",
     "wallet": "M3 7h15a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V7zm0 0V6a2 2 0 0 1 2-2h11M16 14h.01",
+    "lock": "M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5z",
     "sliders": "M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4",
 }
 
@@ -102,6 +103,7 @@ NAV = (
             ("transactions", "Transactions", "swap", {"transactions", "transaction_detail"}, None),
             ("exceptions", "Exceptions", "alert", {"exceptions"}, "exceptions"),
             ("claims", "Réclamations", "chat", {"claims", "claim_detail"}, "claims"),
+            ("auth_events", "Connexions clients", "lock", {"auth_events"}, None),
         ),
     ),
     (

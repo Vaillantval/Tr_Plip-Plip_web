@@ -760,3 +760,57 @@ def float_topup(request):
         f"Rechargement de {form.cleaned_data['amount']} HTG enregistre ({form.cleaned_data['reference']}).",
     )
     return _after_treasury_action(request)
+
+
+# ----------------------------------------------------------------------
+# Connexions clients (lecture seule)
+# ----------------------------------------------------------------------
+def _looks_like_ip(value: str) -> bool:
+    import ipaddress
+
+    try:
+        ipaddress.ip_address(value)
+    except ValueError:
+        return False
+    return True
+
+
+def _auth_events_context(query: str = "", now=None) -> dict:
+    """Blocages d'IP et de comptes en cours, et derniers evenements.
+
+    Un point d'acces legitime (WiFi partage, NAT operateur) peut se faire
+    bloquer : cet ecran est le seul endroit ou on le voit, et ou l'on
+    comprend pourquoi des clients n'arrivent pas a se connecter.
+    """
+    from datetime import timedelta
+
+    from apps.accounts.models import AuthEvent, CustomerAuthEvent
+
+    now = now or timezone.now()
+    lockout = settings.PASSWORD_LOCKOUT
+    since = now - timedelta(seconds=max(lockout["IP_MAX_SECONDS"], lockout["ACCOUNT_MAX_SECONDS"]))
+
+    def active(event_type):
+        rows = []
+        for event in CustomerAuthEvent.objects.filter(event=event_type, created_at__gte=since):
+            until = event.created_at + timedelta(seconds=int(event.detail.get("seconds", 0)))
+            if until > now:
+                rows.append({"event": event, "until": until})
+        return rows
+
+    events = CustomerAuthEvent.objects.all()
+    query = (query or "").strip()
+    if query:
+        events = events.filter(ip_address=query) if _looks_like_ip(query) else events.filter(phone__icontains=query)
+    return {
+        "ip_blocks": active(AuthEvent.IP_LOCKED),
+        "account_locks": active(AuthEvent.ACCOUNT_LOCKED),
+        "events": events[:200],
+        "query": query,
+        "lockout": lockout,
+    }
+
+
+@login_required
+def auth_events(request):
+    return render(request, "console/auth_events.html", _auth_events_context(request.GET.get("q", "")))

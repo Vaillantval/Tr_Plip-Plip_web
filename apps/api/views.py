@@ -18,6 +18,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts import otp
+from apps.accounts.ip import client_ip
 from apps.accounts import services as accounts
 from apps.transactions import services as transactions
 from apps.transactions.models import Transaction
@@ -32,6 +33,9 @@ from .serializers import (
     OTPRequestResponseSerializer,
     OTPRequestSerializer,
     OTPVerifySerializer,
+    PasswordLoginSerializer,
+    PasswordResetSerializer,
+    PasswordSetSerializer,
     QuoteRequestSerializer,
     QuoteSerializer,
     TokenResponseSerializer,
@@ -184,6 +188,131 @@ class OTPVerifyView(APIView):
                 {"token": raw, "expires_at": token.expires_at, "customer": customer}
             ).data
         )
+
+
+#: UN code, UN message, quelle que soit la cause : numero inconnu, sans
+#: mot de passe, mot de passe faux, compte ou IP verrouilles.
+AUTH_FAILED_MESSAGE = "Numero ou mot de passe incorrect"
+
+#: Textes des regles refusees. Le code est dans `rules` : l'application
+#: redige son propre message, dans la langue du client.
+PASSWORD_RULES = {
+    "too_short": "Au moins %s caracteres" % settings.CUSTOMER_PASSWORD_MIN_LENGTH,
+    "too_long": "128 caracteres au maximum",
+    "numeric": "Ajouter au moins une lettre : un mot de passe fait uniquement de chiffres est refuse",
+    "too_common": "Mot de passe trop courant",
+    "similar_phone": "Mot de passe trop proche du numero de telephone",
+}
+
+
+def _password_rejected(exc) -> APIError:
+    return APIError(
+        "PASSWORD_INVALID",
+        " ; ".join(PASSWORD_RULES.get(code, code) for code in exc.codes),
+        extra={"rules": exc.codes},
+    )
+
+
+def _language(request, data) -> str:
+    return data.get("language") or request.headers.get("Accept-Language", "")
+
+
+class PasswordLoginView(APIView):
+    """Le verrouillage (par compte, par IP) est dans le service : pas de
+    throttle DRF serre par IP ici, le NAT operateur mettrait un quartier
+    derriere la meme adresse."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        request=PasswordLoginSerializer,
+        responses={200: TokenResponseSerializer, **ERRORS, 403: OpenApiResponse(ErrorResponseSerializer)},
+        summary="Se connecter par mot de passe et obtenir un jeton d'acces",
+        description=(
+            "Echec : toujours 401 AUTH_FAILED, avec le meme message, que le numero soit inconnu, "
+            "sans mot de passe, que le mot de passe soit faux ou le compte verrouille."
+        ),
+        tags=["Identification"],
+    )
+    def post(self, request):
+        serializer = PasswordLoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        try:
+            customer, raw, token = accounts.login_password(
+                data["phone"], data["password"], ip=client_ip(request), language=_language(request, data)
+            )
+        except accounts.AuthFailed as exc:
+            raise APIError("AUTH_FAILED", AUTH_FAILED_MESSAGE, http_status=401) from exc
+        except accounts.CustomerDisabled as exc:
+            raise APIError("ACCOUNT_DISABLED", "Compte desactive", http_status=403) from exc
+        return Response(TokenResponseSerializer({"token": raw, "expires_at": token.expires_at, "customer": customer}).data)
+
+
+class PasswordResetView(APIView):
+    """Mot de passe oublie : code obtenu par POST /auth/otp/request, puis
+    ici le code et le nouveau mot de passe. Revoque tous les jetons."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+    throttle_classes = [throttling.OTPVerifyPhoneThrottle, throttling.OTPIPThrottle]
+
+    @extend_schema(
+        request=PasswordResetSerializer,
+        responses={200: TokenResponseSerializer, **ERRORS},
+        summary="Reinitialiser le mot de passe avec un code SMS",
+        tags=["Identification"],
+    )
+    def post(self, request):
+        serializer = PasswordResetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        try:
+            customer, raw, token = accounts.reset_password_token(
+                data["phone"], data["code"], data["password"], ip=client_ip(request), language=_language(request, data)
+            )
+        except accounts.PasswordRejected as exc:
+            raise _password_rejected(exc) from exc
+        except accounts.InvalidCode as exc:
+            raise APIError("OTP_INVALID", "Code invalide ou expire") from exc
+        except accounts.CustomerDisabled as exc:
+            raise APIError("ACCOUNT_DISABLED", "Compte desactive", http_status=403) from exc
+        except otp.OTPRateLimited as exc:
+            raise APIError("OTP_RATE_LIMITED", "Trop de tentatives : demander un nouveau code", http_status=429) from exc
+        except otp.OTPUnavailable as exc:
+            raise APIError("OTP_UNAVAILABLE", "Verification momentanement impossible", http_status=503) from exc
+        return Response(TokenResponseSerializer({"token": raw, "expires_at": token.expires_at, "customer": customer}).data)
+
+
+class MePasswordView(APIView):
+    permission_classes = [IsCustomer]
+    throttle_classes = [throttling.CustomerReadThrottle]
+
+    @extend_schema(
+        request=PasswordSetSerializer,
+        responses={200: CustomerSerializer, **ERRORS},
+        summary="Creer ou changer son mot de passe",
+        description="Changer revoque les AUTRES jetons ; le jeton de la requete reste valide.",
+        tags=["Identification"],
+    )
+    def post(self, request):
+        serializer = PasswordSetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        try:
+            customer = accounts.set_password(
+                request.user,
+                data["password"],
+                current=data.get("current_password"),
+                ip=client_ip(request),
+                keep_token=request.auth,
+            )
+        except accounts.PasswordRejected as exc:
+            raise _password_rejected(exc) from exc
+        except accounts.WrongCurrentPassword as exc:
+            raise APIError("CURRENT_PASSWORD_INVALID", "Mot de passe actuel incorrect") from exc
+        return Response(CustomerSerializer(customer).data)
 
 
 class LogoutView(APIView):

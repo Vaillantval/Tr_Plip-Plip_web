@@ -56,6 +56,39 @@ class OTPVerifySerializer(serializers.Serializer):
 class CustomerSerializer(serializers.Serializer):
     phone = serializers.CharField()
     created_at = serializers.DateTimeField()
+    has_password = serializers.BooleanField(
+        help_text="Le client a cree un mot de passe. Faux : proposer d'en creer un (POST /me/password)."
+    )
+
+
+_LANGUAGE = dict(
+    choices=[code for code, _ in settings.LANGUAGES],
+    required=False,
+    help_text="Langue du client, retenue pour les notifications SMS. A defaut, l'en-tete Accept-Language.",
+)
+
+
+class PasswordLoginSerializer(serializers.Serializer):
+    phone = PhoneField()
+    password = serializers.CharField(max_length=128, trim_whitespace=False)
+    language = serializers.ChoiceField(**_LANGUAGE)
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    phone = PhoneField()
+    code = serializers.RegexField(r"^\d{4,10}$", error_messages={"invalid": "Code numerique attendu"})
+    password = serializers.CharField(max_length=128, trim_whitespace=False)
+    language = serializers.ChoiceField(**_LANGUAGE)
+
+
+class PasswordSetSerializer(serializers.Serializer):
+    password = serializers.CharField(max_length=128, trim_whitespace=False)
+    current_password = serializers.CharField(
+        max_length=128,
+        trim_whitespace=False,
+        required=False,
+        help_text="Obligatoire pour CHANGER un mot de passe existant.",
+    )
 
 
 class TokenResponseSerializer(serializers.Serializer):

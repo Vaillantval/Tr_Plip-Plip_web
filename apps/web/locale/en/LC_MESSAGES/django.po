@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Plip-Plip web\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-24 11:46-0500\n"
+"POT-Creation-Date: 2026-11-25 20:34-0500\n"
 "PO-Revision-Date: 2026-09-14 17:45-0400\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
@@ -39,6 +39,18 @@ msgstr "Code received by SMS"
 #: .\apps\web\forms.py
 msgid "Saisissez les chiffres du code reçu par SMS."
 msgstr "Enter the digits of the code you received by SMS."
+
+#: .\apps\web\forms.py .\apps\web\templates\web\account_password.html
+msgid "Mot de passe"
+msgstr "Password"
+
+#: .\apps\web\forms.py
+msgid "Mot de passe actuel"
+msgstr "Current password"
+
+#: .\apps\web\forms.py .\apps\web\templates\web\password_reset.html
+msgid "Nouveau mot de passe"
+msgstr "New password"
 
 #: .\apps\web\forms.py
 msgid "Que s'est-il passé ?"
@@ -94,15 +106,6 @@ msgid "Montant reçu par le bénéficiaire (HTG)"
 msgstr "Amount the recipient receives (HTG)"
 
 #: .\apps\web\forms.py
-msgid "Numéro MonCash qui paie (facultatif)"
-msgstr "MonCash number paying (optional)"
-
-#: .\apps\web\forms.py
-msgid ""
-"Renseigné, vous recevez la demande de paiement directement sur ce téléphone."
-msgstr "If filled in, the payment request is sent straight to this phone."
-
-#: .\apps\web\forms.py
 msgid "Choisissez un portefeuille différent de celui d'envoi."
 msgstr "Choose a different wallet from the one you're sending from."
 
@@ -134,6 +137,41 @@ msgstr "Refunded"
 msgid "Annulé"
 msgstr "Cancelled"
 
+#: .\apps\web\templates\web\account_password.html
+#: .\apps\web\templates\web\transfers.html
+msgid "Changer de mot de passe"
+msgstr "Change password"
+
+#: .\apps\web\templates\web\account_password.html
+msgid "Vos autres connexions seront fermées. Celle-ci reste ouverte."
+msgstr "Your other sessions will be signed out. This one stays open."
+
+#: .\apps\web\templates\web\account_password.html
+#: .\apps\web\templates\web\transfers.html
+msgid "Créer un mot de passe"
+msgstr "Create a password"
+
+#: .\apps\web\templates\web\account_password.html
+msgid ""
+"Avec un mot de passe, vous vous connectez tout de suite, sans attendre de "
+"code par SMS. Le code reste possible à tout moment."
+msgstr "With a password, you sign in right away, without waiting for an SMS code. You can still use a code at any time."
+
+#: .\apps\web\templates\web\account_password.html
+#: .\apps\web\templates\web\password_reset.html
+#, python-format
+msgid "Au moins %(count)s caractères, dont au moins une lettre."
+msgstr "At least %(count)s characters, including at least one letter."
+
+#: .\apps\web\templates\web\account_password.html
+msgid "Enregistrer"
+msgstr "Save"
+
+#: .\apps\web\templates\web\account_password.html
+#: .\apps\web\templates\web\transfers.html
+msgid "Plus tard"
+msgstr "Later"
+
 #: .\apps\web\templates\web\base.html .\apps\web\templates\web\transfers.html
 msgid "Mes transferts"
 msgstr "My transfers"
@@ -142,7 +180,8 @@ msgstr "My transfers"
 msgid "Déconnexion"
 msgstr "Log out"
 
-#: .\apps\web\templates\web\base.html .\apps\web\templates\web\login_code.html
+#: .\apps\web\templates\web\base.html .\apps\web\templates\web\login.html
+#: .\apps\web\templates\web\login_code.html
 msgid "Se connecter"
 msgstr "Log in"
 
@@ -237,18 +276,34 @@ msgid "Connexion"
 msgstr "Log in"
 
 #: .\apps\web\templates\web\login.html
-msgid "Nous vous envoyons un code par SMS. Aucun mot de passe à retenir."
-msgstr "We send you a code by SMS. No password to remember."
+msgid ""
+"Recevez un code par SMS, ou utilisez votre mot de passe si vous en avez créé "
+"un."
+msgstr "Get a code by SMS, or use your password if you have created one."
 
 #: .\apps\web\templates\web\login.html
+msgid "Avec un code SMS"
+msgstr "With an SMS code"
+
+#: .\apps\web\templates\web\login.html
+#: .\apps\web\templates\web\password_forgot.html
 msgid "Recevoir un code"
 msgstr "Get a code"
+
+#: .\apps\web\templates\web\login.html
+msgid "Avec mon mot de passe"
+msgstr "With my password"
+
+#: .\apps\web\templates\web\login.html
+msgid "Mot de passe oublié ?"
+msgstr "Forgot your password?"
 
 #: .\apps\web\templates\web\login_code.html
 msgid "Saisissez le code"
 msgstr "Enter the code"
 
 #: .\apps\web\templates\web\login_code.html
+#: .\apps\web\templates\web\password_reset.html
 #, python-format
 msgid "Code envoyé par SMS au <strong class=\"mono\">+%(phone)s</strong>."
 msgstr "Code sent by SMS to <strong class=\"mono\">+%(phone)s</strong>."
@@ -280,6 +335,14 @@ msgid ""
 "par notre prestataire de paiement."
 msgstr ""
 "Card payments are charged in US dollars, converted by our payment provider."
+
+#: .\apps\web\templates\web\partials\password_field.html
+msgid "Afficher"
+msgstr "Show"
+
+#: .\apps\web\templates\web\partials\password_field.html
+msgid "Masquer"
+msgstr "Hide"
 
 #: .\apps\web\templates\web\partials\quote.html
 msgid "Saisissez un montant pour voir les frais et le total."
@@ -375,6 +438,32 @@ msgstr "This transfer was refunded."
 msgid "Ce transfert a été annulé. Aucun montant n'a été débité."
 msgstr "This transfer was cancelled. Nothing was charged."
 
+#: .\apps\web\templates\web\password_forgot.html
+msgid "Mot de passe oublié"
+msgstr "Forgot password"
+
+#: .\apps\web\templates\web\password_forgot.html
+msgid ""
+"Nous envoyons un code par SMS à votre numéro. Il vous permettra de choisir "
+"un nouveau mot de passe."
+msgstr "We will send a code by SMS to your number. It lets you choose a new password."
+
+#: .\apps\web\templates\web\password_forgot.html
+msgid "Retour à la connexion"
+msgstr "Back to sign in"
+
+#: .\apps\web\templates\web\password_reset.html
+msgid "Toutes vos autres connexions seront fermées."
+msgstr "All your other sessions will be signed out."
+
+#: .\apps\web\templates\web\password_reset.html
+msgid "Enregistrer et me connecter"
+msgstr "Save and sign in"
+
+#: .\apps\web\templates\web\password_reset.html
+msgid "Recevoir un nouveau code"
+msgstr "Get a new code"
+
 #: .\apps\web\templates\web\transfer_detail.html
 msgid "Référence du transfert"
 msgstr "Transfer reference"
@@ -407,6 +496,14 @@ msgstr "A problem with this transfer?"
 #: .\apps\web\templates\web\transfer_detail.html
 msgid "Tous mes transferts"
 msgstr "All my transfers"
+
+#: .\apps\web\templates\web\transfers.html
+msgid "Connectez-vous sans attendre de code."
+msgstr "Sign in without waiting for a code."
+
+#: .\apps\web\templates\web\transfers.html
+msgid "Créez un mot de passe : la prochaine fois, vous entrerez tout de suite."
+msgstr "Create a password: next time, you will get in right away."
 
 #: .\apps\web\templates\web\transfers.html
 msgid "Réponse à lire"
@@ -589,3 +686,45 @@ msgid ""
 "minutes."
 msgstr ""
 "Verification isn't possible right now. Please try again in a few minutes."
+
+#: .\apps\web\views.py
+msgid "Numéro ou mot de passe incorrect."
+msgstr "Incorrect number or password."
+
+#: .\apps\web\views.py
+#, python-format
+msgid "Au moins %(count)s caractères."
+msgstr "At least %(count)s characters."
+
+#: .\apps\web\views.py
+#, python-format
+msgid "%(count)s caractères au maximum."
+msgstr "%(count)s characters at most."
+
+#: .\apps\web\views.py
+msgid ""
+"Ajoutez au moins une lettre : un mot de passe fait uniquement de chiffres "
+"est refusé."
+msgstr "Add at least one letter: a password made only of digits is not accepted."
+
+#: .\apps\web\views.py
+msgid "Ce mot de passe est trop courant. Choisissez-en un autre."
+msgstr "This password is too common. Choose another one."
+
+#: .\apps\web\views.py
+msgid "Ce mot de passe ressemble trop à votre numéro de téléphone."
+msgstr "This password is too similar to your phone number."
+
+#: .\apps\web\views.py
+msgid "Mot de passe enregistré. Vous êtes connecté."
+msgstr "Password saved. You are signed in."
+
+#: .\apps\web\views.py
+msgid "Mot de passe actuel incorrect."
+msgstr "Current password is incorrect."
+
+#: .\apps\web\views.py
+msgid ""
+"Mot de passe enregistré. La prochaine fois, connectez-vous sans attendre de "
+"code."
+msgstr "Password saved. Next time, sign in without waiting for a code."

@@ -59,5 +59,18 @@
     </form>
    </div>
   </footer>
+  <script>
+    // Bouton « Afficher » des champs mot de passe (partials/password_field.html).
+    document.addEventListener("click", function (event) {
+      var button = event.target.closest("[data-reveal]");
+      if (!button) return;
+      var input = document.getElementById(button.getAttribute("data-reveal"));
+      if (!input) return;
+      var show = input.type === "password";
+      input.type = show ? "text" : "password";
+      button.textContent = button.getAttribute(show ? "data-hide" : "data-show");
+      button.setAttribute("aria-pressed", show ? "true" : "false");
+    });
+  </script>
 </body>
 </html>

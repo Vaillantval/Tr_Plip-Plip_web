@@ -54,6 +54,44 @@ class CodeForm(forms.Form):
     )
 
 
+def _password_input(autocomplete: str) -> forms.PasswordInput:
+    # Le collage reste permis (aucun onpaste) : un mot de passe impossible
+    # a saisir sur un telephone renvoie le client au code SMS, et toute
+    # l'economie de la fonctionnalite disparait.
+    return forms.PasswordInput(attrs={"autocomplete": autocomplete, "autocapitalize": "none", "spellcheck": "false"})
+
+
+class PasswordLoginForm(forms.Form):
+    phone = PhoneField(label=_("Votre numéro de téléphone"))
+    password = forms.CharField(label=_("Mot de passe"), strip=False, max_length=128, widget=_password_input("current-password"))
+
+
+class PasswordSetForm(forms.Form):
+    """Creer ou changer son mot de passe. L'ancien n'est exige que s'il
+    existe : c'est la vue qui le sait, et qui retire le champ sinon."""
+
+    current_password = forms.CharField(
+        label=_("Mot de passe actuel"), strip=False, max_length=128, required=False, widget=_password_input("current-password")
+    )
+    password = forms.CharField(label=_("Nouveau mot de passe"), strip=False, max_length=128, widget=_password_input("new-password"))
+
+    def __init__(self, *args, changing: bool, **kwargs):
+        super().__init__(*args, **kwargs)
+        if changing:
+            self.fields["current_password"].required = True
+        else:
+            del self.fields["current_password"]
+
+
+class PasswordResetForm(forms.Form):
+    code = forms.RegexField(
+        regex=r"^\d{4,10}$",
+        label=_("Code reçu par SMS"),
+        error_messages={"invalid": _("Saisissez les chiffres du code reçu par SMS.")},
+    )
+    password = forms.CharField(label=_("Nouveau mot de passe"), strip=False, max_length=128, widget=_password_input("new-password"))
+
+
 class ClaimForm(forms.Form):
     """Ouverture d'une reclamation.
 

@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Plip-Plip web\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-24 11:46-0500\n"
+"POT-Creation-Date: 2026-11-25 20:34-0500\n"
 "PO-Revision-Date: 2026-09-14 17:45-0400\n"
 "Last-Translator: \n"
 "Language-Team: Kreyòl ayisyen\n"
@@ -40,6 +40,18 @@ msgstr "Kòd ou resevwa pa SMS"
 #: .\apps\web\forms.py
 msgid "Saisissez les chiffres du code reçu par SMS."
 msgstr "Antre chif kòd ou resevwa pa SMS la."
+
+#: .\apps\web\forms.py .\apps\web\templates\web\account_password.html
+msgid "Mot de passe"
+msgstr "Modpas"
+
+#: .\apps\web\forms.py
+msgid "Mot de passe actuel"
+msgstr "Modpas ou genyen kounye a"
+
+#: .\apps\web\forms.py .\apps\web\templates\web\password_reset.html
+msgid "Nouveau mot de passe"
+msgstr "Nouvo modpas"
 
 #: .\apps\web\forms.py
 msgid "Que s'est-il passé ?"
@@ -95,15 +107,6 @@ msgid "Montant reçu par le bénéficiaire (HTG)"
 msgstr "Kantite kòb moun nan ap resevwa (HTG)"
 
 #: .\apps\web\forms.py
-msgid "Numéro MonCash qui paie (facultatif)"
-msgstr "Nimewo MonCash k ap peye a (si w vle)"
-
-#: .\apps\web\forms.py
-msgid ""
-"Renseigné, vous recevez la demande de paiement directement sur ce téléphone."
-msgstr "Si w mete l, demann pèman an ap rive dirèkteman sou telefòn sa a."
-
-#: .\apps\web\forms.py
 msgid "Choisissez un portefeuille différent de celui d'envoi."
 msgstr "Chwazi yon lòt pòtfèy, pa sa w ap voye a."
 
@@ -135,6 +138,41 @@ msgstr "Yo ranbouse l"
 msgid "Annulé"
 msgstr "Yo anile l"
 
+#: .\apps\web\templates\web\account_password.html
+#: .\apps\web\templates\web\transfers.html
+msgid "Changer de mot de passe"
+msgstr "Chanje modpas"
+
+#: .\apps\web\templates\web\account_password.html
+msgid "Vos autres connexions seront fermées. Celle-ci reste ouverte."
+msgstr "Lòt koneksyon ou yo ap fèmen. Sa a ap rete ouvè."
+
+#: .\apps\web\templates\web\account_password.html
+#: .\apps\web\templates\web\transfers.html
+msgid "Créer un mot de passe"
+msgstr "Kreye yon modpas"
+
+#: .\apps\web\templates\web\account_password.html
+msgid ""
+"Avec un mot de passe, vous vous connectez tout de suite, sans attendre de "
+"code par SMS. Le code reste possible à tout moment."
+msgstr "Ak yon modpas, ou konekte touswit, san ou pa tann kòd pa SMS. Ou ka toujou sèvi ak kòd la nenpòt ki lè."
+
+#: .\apps\web\templates\web\account_password.html
+#: .\apps\web\templates\web\password_reset.html
+#, python-format
+msgid "Au moins %(count)s caractères, dont au moins une lettre."
+msgstr "Omwen %(count)s karaktè, ak omwen yon lèt ladan yo."
+
+#: .\apps\web\templates\web\account_password.html
+msgid "Enregistrer"
+msgstr "Anrejistre"
+
+#: .\apps\web\templates\web\account_password.html
+#: .\apps\web\templates\web\transfers.html
+msgid "Plus tard"
+msgstr "Pita"
+
 #: .\apps\web\templates\web\base.html .\apps\web\templates\web\transfers.html
 msgid "Mes transferts"
 msgstr "Transfè m yo"
@@ -143,7 +181,8 @@ msgstr "Transfè m yo"
 msgid "Déconnexion"
 msgstr "Dekonekte"
 
-#: .\apps\web\templates\web\base.html .\apps\web\templates\web\login_code.html
+#: .\apps\web\templates\web\base.html .\apps\web\templates\web\login.html
+#: .\apps\web\templates\web\login_code.html
 msgid "Se connecter"
 msgstr "Konekte"
 
@@ -237,18 +276,34 @@ msgid "Connexion"
 msgstr "Koneksyon"
 
 #: .\apps\web\templates\web\login.html
-msgid "Nous vous envoyons un code par SMS. Aucun mot de passe à retenir."
-msgstr "N ap voye yon kòd pou ou pa SMS. Pa gen modpas pou w sonje."
+msgid ""
+"Recevez un code par SMS, ou utilisez votre mot de passe si vous en avez créé "
+"un."
+msgstr "Resevwa yon kòd pa SMS, oswa sèvi ak modpas ou si ou te kreye youn."
 
 #: .\apps\web\templates\web\login.html
+msgid "Avec un code SMS"
+msgstr "Ak yon kòd SMS"
+
+#: .\apps\web\templates\web\login.html
+#: .\apps\web\templates\web\password_forgot.html
 msgid "Recevoir un code"
 msgstr "Resevwa yon kòd"
+
+#: .\apps\web\templates\web\login.html
+msgid "Avec mon mot de passe"
+msgstr "Ak modpas mwen"
+
+#: .\apps\web\templates\web\login.html
+msgid "Mot de passe oublié ?"
+msgstr "Ou bliye modpas ou?"
 
 #: .\apps\web\templates\web\login_code.html
 msgid "Saisissez le code"
 msgstr "Antre kòd la"
 
 #: .\apps\web\templates\web\login_code.html
+#: .\apps\web\templates\web\password_reset.html
 #, python-format
 msgid "Code envoyé par SMS au <strong class=\"mono\">+%(phone)s</strong>."
 msgstr "Nou voye kòd la pa SMS nan <strong class=\"mono\">+%(phone)s</strong>."
@@ -281,6 +336,14 @@ msgid ""
 msgstr ""
 "Ak kat, yo retire pèman an an dola ameriken, apre konvèsyon founisè pèman "
 "nou an fè."
+
+#: .\apps\web\templates\web\partials\password_field.html
+msgid "Afficher"
+msgstr "Montre"
+
+#: .\apps\web\templates\web\partials\password_field.html
+msgid "Masquer"
+msgstr "Kache"
 
 #: .\apps\web\templates\web\partials\quote.html
 msgid "Saisissez un montant pour voir les frais et le total."
@@ -374,6 +437,32 @@ msgstr "Yo ranbouse transfè sa a."
 msgid "Ce transfert a été annulé. Aucun montant n'a été débité."
 msgstr "Yo anile transfè sa a. Yo pa retire okenn kòb."
 
+#: .\apps\web\templates\web\password_forgot.html
+msgid "Mot de passe oublié"
+msgstr "Ou bliye modpas ou?"
+
+#: .\apps\web\templates\web\password_forgot.html
+msgid ""
+"Nous envoyons un code par SMS à votre numéro. Il vous permettra de choisir "
+"un nouveau mot de passe."
+msgstr "nou pral voye yon kòd pa SMS pou ou kap pèmèt ou chwazi yon lot modpas."
+
+#: .\apps\web\templates\web\password_forgot.html
+msgid "Retour à la connexion"
+msgstr "Retounen nan koneksyon an"
+
+#: .\apps\web\templates\web\password_reset.html
+msgid "Toutes vos autres connexions seront fermées."
+msgstr "tout lò koneksyon w yo ap fèmen."
+
+#: .\apps\web\templates\web\password_reset.html
+msgid "Enregistrer et me connecter"
+msgstr "banm anrejistre epi konekte"
+
+#: .\apps\web\templates\web\password_reset.html
+msgid "Recevoir un nouveau code"
+msgstr "resevwa yon lòt kòd"
+
 #: .\apps\web\templates\web\transfer_detail.html
 msgid "Référence du transfert"
 msgstr "Referans transfè a"
@@ -406,6 +495,14 @@ msgstr "Yon pwoblem ak transfe sa a ?"
 #: .\apps\web\templates\web\transfer_detail.html
 msgid "Tous mes transferts"
 msgstr "Tout transfè m yo"
+
+#: .\apps\web\templates\web\transfers.html
+msgid "Connectez-vous sans attendre de code."
+msgstr "Konekte san ou pa tann kòd."
+
+#: .\apps\web\templates\web\transfers.html
+msgid "Créez un mot de passe : la prochaine fois, vous entrerez tout de suite."
+msgstr "Kreye yon modpas: pwochen fwa, w ap antre touswit."
 
 #: .\apps\web\templates\web\transfers.html
 msgid "Réponse à lire"
@@ -583,3 +680,45 @@ msgid ""
 "La vérification est momentanément impossible. Réessayez dans quelques "
 "minutes."
 msgstr "Nou pa ka fè verifikasyon an kounye a. Eseye ankò nan kèk minit."
+
+#: .\apps\web\views.py
+msgid "Numéro ou mot de passe incorrect."
+msgstr "Nimewo a oswa modpas la pa bon."
+
+#: .\apps\web\views.py
+#, python-format
+msgid "Au moins %(count)s caractères."
+msgstr "Omwen %(count)s karaktè."
+
+#: .\apps\web\views.py
+#, python-format
+msgid "%(count)s caractères au maximum."
+msgstr "%(count)s karaktè pou pi plis."
+
+#: .\apps\web\views.py
+msgid ""
+"Ajoutez au moins une lettre : un mot de passe fait uniquement de chiffres "
+"est refusé."
+msgstr "Mete omwen yon lèt: yon modpas ki gen chif sèlman pa aksepte."
+
+#: .\apps\web\views.py
+msgid "Ce mot de passe est trop courant. Choisissez-en un autre."
+msgstr "Modpas sa a twò komen. Chwazi yon lòt."
+
+#: .\apps\web\views.py
+msgid "Ce mot de passe ressemble trop à votre numéro de téléphone."
+msgstr "Modpas sa a sanble twòp ak nimewo telefòn ou."
+
+#: .\apps\web\views.py
+msgid "Mot de passe enregistré. Vous êtes connecté."
+msgstr "Modpas la anrejistre. Ou konekte."
+
+#: .\apps\web\views.py
+msgid "Mot de passe actuel incorrect."
+msgstr "Modpas ou genyen kounye a pa bon."
+
+#: .\apps\web\views.py
+msgid ""
+"Mot de passe enregistré. La prochaine fois, connectez-vous sans attendre de "
+"code."
+msgstr "Modpas la anrejistre. Pwochen fwa, konekte san ou pa tann kòd."

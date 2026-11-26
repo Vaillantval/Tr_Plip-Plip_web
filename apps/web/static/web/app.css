@@ -220,3 +220,10 @@ button[disabled] { opacity: .6; cursor: progress; }
 .foot button { min-height: var(--tap-target-compact); padding: .3rem .7rem; }
 
 [hidden] { display: none !important; }
+
+/* Mot de passe : champ et bouton « Afficher » sur une ligne. */
+.password-row { display: flex; gap: .5rem; align-items: stretch; }
+.password-row input { flex: 1; min-width: 0; }
+.password-row button { flex: none; }
+.offer-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+.offer-actions form { margin: 0; }

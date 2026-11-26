@@ -52,9 +52,10 @@ passe par `record_observation()`.
 > Le test inspecte le code source : il refuse même un attribut nommé `state`
 > sur une exception. Choisis un autre nom.
 
-### 2. Cinq modèles sont append-only
+### 2. Six modèles sont append-only
 
-`JournalEntry`, `LedgerLine`, `TransactionEvent`, `AuditLog`, `ClaimMessage`.
+`JournalEntry`, `LedgerLine`, `TransactionEvent`, `AuditLog`, `ClaimMessage`,
+`CustomerAuthEvent`.
 Leur `save()` lève `RuntimeError` si `pk` est déjà posé, leur `delete()` lève
 toujours. On corrige une écriture par une **contre-écriture**, jamais en la
 modifiant.
@@ -156,7 +157,24 @@ leur façon.
 
 > Gardé, pour les réclamations, par `tests/test_claims.py::test_services_take_no_request_and_no_http_object`.
 
-### 10. Deux verrous, deux natures — l'asymétrie est voulue
+### 10. Un client n'existe que si son numéro a été vérifié par code
+
+Le code SMS prouve qu'on **contrôle** le numéro ; le mot de passe ne prouve
+que l'identité. Un seul endroit crée un `Customer` :
+`_customer_for_verified()` dans `apps/accounts/services.py`, qui n'accepte
+qu'un `VerifiedPhone`, fabriqué par `verify_phone()` seulement, après le
+contrôle du code. La connexion par mot de passe ne crée jamais rien. Les
+plafonds, le remboursement et la traçabilité du donneur d'ordre reposent sur
+cet invariant.
+
+L'échec par mot de passe dit **toujours la même chose** (numéro inconnu, sans
+mot de passe, mot de passe faux, verrouillé), avec la même durée de réponse :
+distinguer ces cas donnerait la liste des clients. Le verrou par compte est en
+base et ne bloque que le mot de passe, jamais le code.
+
+> Gardé par `tests/test_customer_password.py`, qui inspecte le code source.
+
+### 11. Deux verrous, deux natures — l'asymétrie est voulue
 
 Le plafond **expéditeur** verrouille la ligne du client
 (`select_for_update`) : c'est une limite que nous lui **promettons**, un

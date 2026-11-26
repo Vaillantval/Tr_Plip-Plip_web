@@ -1,0 +1,83 @@
+{% extends "console/base.html" %}
+{% block title %}Connexions clients — Console Plip-Plip{% endblock %}
+{% block heading %}Connexions clients{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  <section class="card overflow-hidden {% if ip_blocks %}border-2 border-amber-500{% endif %}" data-group="ip-blocks">
+    <div class="border-b border-slate-200 px-4 py-3">
+      <h2 class="font-semibold">Adresses IP bloquées en ce moment <span class="font-normal">({{ ip_blocks|length }})</span></h2>
+      <p class="mt-0.5 text-sm text-slate-600">
+        Blocage après {{ lockout.IP_THRESHOLD }} échecs de mot de passe depuis une même adresse en {{ lockout.IP_WINDOW_SECONDS }} s.
+        Une adresse partagée (WiFi public, NAT opérateur) peut porter des dizaines de clients légitimes :
+        un blocage ici explique des clients qui n'arrivent pas à se connecter par mot de passe. Le code SMS reste toujours ouvert.
+      </p>
+    </div>
+    {% if ip_blocks %}
+    <table class="w-full">
+      <thead class="thead"><tr><th class="px-4 py-2.5">Adresse</th><th class="px-4 py-2.5">Bloquée le</th><th class="px-4 py-2.5">Jusqu'à</th><th class="px-4 py-2 text-right">Échecs</th><th class="px-4 py-2 text-right">Rang</th></tr></thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for row in ip_blocks %}
+        <tr data-ip="{{ row.event.ip_address }}">
+          <td class="px-4 py-2 font-mono"><a class="underline-offset-2 hover:underline" href="?q={{ row.event.ip_address|urlencode }}">{{ row.event.ip_address }}</a></td>
+          <td class="whitespace-nowrap px-4 py-2">{{ row.event.created_at|date:"d/m/Y H:i:s" }}</td>
+          <td class="whitespace-nowrap px-4 py-2">{{ row.until|date:"H:i:s" }}</td>
+          <td class="px-4 py-2 text-right tabular-nums">{{ row.event.detail.failures }}</td>
+          <td class="px-4 py-2 text-right tabular-nums">{{ row.event.detail.level }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="px-4 py-3 text-slate-500">Aucune adresse bloquée.</p>{% endif %}
+  </section>
+
+  <section class="card overflow-hidden" data-group="account-locks">
+    <div class="border-b border-slate-200 px-4 py-3">
+      <h2 class="font-semibold">Comptes verrouillés en ce moment <span class="font-normal">({{ account_locks|length }})</span></h2>
+      <p class="mt-0.5 text-sm text-slate-600">Le verrou ne bloque que le mot de passe : le client peut se connecter par code SMS ou réinitialiser.</p>
+    </div>
+    {% if account_locks %}
+    <table class="w-full">
+      <thead class="thead"><tr><th class="px-4 py-2.5">Numéro</th><th class="px-4 py-2.5">Depuis l'adresse</th><th class="px-4 py-2.5">Jusqu'à</th><th class="px-4 py-2 text-right">Échecs</th></tr></thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for row in account_locks %}
+        <tr>
+          <td class="px-4 py-2 font-mono">{{ row.event.phone }}</td>
+          <td class="px-4 py-2 font-mono">{{ row.event.ip_address|default:"—" }}</td>
+          <td class="whitespace-nowrap px-4 py-2">{{ row.until|date:"H:i:s" }}</td>
+          <td class="px-4 py-2 text-right tabular-nums">{{ row.event.detail.failures }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p class="px-4 py-3 text-slate-500">Aucun compte verrouillé.</p>{% endif %}
+  </section>
+
+  <section class="card overflow-hidden" data-group="events">
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
+      <h2 class="font-semibold">Derniers événements</h2>
+      <form method="get" class="flex gap-2">
+        <input type="search" name="q" value="{{ query }}" placeholder="Numéro ou adresse IP" class="rounded-lg border border-slate-300 px-3 py-1.5">
+        <button type="submit" class="rounded-lg bg-brand-dark px-3 py-1.5 font-medium text-white">Filtrer</button>
+      </form>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="thead"><tr><th class="px-4 py-2.5">Quand</th><th class="px-4 py-2.5">Événement</th><th class="px-4 py-2.5">Numéro saisi</th><th class="px-4 py-2.5">Client connu</th><th class="px-4 py-2.5">Adresse</th></tr></thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for event in events %}
+          <tr>
+            <td class="whitespace-nowrap px-4 py-2">{{ event.created_at|date:"d/m/Y H:i:s" }}</td>
+            <td class="px-4 py-2">{{ event.get_event_display }}{% if event.detail.seconds %} <span class="text-slate-500">({{ event.detail.seconds }} s)</span>{% endif %}</td>
+            <td class="px-4 py-2 font-mono">{{ event.phone|default:"—" }}</td>
+            <td class="px-4 py-2">{% if event.customer_id %}oui{% else %}<span class="text-slate-500">non</span>{% endif %}</td>
+            <td class="px-4 py-2 font-mono">{{ event.ip_address|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="px-4 py-3 text-slate-500">Aucun événement.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}
