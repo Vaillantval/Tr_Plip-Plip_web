@@ -227,3 +227,54 @@ button[disabled] { opacity: .6; cursor: progress; }
 .password-row button { flex: none; }
 .offer-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
 .offer-actions form { margin: 0; }
+
+/* ------------------------------------------------------------------
+   Animations. Courtes, sur les boutons cles ; toutes coupees si le
+   telephone demande moins de mouvement (prefers-reduced-motion).
+   ------------------------------------------------------------------ */
+button, .button {
+  transition: background-color .18s ease, color .18s ease, box-shadow .18s ease, transform .12s ease;
+}
+button:not(.link):hover, .button:hover { box-shadow: 0 4px 14px rgba(20, 83, 45, .22); transform: translateY(-1px); }
+button.secondary:hover, .button.secondary:hover { box-shadow: 0 2px 8px rgba(20, 83, 45, .12); }
+button:not(.link):active, .button:active { transform: translateY(0) scale(.98); box-shadow: none; }
+
+/* Bouton d'action principal : reflet qui passe au survol. */
+button.block:not(.secondary), .button.block:not(.secondary) { position: relative; overflow: hidden; isolation: isolate; }
+button.block:not(.secondary)::after, .button.block:not(.secondary)::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(110deg, transparent 30%, rgba(163, 230, 53, .28) 50%, transparent 70%);
+  transform: translateX(-100%);
+}
+button.block:not(.secondary):hover::after, .button.block:not(.secondary):hover::after {
+  transform: translateX(100%); transition: transform .7s ease;
+}
+
+/* Paiement en attente : le bouton « Payer maintenant » respire. */
+.button.cta { animation: cta-pulse 2.2s ease-out infinite; }
+@keyframes cta-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(163, 230, 53, .55); }
+  70% { box-shadow: 0 0 0 12px rgba(163, 230, 53, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(163, 230, 53, 0); }
+}
+
+/* Envoi en cours : roue a la place du clic, le texte reste lisible. */
+button.is-loading { cursor: progress; pointer-events: none; }
+button.is-loading::before {
+  content: ""; width: 1em; height: 1em; flex: none; border-radius: 50%;
+  border: 2px solid currentColor; border-right-color: transparent;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Arrivee des cartes au chargement de la page. Pas sur la carte de
+   suivi rafraichie toutes les quelques secondes (hx-get). */
+.wrap > .card:not([hx-get]), .wrap > h1, .wrap > .lead { animation: rise .35s ease-out both; }
+.wrap > .card:nth-of-type(2) { animation-delay: .06s; }
+.wrap > .card:nth-of-type(3) { animation-delay: .12s; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  button:hover, .button:hover, button:active, .button:active { transform: none; }
+}

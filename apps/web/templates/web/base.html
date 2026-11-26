@@ -71,6 +71,21 @@
       button.textContent = button.getAttribute(show ? "data-hide" : "data-show");
       button.setAttribute("aria-pressed", show ? "true" : "false");
     });
+
+    // Bouton principal d'un formulaire envoye : roue d'attente (app.css).
+    document.addEventListener("submit", function (event) {
+      if (event.defaultPrevented) return;
+      var button = event.submitter || event.target.querySelector("button[type=submit].block");
+      if (button && button.classList.contains("block")) button.classList.add("is-loading");
+    });
+    // Retour arriere : la page revient du cache, on rend le bouton.
+    window.addEventListener("pageshow", function (event) {
+      if (!event.persisted) return;
+      document.querySelectorAll("button.is-loading").forEach(function (button) {
+        button.classList.remove("is-loading");
+        button.disabled = false;
+      });
+    });
   </script>
 </body>
 </html>
