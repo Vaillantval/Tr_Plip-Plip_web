@@ -1,0 +1,4 @@
+{% load static web_tags %}{# Logo d'un portefeuille, ou son nom s'il n'a pas de logo. Parametres : code, small. #}
+{% if code == "moncash" %}<span class="chip{% if small %} small{% endif %}"><img src="{% static 'web/wallets/moncash.png' %}" alt="MonCash" width="515" height="173"></span>
+{% elif code == "natcash" %}<span class="chip natcash{% if small %} small{% endif %}"><img src="{% static 'web/wallets/natcash.jpg' %}" alt="NatCash" width="480" height="360"></span>
+{% else %}<span class="chip text{% if small %} small{% endif %}">{{ code|wallet }}</span>{% endif %}

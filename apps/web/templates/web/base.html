@@ -16,7 +16,7 @@
     <a class="brand" href="{% url 'web:home' %}"><img src="{% static 'web/logo.svg' %}" alt="" width="32" height="32">Plip-Plip</a>
     <nav>
       {% if request.customer %}
-        <a href="{% url 'web:transfers' %}">{% translate "Mes transferts" %}</a>
+        <a class="nav-transfers" href="{% url 'web:transfers' %}">{% translate "Mes transferts" %}</a>
         <form method="post" action="{% url 'web:logout' %}">
           {% csrf_token %}
           <button type="submit" class="link">{% translate "Déconnexion" %}</button>

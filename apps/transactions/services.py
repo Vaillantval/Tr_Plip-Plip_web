@@ -383,6 +383,35 @@ def quote_transfer(*, source_wallet: str, destination_wallet: str, net_amount: D
     return q
 
 
+#: Montant de l'exemple de frais affiche sur l'accueil.
+EXAMPLE_NET_AMOUNT = Decimal("1000")
+
+
+def example_quote(wallets: list[dict] | None = None) -> Quote | None:
+    """Devis d'exemple pour l'accueil, aux tarifs reels de la console.
+
+    Route : MonCash vers NatCash si elle est ouverte, sinon la premiere
+    route ouverte dans l'ordre de Wallet. None si aucune ne l'est : l'accueil
+    masque alors l'exemple. N'ecrit rien.
+    """
+    from .pricing import AmountTooLarge, AmountTooSmall
+
+    rows = wallets if wallets is not None else wallet_availability()
+    sources = [r["wallet"] for r in rows if r["payment_enabled"]]
+    destinations = [r["wallet"] for r in rows if r["payout_enabled"]]
+    pairs = [(s, d) for s in sources for d in destinations if s != d]
+    preferred = (Wallet.MONCASH.value, Wallet.NATCASH.value)
+    if preferred in pairs:
+        pairs.remove(preferred)
+        pairs.insert(0, preferred)
+    for source, destination in pairs:
+        try:
+            return quote_transfer(source_wallet=source, destination_wallet=destination, net_amount=EXAMPLE_NET_AMOUNT)
+        except (UnsupportedRoute, AmountTooSmall, AmountTooLarge):
+            continue
+    return None
+
+
 # ----------------------------------------------------------------------
 # Creation
 # ----------------------------------------------------------------------

@@ -32,7 +32,7 @@ from apps.claims import services as claims
 from apps.accounts.models import AuthMethod, NotificationChannel
 from apps.notifications.services import whatsapp_available
 from apps.api.status import MAPPING as STATUS_MAPPING
-from apps.api.status import PublicStatus, payment_instructions, public_status, public_wait
+from apps.api.status import PublicStatus, customer_overview, payment_instructions, public_status, public_wait
 from apps.transactions import services as transactions
 from apps.transactions.models import Transaction
 from apps.transactions.pricing import MIN_NET, AmountTooLarge, AmountTooSmall
@@ -203,6 +203,9 @@ def home(request):
         {
             "form": form,
             "min_net": MIN_NET,
+            "max_net": settings.PRICING["MAX_NET_AMOUNT"],
+            "open_wallets": [w for w in wallets if w["payment_enabled"] or w["payout_enabled"]],
+            "example": transactions.example_quote(wallets),
             "saturated": None if saturation.accepting else _saturation_message(saturation),
         },
     )
@@ -411,6 +414,7 @@ def transfers(request):
         "web/transfers.html",
         {
             "page": page.get_page(request.GET.get("page")),
+            "overview": customer_overview(request.customer),
             "unread_claims": claims.unread_transaction_ids(request.customer),
             "again_statuses": AGAIN_STATUSES,
             "offer_password": not request.customer.has_password

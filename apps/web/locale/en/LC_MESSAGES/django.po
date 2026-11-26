@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Plip-Plip web\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-25 20:34-0500\n"
+"POT-Creation-Date: 2026-11-26 09:48-0500\n"
 "PO-Revision-Date: 2026-09-14 17:45-0400\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
@@ -155,7 +155,9 @@ msgstr "Create a password"
 msgid ""
 "Avec un mot de passe, vous vous connectez tout de suite, sans attendre de "
 "code par SMS. Le code reste possible à tout moment."
-msgstr "With a password, you sign in right away, without waiting for an SMS code. You can still use a code at any time."
+msgstr ""
+"With a password, you sign in right away, without waiting for an SMS code. "
+"You can still use a code at any time."
 
 #: .\apps\web\templates\web\account_password.html
 #: .\apps\web\templates\web\password_reset.html
@@ -259,6 +261,22 @@ msgstr ""
 "you pay."
 
 #: .\apps\web\templates\web\home.html
+msgid "Fonctionne avec"
+msgstr "Works with"
+
+#: .\apps\web\templates\web\home.html
+msgid "payer et recevoir"
+msgstr "pay and receive"
+
+#: .\apps\web\templates\web\home.html
+msgid "payer seulement"
+msgstr "pay only"
+
+#: .\apps\web\templates\web\home.html
+msgid "recevoir seulement"
+msgstr "receive only"
+
+#: .\apps\web\templates\web\home.html
 msgid "Le service est momentanément indisponible. Réessayez plus tard."
 msgstr "The service is temporarily unavailable. Please try again later."
 
@@ -270,6 +288,106 @@ msgstr "Continue"
 #, python-format
 msgid "Montant minimum : %(amount)s HTG."
 msgstr "Minimum amount: %(amount)s HTG."
+
+#: .\apps\web\templates\web\home.html
+msgid "Exemple"
+msgstr "Example"
+
+#: .\apps\web\templates\web\home.html
+#, python-format
+msgid "%(amount)s HTG reçus sur %(destination)s, payés avec %(source)s"
+msgstr "%(amount)s HTG received on %(destination)s, paid with %(source)s"
+
+#: .\apps\web\templates\web\home.html
+msgid "à payer"
+msgstr "to pay"
+
+#: .\apps\web\templates\web\home.html
+#, python-format
+msgid "%(amount)s HTG reçus + %(fees)s HTG de frais"
+msgstr "%(amount)s HTG received + %(fees)s HTG in fees"
+
+#: .\apps\web\templates\web\home.html
+msgid "Ce qu'on vous garantit"
+msgstr "What we guarantee"
+
+#: .\apps\web\templates\web\home.html
+msgid "Le montant exact"
+msgstr "The exact amount"
+
+#: .\apps\web\templates\web\home.html
+msgid "La personne reçoit ce qui est annoncé, pas une gourde de moins."
+msgstr "The recipient gets what was announced, not one gourde less."
+
+#: .\apps\web\templates\web\home.html
+msgid "Frais avant de payer"
+msgstr "Fees before you pay"
+
+#: .\apps\web\templates\web\home.html
+msgid "Le total est affiché avant toute validation."
+msgstr "The total is shown before you confirm anything."
+
+#: .\apps\web\templates\web\home.html
+msgid "Suivi et SMS"
+msgstr "Tracking and SMS"
+
+#: .\apps\web\templates\web\home.html
+msgid "Le suivi se met à jour seul, et un SMS confirme l'arrivée."
+msgstr "Tracking updates on its own, and an SMS confirms arrival."
+
+#: .\apps\web\templates\web\home.html
+msgid "Remboursé si ça échoue"
+msgstr "Refunded if it fails"
+
+#: .\apps\web\templates\web\home.html
+msgid "Et pour toute question, une réclamation avec la référence du transfert."
+msgstr "For any question, open a claim with the transfer reference."
+
+#: .\apps\web\templates\web\home.html
+msgid "Questions fréquentes"
+msgstr "Frequently asked questions"
+
+#: .\apps\web\templates\web\home.html
+msgid "Combien puis-je envoyer ?"
+msgstr "How much can I send?"
+
+#: .\apps\web\templates\web\home.html
+#, python-format
+msgid ""
+"De %(min)s HTG à %(max)s HTG par transfert. Des plafonds par jour "
+"s'appliquent aussi : le site vous prévient s'il faut attendre."
+msgstr "From %(min)s HTG to %(max)s HTG per transfer. Daily limits also apply: the site tells you if you need to wait."
+
+#: .\apps\web\templates\web\home.html
+msgid "Et si je me trompe de numéro ?"
+msgstr "What if I enter the wrong number?"
+
+#: .\apps\web\templates\web\home.html
+msgid ""
+"Avant de payer, on vous demande de retaper le numéro : deux saisies "
+"différentes bloquent l'envoi. Si l'argent est déjà parti, ouvrez une "
+"réclamation avec la référence du transfert."
+msgstr "Before you pay, you are asked to type the number again: two different entries block the transfer. If the money has already gone, open a claim with the transfer reference."
+
+#: .\apps\web\templates\web\home.html
+msgid "Que se passe-t-il si le transfert échoue ?"
+msgstr "What happens if the transfer fails?"
+
+#: .\apps\web\templates\web\home.html
+msgid ""
+"Notre équipe rend l'argent sur le portefeuille qui a payé, et vous recevez "
+"un SMS."
+msgstr "Our team returns the money to the wallet that paid, and you receive an SMS."
+
+#: .\apps\web\templates\web\home.html
+msgid "Comment suivre mon transfert ?"
+msgstr "How do I track my transfer?"
+
+#: .\apps\web\templates\web\home.html
+msgid ""
+"Après le paiement, la page du transfert se met à jour toute seule. Vous la "
+"retrouvez dans « Mes transferts »."
+msgstr "After payment, the transfer page updates on its own. You can find it under “My transfers”."
 
 #: .\apps\web\templates\web\login.html .\apps\web\templates\web\login_code.html
 msgid "Connexion"
@@ -291,12 +409,22 @@ msgid "Recevoir un code"
 msgstr "Get a code"
 
 #: .\apps\web\templates\web\login.html
+msgid "ou"
+msgstr "or"
+
+#: .\apps\web\templates\web\login.html
 msgid "Avec mon mot de passe"
 msgstr "With my password"
 
 #: .\apps\web\templates\web\login.html
 msgid "Mot de passe oublié ?"
 msgstr "Forgot your password?"
+
+#: .\apps\web\templates\web\login.html
+msgid ""
+"Pas encore de compte ? Recevez un code : votre compte est créé dès que votre "
+"numéro est vérifié."
+msgstr "No account yet? Get a code: your account is created as soon as your number is verified."
 
 #: .\apps\web\templates\web\login_code.html
 msgid "Saisissez le code"
@@ -335,6 +463,40 @@ msgid ""
 "par notre prestataire de paiement."
 msgstr ""
 "Card payments are charged in US dollars, converted by our payment provider."
+
+#: .\apps\web\templates\web\partials\how_it_works.html
+msgid "Comment ça marche"
+msgstr "How it works"
+
+#: .\apps\web\templates\web\partials\how_it_works.html
+msgid "Numéro et montant"
+msgstr "Number and amount"
+
+#: .\apps\web\templates\web\partials\how_it_works.html
+msgid ""
+"Choisissez les portefeuilles, tapez le numéro et ce que la personne doit "
+"recevoir. Les frais s'affichent tout de suite."
+msgstr "Choose the wallets, type the number and what the person should receive. The fees show up right away."
+
+#: .\apps\web\templates\web\partials\how_it_works.html
+msgid "Vous payez"
+msgstr "You pay"
+
+#: .\apps\web\templates\web\partials\how_it_works.html
+msgid ""
+"La page de votre portefeuille s'ouvre. Vous validez le paiement chez lui, "
+"comme d'habitude."
+msgstr "Your wallet's page opens. You approve the payment there, as usual."
+
+#: .\apps\web\templates\web\partials\how_it_works.html
+msgid "L'argent arrive"
+msgstr "The money arrives"
+
+#: .\apps\web\templates\web\partials\how_it_works.html
+msgid ""
+"La personne reçoit le montant exact sur son portefeuille. Vous suivez le "
+"transfert en direct et recevez un SMS."
+msgstr "The person receives the exact amount in their wallet. You follow the transfer live and receive an SMS."
 
 #: .\apps\web\templates\web\partials\password_field.html
 msgid "Afficher"
@@ -427,6 +589,7 @@ msgid "Aucun paiement n'a été reçu à temps. Rien n'a été débité."
 msgstr "No payment was received in time. Nothing was charged."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
+#: .\apps\web\templates\web\transfers.html
 msgid "Nouvel envoi"
 msgstr "New transfer"
 
@@ -446,7 +609,8 @@ msgstr "Forgot password"
 msgid ""
 "Nous envoyons un code par SMS à votre numéro. Il vous permettra de choisir "
 "un nouveau mot de passe."
-msgstr "We will send a code by SMS to your number. It lets you choose a new password."
+msgstr ""
+"We will send a code by SMS to your number. It lets you choose a new password."
 
 #: .\apps\web\templates\web\password_forgot.html
 msgid "Retour à la connexion"
@@ -496,6 +660,22 @@ msgstr "A problem with this transfer?"
 #: .\apps\web\templates\web\transfer_detail.html
 msgid "Tous mes transferts"
 msgstr "All my transfers"
+
+#: .\apps\web\templates\web\transfers.html
+msgid "Connecté avec le <span class=\"mono\">%(phone)s</span>"
+msgstr "Signed in as <span class=\"mono\">%(phone)s</span>"
+
+#: .\apps\web\templates\web\transfers.html
+msgid "en cours"
+msgstr "in progress"
+
+#: .\apps\web\templates\web\transfers.html
+msgid "livrés"
+msgstr "delivered"
+
+#: .\apps\web\templates\web\transfers.html
+msgid "HTG reçus par vos proches"
+msgstr "HTG received by your loved ones"
 
 #: .\apps\web\templates\web\transfers.html
 msgid "Connectez-vous sans attendre de code."
@@ -705,7 +885,8 @@ msgstr "%(count)s characters at most."
 msgid ""
 "Ajoutez au moins une lettre : un mot de passe fait uniquement de chiffres "
 "est refusé."
-msgstr "Add at least one letter: a password made only of digits is not accepted."
+msgstr ""
+"Add at least one letter: a password made only of digits is not accepted."
 
 #: .\apps\web\views.py
 msgid "Ce mot de passe est trop courant. Choisissez-en un autre."

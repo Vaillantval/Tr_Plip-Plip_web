@@ -50,6 +50,33 @@ def public_status(state: str) -> str:
     return MAPPING[State(state)]
 
 
+def customer_overview(customer) -> dict:
+    """Resume du tableau de bord client, en statuts publics seulement.
+
+    `ongoing` : en attente de paiement ou en cours (dont les etats internes
+    qu'un operateur traite, affiches « en cours »). `delivered_amount` :
+    total recu par les beneficiaires sur les transferts livres.
+    """
+    from django.db.models import Count, Q, Sum
+
+    from apps.transactions.models import Transaction
+
+    ongoing = [
+        state.value
+        for state, status in MAPPING.items()
+        if status in (PublicStatus.AWAITING_PAYMENT, PublicStatus.IN_PROGRESS)
+    ]
+    delivered = [state.value for state, status in MAPPING.items() if status == PublicStatus.DELIVERED]
+    totals = Transaction.objects.filter(customer=customer).aggregate(
+        total=Count("id"),
+        ongoing=Count("id", filter=Q(state__in=ongoing)),
+        delivered=Count("id", filter=Q(state__in=delivered)),
+        delivered_amount=Sum("net_amount", filter=Q(state__in=delivered)),
+    )
+    totals["delivered_amount"] = totals["delivered_amount"] or 0
+    return totals
+
+
 def public_wait(txn, cache: dict | None = None) -> dict | None:
     """Delai estime cote client, pour l'API comme pour le site web.
 

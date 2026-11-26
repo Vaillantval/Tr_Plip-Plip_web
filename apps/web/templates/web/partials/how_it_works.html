@@ -1,0 +1,37 @@
+{% load i18n %}
+<h2 class="section-title">{% translate "Comment ça marche" %}</h2>
+<ol class="how">
+  <li>
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <rect x="18" y="6" width="28" height="52" rx="6" fill="#ecfccb" stroke="#14532d" stroke-width="2.5"/>
+      <rect x="23" y="16" width="18" height="6" rx="2" fill="#ffffff" stroke="#14532d" stroke-width="1.5"/>
+      <rect x="23" y="27" width="18" height="6" rx="2" fill="#ffffff" stroke="#14532d" stroke-width="1.5"/>
+      <rect x="23" y="40" width="18" height="7" rx="2" fill="#14532d"/>
+      <circle cx="32" cy="52.5" r="1.6" fill="#14532d"/>
+    </svg>
+    <div><b><span class="n">1</span>{% translate "Numéro et montant" %}</b>
+      <span>{% translate "Choisissez les portefeuilles, tapez le numéro et ce que la personne doit recevoir. Les frais s'affichent tout de suite." %}</span></div>
+  </li>
+  <li>
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <rect x="4" y="12" width="22" height="40" rx="5" fill="#ffffff" stroke="#14532d" stroke-width="2.5"/>
+      <rect x="38" y="12" width="22" height="40" rx="5" fill="#ffffff" stroke="#14532d" stroke-width="2.5"/>
+      <path class="flow" d="M26 32 H38" stroke="#14532d" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <circle cx="15" cy="30" r="6" fill="#a3e635" stroke="#14532d" stroke-width="2"/>
+      <text x="15" y="33.5" text-anchor="middle" font-size="8" font-weight="700" fill="#14532d" font-family="system-ui, sans-serif">G</text>
+    </svg>
+    <div><b><span class="n">2</span>{% translate "Vous payez" %}</b>
+      <span>{% translate "La page de votre portefeuille s'ouvre. Vous validez le paiement chez lui, comme d'habitude." %}</span></div>
+  </li>
+  <li>
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <rect x="18" y="6" width="28" height="52" rx="6" fill="#ffffff" stroke="#14532d" stroke-width="2.5"/>
+      <circle cx="32" cy="28" r="10" fill="#14532d"/>
+      <path d="M27 28 L31 32 L38 24" stroke="#a3e635" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="36" y="40" width="22" height="12" rx="4" fill="#a3e635" stroke="#14532d" stroke-width="1.5"/>
+      <path d="M40 46 H54" stroke="#14532d" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <div><b><span class="n">3</span>{% translate "L'argent arrive" %}</b>
+      <span>{% translate "La personne reçoit le montant exact sur son portefeuille. Vous suivez le transfert en direct et recevez un SMS." %}</span></div>
+  </li>
+</ol>

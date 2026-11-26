@@ -2,13 +2,21 @@
 {% load i18n %}
 {% block title %}{% translate "Connexion" %} — Plip-Plip{% endblock %}
 {% block content %}
-<h1>{% translate "Connexion" %}</h1>
+<div class="login-head">
+  <svg class="login-mark" viewBox="0 0 48 48" aria-hidden="true">
+    <rect x="13" y="4" width="22" height="40" rx="5" fill="#ecfccb" stroke="#14532d" stroke-width="2.4"/>
+    <circle cx="24" cy="21" r="7" fill="#14532d"/>
+    <path d="M21 21 L23.5 23.5 L27.5 18.5" stroke="#a3e635" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M20 35 H28" stroke="#14532d" stroke-width="2.2" stroke-linecap="round"/>
+  </svg>
+  <h1>{% translate "Connexion" %}</h1>
+</div>
 <p class="lead">{% translate "Recevez un code par SMS, ou utilisez votre mot de passe si vous en avez créé un." %}</p>
 
 {# Les deux choix d'emblee, sans consulter le numero : n'afficher le mot de passe qu'aux numeros qui en ont un revelerait la liste des clients. #}
-<form class="card" method="post" action="{% url 'web:login' %}" onsubmit="this.querySelector('button[type=submit]').disabled = true;">
+<form class="card login-card" method="post" action="{% url 'web:login' %}" onsubmit="this.querySelector('button[type=submit]').disabled = true;">
   {% csrf_token %}
-  <h2>{% translate "Avec un code SMS" %}</h2>
+  <h2 class="method"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5 H20 V15 H10 L5 19 V15 H4 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8 10 H16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>{% translate "Avec un code SMS" %}</h2>
   <input type="hidden" name="next" value="{{ next }}">
   {% for error in form.non_field_errors %}<p class="alert error">{{ error }}</p>{% endfor %}
   <div class="field">
@@ -20,9 +28,11 @@
   <button type="submit" class="block">{% translate "Recevoir un code" %}</button>
 </form>
 
-<form class="card" id="mot-de-passe" method="post" action="{% url 'web:login_password' %}">
+<p class="or" aria-hidden="true"><span>{% translate "ou" %}</span></p>
+
+<form class="card login-card" id="mot-de-passe" method="post" action="{% url 'web:login_password' %}">
   {% csrf_token %}
-  <h2>{% translate "Avec mon mot de passe" %}</h2>
+  <h2 class="method"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 10 V7 A4 4 0 0 1 16 7 V10" fill="none" stroke="currentColor" stroke-width="2"/></svg>{% translate "Avec mon mot de passe" %}</h2>
   <input type="hidden" name="next" value="{{ next }}">
   {% for error in password_form.non_field_errors %}<p class="alert error">{{ error }}</p>{% endfor %}
   <div class="field">
@@ -35,4 +45,5 @@
   <button type="submit" class="block">{% translate "Se connecter" %}</button>
   <p class="muted"><a href="{% url 'web:password_forgot' %}?next={{ next|urlencode }}">{% translate "Mot de passe oublié ?" %}</a></p>
 </form>
+<p class="muted center">{% translate "Pas encore de compte ? Recevez un code : votre compte est créé dès que votre numéro est vérifié." %}</p>
 {% endblock %}

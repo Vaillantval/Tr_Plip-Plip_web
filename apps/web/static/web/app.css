@@ -274,6 +274,144 @@ button.is-loading::before {
 .wrap > .card:nth-of-type(3) { animation-delay: .12s; }
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
+/* ------------------------------------------------------------------
+   Accueil : portefeuilles, etapes, exemple, garanties, questions.
+   ------------------------------------------------------------------ */
+.center { text-align: center; }
+.works-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .09em; color: rgba(255, 255, 255, .65); margin: 1rem 0 .45rem; }
+.wallets { display: flex; flex-wrap: wrap; gap: .6rem; list-style: none; margin: 0; padding: 0; }
+.wallets li { display: flex; flex-direction: column; align-items: center; gap: .25rem; }
+.wallets .chip { animation: float 3.2s ease-in-out infinite; }
+.wallets li:nth-child(2) .chip { animation-delay: -.8s; }
+.wallets li:nth-child(3) .chip { animation-delay: -1.6s; }
+.wallets li:nth-child(4) .chip { animation-delay: -2.4s; }
+.role { font-size: .68rem; color: rgba(255, 255, 255, .75); }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+.chip {
+  height: 2.3rem; min-width: 4.6rem; padding: .3rem .55rem; border-radius: var(--radius-sm);
+  background: #fff; display: inline-grid; place-items: center; box-shadow: 0 1px 0 rgba(0, 0, 0, .08); flex: none;
+}
+.chip img { height: 1.55rem; width: auto; display: block; }
+.chip.natcash { padding: 0; overflow: hidden; background: #f28a2e; }
+.chip.natcash img { height: 100%; width: 4.1rem; object-fit: cover; }
+.chip.text { font-weight: 700; color: var(--brand); font-size: .85rem; white-space: nowrap; }
+.chip.small { height: 1.7rem; min-width: 3.2rem; padding: .2rem .4rem; border: 1px solid var(--line); box-shadow: none; }
+.chip.small img { height: 1.1rem; }
+.chip.small.natcash { padding: 0; border: 0; }
+.chip.small.natcash img { width: 3.1rem; }
+.chip.small.text { font-size: .75rem; }
+
+.section-title { font-size: 1.05rem; margin: 1.6rem 0 .75rem; }
+.how { list-style: none; margin: 0; padding: 0; display: grid; gap: .65rem; }
+.how li {
+  display: grid; grid-template-columns: 4.2rem 1fr; gap: .85rem; align-items: center;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); padding: .7rem .85rem;
+}
+.how li > div { min-width: 0; }
+.how svg { width: 4.2rem; height: 4.2rem; display: block; }
+.how b { display: block; font-size: .95rem; }
+.how li span:not(.n) { color: var(--muted); font-size: .88rem; }
+.how .n {
+  display: inline-grid; place-items: center; width: 1.3rem; height: 1.3rem; border-radius: 50%;
+  background: var(--brand); color: var(--accent); font-size: .72rem; font-weight: 700; margin-right: .35rem; vertical-align: .05rem;
+}
+.flow { stroke-dasharray: 4 5; animation: flow 1.2s linear infinite; }
+@keyframes flow { to { stroke-dashoffset: -18; } }
+
+.example { background: var(--brand); color: #fff; border-radius: var(--radius-md); padding: 1rem 1.1rem; margin: 1.4rem 0 0; position: relative; overflow: hidden; }
+.example::before { content: ""; position: absolute; right: -2.5rem; top: -2.5rem; width: 8rem; height: 8rem; border-radius: 50%; background: rgba(163, 230, 53, .14); }
+.example p { position: relative; }
+.example .tag { font-size: .7rem; text-transform: uppercase; letter-spacing: .09em; color: var(--accent); margin: 0 0 .35rem; }
+.example .route { font-size: .9rem; color: rgba(255, 255, 255, .82); margin: 0 0 .4rem; }
+.example .big { display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap; margin: 0; }
+.example .big strong { font-size: 1.9rem; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.example .big span { color: rgba(255, 255, 255, .8); font-size: .9rem; }
+.example .split { margin: .5rem 0 0; font-size: .85rem; color: rgba(255, 255, 255, .75); font-variant-numeric: tabular-nums; }
+
+.promises { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin: 0; padding: 0; list-style: none; }
+.promises li { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); padding: .8rem; min-width: 0; }
+.promises svg { width: 1.9rem; height: 1.9rem; display: block; margin: 0 0 .45rem; }
+.promises b { display: block; font-size: .9rem; line-height: 1.3; margin: 0 0 .2rem; }
+.promises span { color: var(--muted); font-size: .82rem; line-height: 1.4; display: block; }
+
+.faq { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; }
+.faq details + details { border-top: 1px solid var(--line); }
+.faq summary { list-style: none; cursor: pointer; padding: .85rem 1rem; font-weight: 600; font-size: .95rem; display: flex; justify-content: space-between; gap: 1rem; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; color: var(--brand); font-weight: 700; transition: transform .2s ease; }
+.faq details[open] summary::after { transform: rotate(45deg); }
+.faq details p { margin: 0; padding: 0 1rem .9rem; color: var(--muted); font-size: .9rem; }
+
+/* Animations continues, legeres : « Mes transferts » vibre toutes les
+   4 s, le bouton principal respire et un reflet le traverse. */
+.top nav a.nav-transfers { display: inline-block; animation: nudge 4s ease-in-out infinite; transform-origin: 50% 60%; }
+@keyframes nudge {
+  0%, 84%, 100% { transform: none; }
+  87% { transform: rotate(-4deg); }
+  90% { transform: rotate(4deg); }
+  93% { transform: rotate(-3deg); }
+  96% { transform: rotate(2deg); }
+}
+.breathe { animation: breathe 2.8s ease-in-out infinite; }
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(163, 230, 53, 0); }
+  50% { box-shadow: 0 0 0 5px rgba(163, 230, 53, .35); }
+}
+.button.breathe:not(.block) { position: relative; overflow: hidden; isolation: isolate; }
+.button.breathe:not(.block)::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(110deg, transparent 30%, rgba(163, 230, 53, .28) 50%, transparent 70%);
+}
+button.breathe::after, .button.breathe::after { animation: sheen 4.5s ease-in-out infinite; }
+@keyframes sheen { 0%, 70% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+/* ------------------------------------------------------------------
+   Tableau de bord client (« Mes transferts »).
+   ------------------------------------------------------------------ */
+.dash-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin: 0 0 1rem; }
+.dash-head > div { min-width: 0; }
+.dash-head h1 { margin-bottom: .1rem; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; list-style: none; padding: 0; margin: 0 0 1rem; }
+.stats li { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); padding: .7rem .75rem; min-width: 0; animation: rise .35s ease-out both; }
+.stats li:nth-child(2) { animation-delay: .05s; }
+.stats li:nth-child(3) { animation-delay: .1s; background: var(--brand); border-color: var(--brand); color: var(--brand-ink); }
+.stats strong { display: block; font-size: 1.35rem; line-height: 1.2; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.stats span { font-size: .78rem; color: var(--muted); }
+.stats li:nth-child(3) span { color: rgba(255, 255, 255, .78); }
+
+.tx-list { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: .6rem; }
+.tx {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow);
+  border-left: 4px solid var(--progress); animation: rise .35s ease-out both; transition: transform .15s ease, box-shadow .15s ease;
+}
+.tx:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(16, 24, 40, .08); }
+.tx.status-delivered { border-left-color: var(--ok); }
+.tx.status-awaiting_payment, .tx.status-refunded { border-left-color: var(--warn); }
+.tx.status-expired, .tx.status-cancelled { border-left-color: var(--line); }
+.tx-main { display: grid; grid-template-columns: 1fr auto; gap: .45rem .75rem; align-items: center; padding: .8rem .9rem; color: inherit; text-decoration: none; }
+.tx-route { display: flex; align-items: center; gap: .35rem; min-width: 0; }
+.tx-arrow { color: var(--muted); font-weight: 700; }
+.tx-amount { font-weight: 700; font-size: 1.15rem; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.tx-amount small { font-size: .75rem; color: var(--muted); font-weight: 600; }
+.tx-pills { display: flex; flex-wrap: wrap; gap: .35rem; grid-column: 1 / -1; }
+.tx-meta { grid-column: 1 / -1; overflow-wrap: anywhere; }
+.tx .again { display: inline-flex; padding: 0 .9rem .75rem; color: var(--brand); font-weight: 600; font-size: .9rem; text-decoration: none; }
+.tx .again:hover { text-decoration: underline; }
+.tx.status-awaiting_payment .pill.awaiting_payment::before { animation: blink 1.4s ease-in-out infinite; }
+@keyframes blink { 50% { opacity: .2; } }
+
+/* ------------------------------------------------------------------
+   Connexion.
+   ------------------------------------------------------------------ */
+.login-head { display: flex; align-items: center; gap: .75rem; }
+.login-head h1 { margin: 0; }
+.login-mark { width: 3rem; height: 3rem; flex: none; animation: float 3.2s ease-in-out infinite; }
+.login-card h2.method { display: flex; align-items: center; gap: .5rem; color: var(--brand); }
+.login-card h2.method svg { width: 1.35rem; height: 1.35rem; flex: none; padding: .2rem; box-sizing: content-box; border-radius: 8px; background: var(--brand-soft); }
+.or { display: flex; align-items: center; gap: .75rem; margin: -.25rem 0 .75rem; color: var(--muted); font-size: .85rem; }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
   button:hover, .button:hover, button:active, .button:active { transform: none; }

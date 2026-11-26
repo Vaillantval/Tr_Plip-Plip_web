@@ -6,6 +6,17 @@
     <span class="hero-mark" aria-hidden="true"></span>
     <h1>{% translate "Envoyer de l'argent d'un portefeuille à l'autre" %}</h1>
     <p class="lead">{% translate "Le bénéficiaire reçoit exactement le montant annoncé. Les frais sont affichés avant de payer." %}</p>
+    {% if open_wallets %}
+    <p class="works-label">{% translate "Fonctionne avec" %}</p>
+    <ul class="wallets" data-wallets>
+      {% for w in open_wallets %}
+      <li data-wallet="{{ w.wallet }}">
+        {% include "web/partials/wallet_badge.html" with code=w.wallet %}
+        <span class="role">{% if w.payment_enabled and w.payout_enabled %}{% translate "payer et recevoir" %}{% elif w.payment_enabled %}{% translate "payer seulement" %}{% else %}{% translate "recevoir seulement" %}{% endif %}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
   </div>
 </section>
 {% endblock %}
@@ -34,11 +45,62 @@
     {% include "web/partials/quote.html" %}
   </div>
 
-  <button type="submit" class="block">{% translate "Continuer" %}</button>
+  <button type="submit" class="block breathe">{% translate "Continuer" %}</button>
 </form>
 {% endif %}
 
-<p class="muted">{% blocktranslate trimmed with amount=min_net|htg %}Montant minimum : {{ amount }} HTG.{% endblocktranslate %}</p>
+<p class="muted center">{% blocktranslate trimmed with amount=min_net|htg %}Montant minimum : {{ amount }} HTG.{% endblocktranslate %}</p>
+
+{% include "web/partials/how_it_works.html" %}
+
+{% if example %}
+<section class="example" data-example>
+  <p class="tag">{% translate "Exemple" %}</p>
+  <p class="route">
+    {% blocktranslate trimmed with amount=example.net_amount|htg destination=example.destination_wallet|wallet source=example.source_wallet|wallet %}
+      {{ amount }} HTG reçus sur {{ destination }}, payés avec {{ source }}
+    {% endblocktranslate %}
+  </p>
+  <p class="big"><strong>{{ example.total_charged|htg }} HTG</strong><span>{% translate "à payer" %}</span></p>
+  <p class="split">
+    {% blocktranslate trimmed with amount=example.net_amount|htg fees=example.total_fees|htg %}
+      {{ amount }} HTG reçus + {{ fees }} HTG de frais
+    {% endblocktranslate %}
+  </p>
+</section>
+{% endif %}
+
+<h2 class="section-title">{% translate "Ce qu'on vous garantit" %}</h2>
+<ul class="promises">
+  <li>
+    <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#ecfccb"/><path d="M10 16.5 L14 20.5 L22 12" stroke="#14532d" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <b>{% translate "Le montant exact" %}</b><span>{% translate "La personne reçoit ce qui est annoncé, pas une gourde de moins." %}</span>
+  </li>
+  <li>
+    <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#ecfccb"/><rect x="10" y="9" width="12" height="15" rx="2" fill="none" stroke="#14532d" stroke-width="2.2"/><path d="M13 14 H19 M13 18 H17" stroke="#14532d" stroke-width="2" stroke-linecap="round"/></svg>
+    <b>{% translate "Frais avant de payer" %}</b><span>{% translate "Le total est affiché avant toute validation." %}</span>
+  </li>
+  <li>
+    <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#ecfccb"/><path d="M9 11 H23 V19 H15 L11 23 V19 H9 Z" fill="none" stroke="#14532d" stroke-width="2.2" stroke-linejoin="round"/></svg>
+    <b>{% translate "Suivi et SMS" %}</b><span>{% translate "Le suivi se met à jour seul, et un SMS confirme l'arrivée." %}</span>
+  </li>
+  <li>
+    <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="#ecfccb"/><path d="M21 12 A7 7 0 1 0 22.5 18" fill="none" stroke="#14532d" stroke-width="2.4" stroke-linecap="round"/><path d="M21.5 7.5 V12.5 H16.5" fill="none" stroke="#14532d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <b>{% translate "Remboursé si ça échoue" %}</b><span>{% translate "Et pour toute question, une réclamation avec la référence du transfert." %}</span>
+  </li>
+</ul>
+
+<h2 class="section-title">{% translate "Questions fréquentes" %}</h2>
+<div class="faq">
+  <details><summary>{% translate "Combien puis-je envoyer ?" %}</summary>
+    <p>{% blocktranslate trimmed with min=min_net|htg max=max_net|htg %}De {{ min }} HTG à {{ max }} HTG par transfert. Des plafonds par jour s'appliquent aussi : le site vous prévient s'il faut attendre.{% endblocktranslate %}</p></details>
+  <details><summary>{% translate "Et si je me trompe de numéro ?" %}</summary>
+    <p>{% translate "Avant de payer, on vous demande de retaper le numéro : deux saisies différentes bloquent l'envoi. Si l'argent est déjà parti, ouvrez une réclamation avec la référence du transfert." %}</p></details>
+  <details><summary>{% translate "Que se passe-t-il si le transfert échoue ?" %}</summary>
+    <p>{% translate "Notre équipe rend l'argent sur le portefeuille qui a payé, et vous recevez un SMS." %}</p></details>
+  <details><summary>{% translate "Comment suivre mon transfert ?" %}</summary>
+    <p>{% translate "Après le paiement, la page du transfert se met à jour toute seule. Vous la retrouvez dans « Mes transferts »." %}</p></details>
+</div>
 
 <script>
   (function () {

@@ -2,7 +2,21 @@
 {% load i18n web_tags %}
 {% block title %}{% translate "Mes transferts" %} — Plip-Plip{% endblock %}
 {% block content %}
-<h1>{% translate "Mes transferts" %}</h1>
+<div class="dash-head">
+  <div>
+    <h1>{% translate "Mes transferts" %}</h1>
+    <p class="muted">{% blocktranslate trimmed with phone=request.customer.phone|masked_phone %}Connecté avec le <span class="mono">{{ phone }}</span>{% endblocktranslate %}</p>
+  </div>
+  <a class="button breathe" href="{% url 'web:home' %}">{% translate "Nouvel envoi" %}</a>
+</div>
+
+{% if overview.total %}
+<ul class="stats" data-overview>
+  <li><strong>{{ overview.ongoing }}</strong><span>{% translate "en cours" %}</span></li>
+  <li><strong>{{ overview.delivered }}</strong><span>{% translate "livrés" %}</span></li>
+  <li><strong>{{ overview.delivered_amount|htg }}</strong><span>{% translate "HTG reçus par vos proches" %}</span></li>
+</ul>
+{% endif %}
 
 {% if offer_password %}
 <section class="card offer" data-offer="password">
@@ -19,28 +33,32 @@
 {% endif %}
 
 {% if page.object_list %}
-<section class="card">
-  <ul class="list">
-    {% for txn in page.object_list %}
-    {% with status=txn|status_of %}
-    <li>
-      <a href="{% url 'web:transfer_detail' txn.reference %}">
-        <span class="mono">{{ txn.reference }}</span>
+<ul class="tx-list">
+  {% for txn in page.object_list %}
+  {% with status=txn|status_of %}
+  <li class="tx status-{{ status }}">
+    <a class="tx-main" href="{% url 'web:transfer_detail' txn.reference %}">
+      <span class="tx-route" aria-label="{{ txn.source_wallet|wallet }} → {{ txn.destination_wallet|wallet }}">
+        {% include "web/partials/wallet_badge.html" with code=txn.source_wallet small=True %}
+        <span class="tx-arrow" aria-hidden="true">→</span>
+        {% include "web/partials/wallet_badge.html" with code=txn.destination_wallet small=True %}
+      </span>
+      <span class="tx-amount">{{ txn.net_amount|htg }} <small>HTG</small></span>
+      <span class="tx-pills">
         <span class="pill {{ status }}">{{ status|status_label }}</span>
         {% if txn.id in unread_claims %}<span class="pill answered">{% translate "Réponse à lire" %}</span>{% endif %}
-        <span class="amount">{{ txn.net_amount|htg }} HTG</span>
-        <span class="muted meta">
-          {{ txn.source_wallet|wallet }} → {{ txn.destination_wallet|wallet }} · <span class="mono">{{ txn.recipient_phone }}</span> · {{ txn.created_at|date:"d/m/Y H:i" }}
-        </span>
-      </a>
-      {% if status in again_statuses %}
-      <a class="again" href="{% url 'web:home' %}?refaire={{ txn.reference|urlencode }}">{% translate "Refaire cet envoi" %}</a>
-      {% endif %}
-    </li>
-    {% endwith %}
-    {% endfor %}
-  </ul>
-</section>
+      </span>
+      <span class="muted tx-meta">
+        <span class="mono">{{ txn.recipient_phone }}</span> · {{ txn.created_at|date:"d/m/Y H:i" }} · <span class="mono">{{ txn.reference }}</span>
+      </span>
+    </a>
+    {% if status in again_statuses %}
+    <a class="again" href="{% url 'web:home' %}?refaire={{ txn.reference|urlencode }}">{% translate "Refaire cet envoi" %}</a>
+    {% endif %}
+  </li>
+  {% endwith %}
+  {% endfor %}
+</ul>
 {% if page.has_other_pages %}
 <p class="pager">
   <span>{% if page.has_previous %}<a href="?page={{ page.previous_page_number }}">{% translate "Plus récents" %}</a>{% endif %}</span>

@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Plip-Plip web\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-25 20:34-0500\n"
+"POT-Creation-Date: 2026-11-26 09:48-0500\n"
 "PO-Revision-Date: 2026-09-14 17:45-0400\n"
 "Last-Translator: \n"
 "Language-Team: Kreyòl ayisyen\n"
@@ -25,7 +25,9 @@ msgstr ""
 msgid ""
 "Ce numéro ne peut pas recevoir d'argent : MonCash et NatCash fonctionnent "
 "uniquement sur des lignes mobiles."
-msgstr "Nimewo sa a pa ka resevwa lajan : MonCash ak NatCash mache sèlman sou liy telefòn selilè."
+msgstr ""
+"Nimewo sa a pa ka resevwa lajan : MonCash ak NatCash mache sèlman sou liy "
+"telefòn selilè."
 
 #: .\apps\web\forms.py
 msgid "Votre numéro de téléphone"
@@ -76,13 +78,16 @@ msgid ""
 "En choisissant WhatsApp, vous acceptez d'y recevoir les avis de vos "
 "transferts. Si le message ne peut pas vous être livré, il vous est envoyé "
 "par SMS."
-msgstr "Si w chwazi WhatsApp, ou aksepte resevwa mesaj sou transfè w yo sou WhatsApp. Si mesaj la pa ka rive jwenn ou, n ap voye l pa SMS."
+msgstr ""
+"Si w chwazi WhatsApp, ou aksepte resevwa mesaj sou transfè w yo sou "
+"WhatsApp. Si mesaj la pa ka rive jwenn ou, n ap voye l pa SMS."
 
 #: .\apps\web\forms.py
 msgid ""
 "Les deux numéros ne correspondent pas. Retapez-le, ou modifiez l'envoi si le "
 "premier était faux."
-msgstr "De nimewo yo pa menm. Retape l, oswa chanje transfè a si premye a pa t bon."
+msgstr ""
+"De nimewo yo pa menm. Retape l, oswa chanje transfè a si premye a pa t bon."
 
 #: .\apps\web\forms.py
 msgid "J'envoie depuis"
@@ -150,7 +155,9 @@ msgstr "Kreye yon modpas"
 msgid ""
 "Avec un mot de passe, vous vous connectez tout de suite, sans attendre de "
 "code par SMS. Le code reste possible à tout moment."
-msgstr "Ak yon modpas, ou konekte touswit, san ou pa tann kòd pa SMS. Ou ka toujou sèvi ak kòd la nenpòt ki lè."
+msgstr ""
+"Ak yon modpas, ou konekte touswit, san ou pa tann kòd pa SMS. Ou ka toujou "
+"sèvi ak kòd la nenpòt ki lè."
 
 #: .\apps\web\templates\web\account_password.html
 #: .\apps\web\templates\web\password_reset.html
@@ -253,6 +260,22 @@ msgstr ""
 "montre w frè yo anvan ou peye."
 
 #: .\apps\web\templates\web\home.html
+msgid "Fonctionne avec"
+msgstr "Mache ak"
+
+#: .\apps\web\templates\web\home.html
+msgid "payer et recevoir"
+msgstr "peye ak resevwa"
+
+#: .\apps\web\templates\web\home.html
+msgid "payer seulement"
+msgstr "peye sèlman"
+
+#: .\apps\web\templates\web\home.html
+msgid "recevoir seulement"
+msgstr "resevwa sèlman"
+
+#: .\apps\web\templates\web\home.html
 msgid "Le service est momentanément indisponible. Réessayez plus tard."
 msgstr "Sèvis la pa disponib kounye a. Eseye ankò pita."
 
@@ -264,6 +287,106 @@ msgstr "Kontinye"
 #, python-format
 msgid "Montant minimum : %(amount)s HTG."
 msgstr "Pi piti kantite : %(amount)s HTG."
+
+#: .\apps\web\templates\web\home.html
+msgid "Exemple"
+msgstr "Egzanp"
+
+#: .\apps\web\templates\web\home.html
+#, python-format
+msgid "%(amount)s HTG reçus sur %(destination)s, payés avec %(source)s"
+msgstr "%(amount)s HTG resevwa sou %(destination)s, peye ak %(source)s"
+
+#: .\apps\web\templates\web\home.html
+msgid "à payer"
+msgstr "pou peye"
+
+#: .\apps\web\templates\web\home.html
+#, python-format
+msgid "%(amount)s HTG reçus + %(fees)s HTG de frais"
+msgstr "%(amount)s HTG resevwa + %(fees)s HTG frè"
+
+#: .\apps\web\templates\web\home.html
+msgid "Ce qu'on vous garantit"
+msgstr "Sa nou garanti w"
+
+#: .\apps\web\templates\web\home.html
+msgid "Le montant exact"
+msgstr "Kantite kòb egzak la"
+
+#: .\apps\web\templates\web\home.html
+msgid "La personne reçoit ce qui est annoncé, pas une gourde de moins."
+msgstr "Moun nan resevwa egzakteman kantite nou montre a, pa yon goud mwens."
+
+#: .\apps\web\templates\web\home.html
+msgid "Frais avant de payer"
+msgstr "Frè yo anvan ou peye"
+
+#: .\apps\web\templates\web\home.html
+msgid "Le total est affiché avant toute validation."
+msgstr "N ap montre w total la anvan ou konfime anyen."
+
+#: .\apps\web\templates\web\home.html
+msgid "Suivi et SMS"
+msgstr "Swivi ak SMS"
+
+#: .\apps\web\templates\web\home.html
+msgid "Le suivi se met à jour seul, et un SMS confirme l'arrivée."
+msgstr "Swivi a mete tèt li ajou pou kont li, epi yon SMS konfime lajan an rive."
+
+#: .\apps\web\templates\web\home.html
+msgid "Remboursé si ça échoue"
+msgstr "Nou ranbouse w si sa pa mache"
+
+#: .\apps\web\templates\web\home.html
+msgid "Et pour toute question, une réclamation avec la référence du transfert."
+msgstr "Epi pou nenpòt kesyon, fè yon reklamasyon ak referans transfè a."
+
+#: .\apps\web\templates\web\home.html
+msgid "Questions fréquentes"
+msgstr "Kesyon ki pi souvan"
+
+#: .\apps\web\templates\web\home.html
+msgid "Combien puis-je envoyer ?"
+msgstr "Konbyen kòb mwen ka voye ?"
+
+#: .\apps\web\templates\web\home.html
+#, python-format
+msgid ""
+"De %(min)s HTG à %(max)s HTG par transfert. Des plafonds par jour "
+"s'appliquent aussi : le site vous prévient s'il faut attendre."
+msgstr "Soti %(min)s HTG rive %(max)s HTG pou chak transfè. Gen limit pa jou tou : sit la ap avèti w si ou dwe tann."
+
+#: .\apps\web\templates\web\home.html
+msgid "Et si je me trompe de numéro ?"
+msgstr "E si m fè erè nan nimewo a ?"
+
+#: .\apps\web\templates\web\home.html
+msgid ""
+"Avant de payer, on vous demande de retaper le numéro : deux saisies "
+"différentes bloquent l'envoi. Si l'argent est déjà parti, ouvrez une "
+"réclamation avec la référence du transfert."
+msgstr "Anvan ou peye, nou mande w retape nimewo a : si de nimewo yo pa menm, transfè a bloke. Si lajan an deja pati, louvri yon reklamasyon ak referans transfè a."
+
+#: .\apps\web\templates\web\home.html
+msgid "Que se passe-t-il si le transfert échoue ?"
+msgstr "Kisa k ap pase si transfè a pa mache ?"
+
+#: .\apps\web\templates\web\home.html
+msgid ""
+"Notre équipe rend l'argent sur le portefeuille qui a payé, et vous recevez "
+"un SMS."
+msgstr "Ekip nou an remèt lajan an sou pòtfèy ki te peye a, epi w ap resevwa yon SMS."
+
+#: .\apps\web\templates\web\home.html
+msgid "Comment suivre mon transfert ?"
+msgstr "Kijan pou m swiv transfè m nan ?"
+
+#: .\apps\web\templates\web\home.html
+msgid ""
+"Après le paiement, la page du transfert se met à jour toute seule. Vous la "
+"retrouvez dans « Mes transferts »."
+msgstr "Apre pèman an, paj transfè a ap mete tèt li ajou pou kont li. W ap jwenn li nan « Transfè m yo »."
 
 #: .\apps\web\templates\web\login.html .\apps\web\templates\web\login_code.html
 msgid "Connexion"
@@ -285,12 +408,22 @@ msgid "Recevoir un code"
 msgstr "Resevwa yon kòd"
 
 #: .\apps\web\templates\web\login.html
+msgid "ou"
+msgstr "oswa"
+
+#: .\apps\web\templates\web\login.html
 msgid "Avec mon mot de passe"
 msgstr "Ak modpas mwen"
 
 #: .\apps\web\templates\web\login.html
 msgid "Mot de passe oublié ?"
 msgstr "Ou bliye modpas ou ?"
+
+#: .\apps\web\templates\web\login.html
+msgid ""
+"Pas encore de compte ? Recevez un code : votre compte est créé dès que votre "
+"numéro est vérifié."
+msgstr "Ou poko gen kont ? Resevwa yon kòd : kont ou ap kreye depi nimewo ou verifye."
 
 #: .\apps\web\templates\web\login_code.html
 msgid "Saisissez le code"
@@ -331,6 +464,40 @@ msgstr ""
 "Ak kat, yo retire pèman an an dola ameriken, apre konvèsyon founisè pèman "
 "nou an fè."
 
+#: .\apps\web\templates\web\partials\how_it_works.html
+msgid "Comment ça marche"
+msgstr "Kijan sa mache"
+
+#: .\apps\web\templates\web\partials\how_it_works.html
+msgid "Numéro et montant"
+msgstr "Nimewo ak kantite kòb"
+
+#: .\apps\web\templates\web\partials\how_it_works.html
+msgid ""
+"Choisissez les portefeuilles, tapez le numéro et ce que la personne doit "
+"recevoir. Les frais s'affichent tout de suite."
+msgstr "Chwazi pòtfèy yo, tape nimewo a ak kantite kòb moun nan dwe resevwa. W ap wè frè yo touswit."
+
+#: .\apps\web\templates\web\partials\how_it_works.html
+msgid "Vous payez"
+msgstr "Ou peye"
+
+#: .\apps\web\templates\web\partials\how_it_works.html
+msgid ""
+"La page de votre portefeuille s'ouvre. Vous validez le paiement chez lui, "
+"comme d'habitude."
+msgstr "Paj pòtfèy ou a ap louvri. Ou aksepte pèman an sou paj sa a, jan ou konn fè l la."
+
+#: .\apps\web\templates\web\partials\how_it_works.html
+msgid "L'argent arrive"
+msgstr "Lajan an rive"
+
+#: .\apps\web\templates\web\partials\how_it_works.html
+msgid ""
+"La personne reçoit le montant exact sur son portefeuille. Vous suivez le "
+"transfert en direct et recevez un SMS."
+msgstr "Moun nan resevwa kantite kòb egzak la sou pòtfèy li. Ou swiv transfè a an dirèk epi ou resevwa yon SMS."
+
 #: .\apps\web\templates\web\partials\password_field.html
 msgid "Afficher"
 msgstr "Montre"
@@ -355,7 +522,9 @@ msgstr "Resevwa"
 msgid ""
 "Payez pour lancer le transfert. La page de paiement s'ouvre dans un nouvel "
 "onglet ; revenez ici ensuite, cette page se met à jour toute seule."
-msgstr "Peye pou transfè a kòmanse. Paj pèman an ap louvri nan yon lòt onglè ; tounen isit la apre, paj sa a ap mete tèt li ajou pou kont li."
+msgstr ""
+"Peye pou transfè a kòmanse. Paj pèman an ap louvri nan yon lòt onglè ; "
+"tounen isit la apre, paj sa a ap mete tèt li ajou pou kont li."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
 msgid "Payer maintenant"
@@ -406,7 +575,8 @@ msgstr "N ap trete l pi vit ke posib."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
 msgid "Inutile de refaire l'envoi : cette page se met à jour toute seule."
-msgstr "Ou pa bezwen voye lajan an ankò : paj sa a ap mete tèt li ajou pou kont li."
+msgstr ""
+"Ou pa bezwen voye lajan an ankò : paj sa a ap mete tèt li ajou pou kont li."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
 #, python-format
@@ -418,6 +588,7 @@ msgid "Aucun paiement n'a été reçu à temps. Rien n'a été débité."
 msgstr "Nou pa t resevwa okenn pèman alè. Yo pa retire anyen."
 
 #: .\apps\web\templates\web\partials\transfer_status.html
+#: .\apps\web\templates\web\transfers.html
 msgid "Nouvel envoi"
 msgstr "Nouvo transfè"
 
@@ -437,7 +608,9 @@ msgstr "Ou bliye modpas ou?"
 msgid ""
 "Nous envoyons un code par SMS à votre numéro. Il vous permettra de choisir "
 "un nouveau mot de passe."
-msgstr "N ap voye yon kòd pa SMS sou nimewo ou. L ap pèmèt ou chwazi yon nouvo modpas."
+msgstr ""
+"N ap voye yon kòd pa SMS sou nimewo ou. L ap pèmèt ou chwazi yon nouvo "
+"modpas."
 
 #: .\apps\web\templates\web\password_forgot.html
 msgid "Retour à la connexion"
@@ -487,6 +660,22 @@ msgstr "Yon pwoblèm ak transfè sa a ?"
 #: .\apps\web\templates\web\transfer_detail.html
 msgid "Tous mes transferts"
 msgstr "Tout transfè m yo"
+
+#: .\apps\web\templates\web\transfers.html
+msgid "Connecté avec le <span class=\"mono\">%(phone)s</span>"
+msgstr "Konekte ak <span class=\"mono\">%(phone)s</span>"
+
+#: .\apps\web\templates\web\transfers.html
+msgid "en cours"
+msgstr "k ap fèt"
+
+#: .\apps\web\templates\web\transfers.html
+msgid "livrés"
+msgstr "ki rive"
+
+#: .\apps\web\templates\web\transfers.html
+msgid "HTG reçus par vos proches"
+msgstr "HTG moun pa w yo resevwa"
 
 #: .\apps\web\templates\web\transfers.html
 msgid "Connectez-vous sans attendre de code."
@@ -539,14 +728,18 @@ msgstr "Nou pa ofri konbinezon pòtfèy sa a."
 msgid ""
 "Les transferts sont momentanément suspendus. Rien n'a été débité. Réessayez "
 "plus tard."
-msgstr "Transfè yo kanpe pou kounye a. Yo pa retire okenn kòb sou kont ou. Eseye ankò pita."
+msgstr ""
+"Transfè yo kanpe pou kounye a. Yo pa retire okenn kòb sou kont ou. Eseye "
+"ankò pita."
 
 #: .\apps\web\views.py
 msgid ""
 "Nous recevons beaucoup de transferts en ce moment. Plutôt que de prendre "
 "votre argent sans pouvoir le livrer rapidement, nous préférons attendre. "
 "Réessayez dans quelques minutes."
-msgstr "Nou gen anpil transfè kounye a. Pito nou tann pase nou pran kòb ou san nou pa ka voye l byen vit. Eseye ankò nan kèk minit."
+msgstr ""
+"Nou gen anpil transfè kounye a. Pito nou tann pase nou pran kòb ou san nou "
+"pa ka voye l byen vit. Eseye ankò nan kèk minit."
 
 #: .\apps\web\views.py
 msgid ""
